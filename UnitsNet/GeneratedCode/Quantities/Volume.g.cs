@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace UnitsNet
     ///     Volume is the quantity of three-dimensional space enclosed by some closed boundary, for example, the space that a substance (solid, liquid, gas, or plasma) or shape occupies or contains.[1] Volume is often quantified numerically using the SI derived unit, the cubic metre. The volume of a container is generally understood to be the capacity of the container, i. e. the amount of fluid (gas or liquid) that the container could hold, rather than the amount of space the container itself displaces.
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct Volume :
         IArithmeticQuantity<Volume, VolumeUnit, double>,
         IComparable,
@@ -47,13 +49,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly VolumeUnit? _unit;
 
         static Volume()
@@ -634,7 +636,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(VolumeUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -1248,7 +1250,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static Volume Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<Volume, VolumeUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<Volume, VolumeUnit>(
                 str,
                 provider,
                 From);
@@ -1279,7 +1281,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out Volume result)
         {
-            return QuantityParser.Default.TryParse<Volume, VolumeUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<Volume, VolumeUnit>(
                 str,
                 provider,
                 From,
@@ -1312,7 +1314,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static VolumeUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<VolumeUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<VolumeUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.VolumeUnit)"/>
@@ -1333,7 +1335,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out VolumeUnit unit)
         {
-            return UnitParser.Default.TryParse<VolumeUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<VolumeUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -1535,7 +1537,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />
@@ -1682,7 +1684,7 @@ namespace UnitsNet
                 (VolumeUnit.CubicDecimeter, VolumeUnit.CubicMeter) => new Volume(_value / 1e3, VolumeUnit.CubicMeter),
                 (VolumeUnit.CubicFoot, VolumeUnit.CubicMeter) => new Volume(_value * 2.8316846592e-2, VolumeUnit.CubicMeter),
                 (VolumeUnit.CubicHectometer, VolumeUnit.CubicMeter) => new Volume(_value * 1e6, VolumeUnit.CubicMeter),
-                (VolumeUnit.CubicInch, VolumeUnit.CubicMeter) => new Volume(_value * 1.6387 * 1e-5, VolumeUnit.CubicMeter),
+                (VolumeUnit.CubicInch, VolumeUnit.CubicMeter) => new Volume(_value * 1.6387064e-5, VolumeUnit.CubicMeter),
                 (VolumeUnit.CubicKilometer, VolumeUnit.CubicMeter) => new Volume(_value * 1e9, VolumeUnit.CubicMeter),
                 (VolumeUnit.CubicMicrometer, VolumeUnit.CubicMeter) => new Volume(_value / 1e18, VolumeUnit.CubicMeter),
                 (VolumeUnit.CubicMile, VolumeUnit.CubicMeter) => new Volume(_value * 4.16818182544058e9, VolumeUnit.CubicMeter),
@@ -1737,7 +1739,7 @@ namespace UnitsNet
                 (VolumeUnit.CubicMeter, VolumeUnit.CubicDecimeter) => new Volume(_value * 1e3, VolumeUnit.CubicDecimeter),
                 (VolumeUnit.CubicMeter, VolumeUnit.CubicFoot) => new Volume(_value / 2.8316846592e-2, VolumeUnit.CubicFoot),
                 (VolumeUnit.CubicMeter, VolumeUnit.CubicHectometer) => new Volume(_value / 1e6, VolumeUnit.CubicHectometer),
-                (VolumeUnit.CubicMeter, VolumeUnit.CubicInch) => new Volume(_value / (1.6387 * 1e-5), VolumeUnit.CubicInch),
+                (VolumeUnit.CubicMeter, VolumeUnit.CubicInch) => new Volume(_value / 1.6387064e-5, VolumeUnit.CubicInch),
                 (VolumeUnit.CubicMeter, VolumeUnit.CubicKilometer) => new Volume(_value / 1e9, VolumeUnit.CubicKilometer),
                 (VolumeUnit.CubicMeter, VolumeUnit.CubicMicrometer) => new Volume(_value * 1e18, VolumeUnit.CubicMicrometer),
                 (VolumeUnit.CubicMeter, VolumeUnit.CubicMile) => new Volume(_value / 4.16818182544058e9, VolumeUnit.CubicMile),

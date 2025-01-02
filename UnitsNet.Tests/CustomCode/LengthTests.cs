@@ -8,10 +8,6 @@ using Xunit;
 
 namespace UnitsNet.Tests
 {
-    // Avoid accessing static prop DefaultToString in parallel from multiple tests:
-    // UnitSystemTests.DefaultToStringFormatting()
-    // LengthTests.ToStringReturnsCorrectNumberAndUnitWithCentimeterAsDefualtUnit()
-    [Collection(nameof(UnitAbbreviationsCacheFixture))]
     public class LengthTests : LengthTestsBase
     {
         protected override bool SupportsSIUnitSystem => true;
@@ -21,6 +17,7 @@ namespace UnitsNet.Tests
         protected override double DtpPicasInOneMeter => 236.22047244;
         protected override double DtpPointsInOneMeter => 2834.6456693;
 
+        protected override double FemtometersInOneMeter => 1E+15;
         protected override double FeetInOneMeter => 3.28083989501;
 
         protected override double HectometersInOneMeter => 1E-2;
@@ -50,6 +47,7 @@ namespace UnitsNet.Tests
 
         protected override double FathomsInOneMeter => 0.546806649;
 
+        protected override double PicometersInOneMeter => 1E+12;
         protected override double PrinterPicasInOneMeter => 237.10630158;
         protected override double PrinterPointsInOneMeter => 2845.2755906;
 
@@ -65,6 +63,8 @@ namespace UnitsNet.Tests
 
         protected override double KiloparsecsInOneMeter => 3.2407790389471100000000000E-20;
 
+        protected override double KiloyardsInOneMeter => 1.0936132983E-3;
+
         protected override double LightYearsInOneMeter => 1.0570008340247000000000000E-16;
 
         protected override double MegalightYearsInOneMeter => 1.0570008340247000000000000E-22;
@@ -73,7 +73,7 @@ namespace UnitsNet.Tests
 
         protected override double ParsecsInOneMeter => 3.2407790389471100000000000E-17;
 
-        protected override double SolarRadiusesInOneMeter => 1.43779384911791000E-09;
+        protected override double SolarRadiusesInOneMeter => 1.4374011786689664E-09;
 
         protected override double ChainsInOneMeter => 0.0497096953789867;
 
@@ -84,6 +84,7 @@ namespace UnitsNet.Tests
         protected override double DataMilesInOneMeter => 0.000546807;
 
         protected override double MegametersInOneMeter => 1e-6;
+        protected override double GigametersInOneMeter => 1e-9;
 
         protected override double KilofeetInOneMeter => 3.28083989501e-3;
 
@@ -127,6 +128,20 @@ namespace UnitsNet.Tests
         {
             Duration duration = Length.FromMeters(20) / Speed.FromMetersPerSecond(2);
             Assert.Equal(Duration.FromSeconds(10), duration);
+        }
+
+        [Fact]
+        public void LengthDividedByAreaEqualsReciprocalLength()
+        {
+            ReciprocalLength reciprocalLength = Length.FromMeters(20) / Area.FromSquareMeters(2);
+            Assert.Equal(ReciprocalLength.FromInverseMeters(10), reciprocalLength);
+        }
+
+        [Fact]
+        public void LengthDividedByVolumeEqualsReciprocalArea()
+        {
+            ReciprocalArea reciprocalArea = Length.FromMeters(20) / Volume.FromCubicMeters(2);
+            Assert.Equal(ReciprocalArea.FromInverseSquareMeters(10), reciprocalArea);
         }
 
         [Fact]

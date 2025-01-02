@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace UnitsNet
     ///     
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct Jerk :
         IArithmeticQuantity<Jerk, JerkUnit, double>,
         IComparable,
@@ -47,13 +49,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly JerkUnit? _unit;
 
         static Jerk()
@@ -290,7 +292,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(JerkUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -474,7 +476,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static Jerk Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<Jerk, JerkUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<Jerk, JerkUnit>(
                 str,
                 provider,
                 From);
@@ -505,7 +507,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out Jerk result)
         {
-            return QuantityParser.Default.TryParse<Jerk, JerkUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<Jerk, JerkUnit>(
                 str,
                 provider,
                 From,
@@ -538,7 +540,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static JerkUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<JerkUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<JerkUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.JerkUnit)"/>
@@ -559,7 +561,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out JerkUnit unit)
         {
-            return UnitParser.Default.TryParse<JerkUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<JerkUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -761,7 +763,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />

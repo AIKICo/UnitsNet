@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace UnitsNet
     ///     Vitamin A: 1 IU is the biological equivalent of 0.3 µg retinol, or of 0.6 µg beta-carotene.
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct VitaminA :
         IArithmeticQuantity<VitaminA, VitaminAUnit, double>,
         IComparable,
@@ -47,13 +49,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly VitaminAUnit? _unit;
 
         static VitaminA()
@@ -210,7 +212,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(VitaminAUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -294,7 +296,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static VitaminA Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<VitaminA, VitaminAUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<VitaminA, VitaminAUnit>(
                 str,
                 provider,
                 From);
@@ -325,7 +327,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out VitaminA result)
         {
-            return QuantityParser.Default.TryParse<VitaminA, VitaminAUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<VitaminA, VitaminAUnit>(
                 str,
                 provider,
                 From,
@@ -358,7 +360,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static VitaminAUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<VitaminAUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<VitaminAUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.VitaminAUnit)"/>
@@ -379,7 +381,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out VitaminAUnit unit)
         {
-            return UnitParser.Default.TryParse<VitaminAUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<VitaminAUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -581,7 +583,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />

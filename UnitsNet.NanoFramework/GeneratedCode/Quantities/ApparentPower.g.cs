@@ -26,6 +26,10 @@ namespace UnitsNet
     /// <summary>
     ///     Power engineers measure apparent power as the magnitude of the vector sum of active and reactive power. Apparent power is the product of the root-mean-square of voltage and current.
     /// </summary>
+    /// <remarks>
+    ///     <c>ApparentPower</c> has been renamed to <c>ElectricApparentPower</c>, and will be removed in a later major version.
+    /// </remarks>
+    [Obsolete("ApparentPower has been renamed to ElectricApparentPower, and will be removed in a later major version.")]
     public struct  ApparentPower
     {
         /// <summary>
@@ -59,17 +63,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ApparentPower, which is Second. All conversions go via this value.
         /// </summary>
         public static ApparentPowerUnit BaseUnit { get; } = ApparentPowerUnit.Voltampere;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ApparentPower.
         /// </summary>
         public static ApparentPower MaxValue { get; } = new ApparentPower(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ApparentPower.
         /// </summary>
         public static ApparentPower MinValue { get; } = new ApparentPower(double.MinValue, BaseUnit);
 
@@ -171,9 +175,9 @@ namespace UnitsNet
                 public double As(ApparentPowerUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ApparentPower to another ApparentPower with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ApparentPower with the specified unit.</returns>
                 public ApparentPower ToUnit(ApparentPowerUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);

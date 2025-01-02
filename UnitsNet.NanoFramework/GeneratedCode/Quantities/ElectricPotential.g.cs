@@ -26,6 +26,9 @@ namespace UnitsNet
     /// <summary>
     ///     In classical electromagnetism, the electric potential (a scalar quantity denoted by Φ, ΦE or V and also called the electric field potential or the electrostatic potential) at a point is the amount of electric potential energy that a unitary point charge would have when located at that point.
     /// </summary>
+    /// <remarks>
+    ///     If you want to map more parameters into the <c>ElectricPotential</c> class (volts RMS, phase angle, etc.), create your own wrapper type such as a record or named tuple.
+    /// </remarks>
     public struct  ElectricPotential
     {
         /// <summary>
@@ -59,17 +62,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricPotential, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricPotentialUnit BaseUnit { get; } = ElectricPotentialUnit.Volt;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricPotential.
         /// </summary>
         public static ElectricPotential MaxValue { get; } = new ElectricPotential(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricPotential.
         /// </summary>
         public static ElectricPotential MinValue { get; } = new ElectricPotential(double.MinValue, BaseUnit);
 
@@ -171,9 +174,9 @@ namespace UnitsNet
                 public double As(ElectricPotentialUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricPotential to another ElectricPotential with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricPotential with the specified unit.</returns>
                 public ElectricPotential ToUnit(ElectricPotentialUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);

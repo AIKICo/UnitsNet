@@ -59,17 +59,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Volume, which is Second. All conversions go via this value.
         /// </summary>
         public static VolumeUnit BaseUnit { get; } = VolumeUnit.CubicMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Volume.
         /// </summary>
         public static Volume MaxValue { get; } = new Volume(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Volume.
         /// </summary>
         public static Volume MinValue { get; } = new Volume(double.MinValue, BaseUnit);
 
@@ -699,9 +699,9 @@ namespace UnitsNet
                 public double As(VolumeUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Volume to another Volume with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Volume with the specified unit.</returns>
                 public Volume ToUnit(VolumeUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -725,7 +725,7 @@ namespace UnitsNet
                         VolumeUnit.CubicDecimeter => _value / 1e3,
                         VolumeUnit.CubicFoot => _value * 2.8316846592e-2,
                         VolumeUnit.CubicHectometer => _value * 1e6,
-                        VolumeUnit.CubicInch => _value * 1.6387 * 1e-5,
+                        VolumeUnit.CubicInch => _value * 1.6387064e-5,
                         VolumeUnit.CubicKilometer => _value * 1e9,
                         VolumeUnit.CubicMeter => _value,
                         VolumeUnit.CubicMicrometer => _value / 1e18,
@@ -792,7 +792,7 @@ namespace UnitsNet
                         VolumeUnit.CubicDecimeter => baseUnitValue * 1e3,
                         VolumeUnit.CubicFoot => baseUnitValue / 2.8316846592e-2,
                         VolumeUnit.CubicHectometer => baseUnitValue / 1e6,
-                        VolumeUnit.CubicInch => baseUnitValue / (1.6387 * 1e-5),
+                        VolumeUnit.CubicInch => baseUnitValue / 1.6387064e-5,
                         VolumeUnit.CubicKilometer => baseUnitValue / 1e9,
                         VolumeUnit.CubicMeter => baseUnitValue,
                         VolumeUnit.CubicMicrometer => baseUnitValue * 1e18,

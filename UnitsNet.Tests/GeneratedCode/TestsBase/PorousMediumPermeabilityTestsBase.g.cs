@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -500,6 +501,8 @@ namespace UnitsNet.Tests
             var v = PorousMediumPermeability.FromSquareMeters(1);
             Assert.True(v.Equals(PorousMediumPermeability.FromSquareMeters(1), SquareMetersTolerance, ComparisonType.Relative));
             Assert.False(v.Equals(PorousMediumPermeability.Zero, SquareMetersTolerance, ComparisonType.Relative));
+            Assert.True(PorousMediumPermeability.FromSquareMeters(100).Equals(PorousMediumPermeability.FromSquareMeters(120), (double)0.3m, ComparisonType.Relative));
+            Assert.False(PorousMediumPermeability.FromSquareMeters(100).Equals(PorousMediumPermeability.FromSquareMeters(120), (double)0.1m, ComparisonType.Relative));
         }
 
         [Fact]
@@ -529,7 +532,7 @@ namespace UnitsNet.Tests
             var units = Enum.GetValues(typeof(PorousMediumPermeabilityUnit)).Cast<PorousMediumPermeabilityUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -542,19 +545,12 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 D", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.Darcy).ToString());
-                Assert.Equal("1 µD", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.Microdarcy).ToString());
-                Assert.Equal("1 mD", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.Millidarcy).ToString());
-                Assert.Equal("1 cm²", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.SquareCentimeter).ToString());
-                Assert.Equal("1 m²", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.SquareMeter).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 D", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.Darcy).ToString());
+            Assert.Equal("1 µD", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.Microdarcy).ToString());
+            Assert.Equal("1 mD", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.Millidarcy).ToString());
+            Assert.Equal("1 cm²", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.SquareCentimeter).ToString());
+            Assert.Equal("1 m²", new PorousMediumPermeability(1, PorousMediumPermeabilityUnit.SquareMeter).ToString());
         }
 
         [Fact]
@@ -573,19 +569,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s1"));
-                Assert.Equal("0.12 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s2"));
-                Assert.Equal("0.123 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s3"));
-                Assert.Equal("0.1235 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s1"));
+            Assert.Equal("0.12 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s2"));
+            Assert.Equal("0.123 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s3"));
+            Assert.Equal("0.1235 m²", new PorousMediumPermeability(0.123456, PorousMediumPermeabilityUnit.SquareMeter).ToString("s4"));
         }
 
         [Fact]

@@ -26,6 +26,10 @@ namespace UnitsNet
     /// <summary>
     ///     The Electric Potential of a system known to use Direct Current.
     /// </summary>
+    /// <remarks>
+    ///     <c>ElectricPotentialDc</c> has been merged into <c>ElectricPotential</c>, and will be removed in a later major version. If you want to map more parameters into the <c>ElectricPotential</c> class (volts RMS, phase angle, etc.), create your own wrapper type such as a record or named tuple.
+    /// </remarks>
+    [Obsolete("ElectricPotentialDc has been merged into ElectricPotential, and will be removed in a later major version. If you want to map more parameters into the ElectricPotential class (volts RMS, phase angle, etc.), create your own wrapper type such as a record or named tuple.")]
     public struct  ElectricPotentialDc
     {
         /// <summary>
@@ -59,17 +63,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricPotentialDc, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricPotentialDcUnit BaseUnit { get; } = ElectricPotentialDcUnit.VoltDc;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricPotentialDc.
         /// </summary>
         public static ElectricPotentialDc MaxValue { get; } = new ElectricPotentialDc(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricPotentialDc.
         /// </summary>
         public static ElectricPotentialDc MinValue { get; } = new ElectricPotentialDc(double.MinValue, BaseUnit);
 
@@ -160,9 +164,9 @@ namespace UnitsNet
                 public double As(ElectricPotentialDcUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricPotentialDc to another ElectricPotentialDc with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricPotentialDc with the specified unit.</returns>
                 public ElectricPotentialDc ToUnit(ElectricPotentialDcUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);

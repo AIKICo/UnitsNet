@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -35,7 +36,12 @@ namespace UnitsNet
     /// <summary>
     ///     Volt-ampere reactive (var) is a unit by which reactive power is expressed in an AC electric power system. Reactive power exists in an AC circuit when the current and voltage are not in phase.
     /// </summary>
+    /// <remarks>
+    ///     <c>ReactivePower</c> has been renamed to <c>ElectricReactivePower</c>, and will be removed in a later major version.
+    /// </remarks>
+    [Obsolete("ReactivePower has been renamed to ElectricReactivePower, and will be removed in a later major version.")]
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct ReactivePower :
         IArithmeticQuantity<ReactivePower, ReactivePowerUnit, double>,
         IComparable,
@@ -47,13 +53,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly ReactivePowerUnit? _unit;
 
         static ReactivePower()
@@ -234,7 +240,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(ReactivePowerUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -348,7 +354,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static ReactivePower Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<ReactivePower, ReactivePowerUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<ReactivePower, ReactivePowerUnit>(
                 str,
                 provider,
                 From);
@@ -379,7 +385,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out ReactivePower result)
         {
-            return QuantityParser.Default.TryParse<ReactivePower, ReactivePowerUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<ReactivePower, ReactivePowerUnit>(
                 str,
                 provider,
                 From,
@@ -412,7 +418,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static ReactivePowerUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<ReactivePowerUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<ReactivePowerUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.ReactivePowerUnit)"/>
@@ -433,7 +439,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out ReactivePowerUnit unit)
         {
-            return UnitParser.Default.TryParse<ReactivePowerUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<ReactivePowerUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -635,7 +641,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />

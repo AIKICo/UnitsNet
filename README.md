@@ -8,7 +8,8 @@ Add strongly typed quantities to your code and get merrily on with your life.
 
 No more magic constants found on Stack Overflow, no more second-guessing the unit of parameters and variables.
 
-[Upgrading from 4.x to 5.x](https://github.com/angularsen/UnitsNet/wiki/Upgrading-from-4.x-to-5.x)
+[Upgrading from 4.x to 5.x](https://github.com/angularsen/UnitsNet/wiki/Upgrading-from-4.x-to-5.x)<br>
+[Upgrading from 5.x to 6.x](https://github.com/angularsen/UnitsNet/wiki/Upgrading-from-5.x-to-6.x) (still in prerelease and may yet change)
 
 ### Overview
 
@@ -26,6 +27,7 @@ No more magic constants found on Stack Overflow, no more second-guessing the uni
 * [Want To Contribute?](#want-to-contribute)
 * [Continuous Integration](#continuous-integration)
 * [Who are Using This?](#who-are-using-this)
+* [Top Usages by GitHub Repos](#top-usages-by-gitHub-repos)
 * [Units.NET on other platforms](#unitsnet-on-other-platforms)
 
 ### Installing via NuGet
@@ -96,7 +98,7 @@ var oneKg = Mass.FromKilograms(1);
 
 // ToString() uses CurrentCulture for abbreviation language number formatting. This is consistent with the behavior of the .NET Framework,
 // where DateTime.ToString() uses CurrentCulture for the whole string, likely because mixing an english date format with a russian month name might be confusing.
-Thread.CurrentThread.CurrentCulture = russian;
+CultureInfo.CurrentCulture = russian;
 string kgRu = oneKg.ToString(); // "1 кг"
 
 // ToString() with specific culture and custom string format pattern
@@ -130,32 +132,57 @@ There are a handful of classes to help with this:
 - [UnitConverter](UnitsNet/UnitConverter.cs) for converting values to a different unit, with only strings or enum values
 - [UnitParser](UnitsNet/CustomCode/UnitParser.cs) for parsing unit abbreviation strings, such as `"cm"` to `LengthUnit.Centimeter`
 
-#### Enumerate quantities and units
-`Quantity` is the go-to class for looking up information about quantities at runtime.
-```c#
-string[] Quantity.Names;       // ["Length", "Mass", ...]
-QuantityType[] Quantity.Types; // [QuantityType.Length, QuantityType.Mass, ...]
-QuantityInfo[] Quantity.Infos; // Information about all quantities and their units, types, values etc., see more below
+#### Quantity - Enumerate quantities and units at runtime
+Use `Quantity` class for looking up `QuantityInfo` and `UnitInfo` at runtime.
 
-QuantityInfo Quantity.GetInfo(QuantityType.Length); // Get information about Length
+```c#
+string[] names = Quantity.Names;     // ["Length", "Mass", ...]
+QuantityInfo[] qis = Quantity.Infos; // All quantities and their units, types, values.
+
+// Look up quantity by name.
+QuantityInfo lengthInfo = Quantity.ByName["Length"];
+UnitInfo[] lengthUnits = lengthInfo.UnitInfos;
+
+// Look up unit by enum value (note: for extensibility, will instead look up by name in the future)
+UnitInfo cmInfo = Quantity.GetUnitInfo(LengthUnit.Centimeter);
 ```
 
-#### Information about quantity type
-`QuantityInfo` makes it easy to enumerate names, units, types and values for the quantity type.
+#### QuantityInfo - Information about a quantity
+`QuantityInfo` makes it easy to get names, units, types and values for a quantity.
 This is useful for populating lists of quantities and units for the user to choose.
 
 ```c#
-QuantityInfo lengthInfo = Quantity.GetInfo(QuantityType.Length); // You can get it statically here
-lengthInfo = Length.Info;                                        // or statically per quantity
-lengthInfo = Length.Zero.QuantityInfo;                           // or dynamically from quantity instances
+// Different ways to look up the quantity info.
+QuantityInfo lengthInfo = Quantity.ByName["Length"];
+lengthInfo = Length.Info;
+lengthInfo = Length.FromMeters(1).QuantityInfo;
 
-lengthInfo.Name;         // "Length"
-lengthInfo.QuantityType; // QuantityType.Length
-lengthInfo.UnitNames;    // ["Centimeter", "Meter", ...]
-lengthInfo.Units;        // [LengthUnit.Centimeter, LengthUnit.Meter, ...]
-lengthInfo.UnitType;     // typeof(LengthUnit)
-lengthInfo.ValueType;    // typeof(Length)
-lengthInfo.Zero;         // Length.Zero
+// The quantity information.
+lengthInfo.Name;            // "Length"
+lengthInfo.UnitInfos;       // UnitInfo[] for its units Centimeter, Meter, etc.
+lengthInfo.BaseUnitInfo;    // UnitInfo for LengthUnit.Meter
+lengthInfo.BaseDimensions;  // {"Length": 1, "Mass": 0, ...}
+lengthInfo.UnitType;        // typeof(LengthUnit)
+lengthInfo.ValueType;       // typeof(Length)
+lengthInfo.Zero;            // Length.Zero
+```
+
+#### UnitInfo - Information about a unit
+`UnitInfo` describes a unit, such as its enum value, names and its representation in SI base units.
+
+```c#
+// Different ways to look up the unit info.
+var cm = Quantity.GetUnitInfo(LengthUnit.Centimeter);
+
+if (Quantity.TryGetUnitInfo(LengthUnit.Centimeter, out UnitInfo tryGetCm)) {
+    cm = tryGetCm;
+}
+
+// The unit information.
+cm.Value;       // Enum value: LengthUnit.Centimeter
+cm.Name;        // "Centimeter"
+cm.PluralName;  // "Centimeters"
+cm.BaseUnits;   // {"Length": Centimeter, "Mass": null, "Time": null, ...}
 ```
 
 #### Construct quantity
@@ -203,9 +230,9 @@ if (Quantity.TryParse(typeof(Length), "3cm", out IQuantity quantity2)
 [UnitParser](UnitsNet/CustomCode/UnitParser.cs) parses unit abbreviation strings to unit enum values.
 
 ```c#
-Enum unit = UnitParser.Default.Parse("cm", typeof(LengthUnit)); // LengthUnit.Centimeter
+Enum unit = UnitsNetSetup.Default.UnitParser.Parse("cm", typeof(LengthUnit)); // LengthUnit.Centimeter
 
-if (UnitParser.Default.TryParse("cm", typeof(LengthUnit), out Enum unit2))
+if (UnitsNetSetup.Default.UnitParser.TryParse("cm", typeof(LengthUnit), out Enum unit2))
 {
     // Use unit2 as LengthUnit.Centimeter
 }
@@ -250,14 +277,16 @@ Read more at [Extending-with-Custom-Units](https://github.com/angularsen/UnitsNe
 #### Map between unit enum values and unit abbreviations
 ```c#
 // Map unit enum values to unit abbreviations
-UnitAbbreviationsCache.Default.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "sm");
-UnitAbbreviationsCache.Default.GetDefaultAbbreviation(HowMuchUnit.Some); // "sm"
-UnitParser.Default.Parse<HowMuchUnit>("sm");  // HowMuchUnit.Some
+var unitAbbreviations = UnitsNetSetup.Default.UnitAbbreviations;
+unitAbbreviations.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "sm");
+unitAbbreviations.GetDefaultAbbreviation(HowMuchUnit.Some); // "sm"
+
+UnitsNetSetup.Default.UnitParser.Parse<HowMuchUnit>("sm");  // HowMuchUnit.Some
 ```
 
 #### Convert between units of custom quantity
 ```c#
-var unitConverter = UnitConverter.Default;
+var unitConverter = UnitsNetSetup.Default.UnitConverter;
 unitConverter.SetConversionFunction<HowMuch>(HowMuchUnit.Lots, HowMuchUnit.Some, x => new HowMuch(x.Value * 2, HowMuchUnit.Some));
 unitConverter.SetConversionFunction<HowMuch>(HowMuchUnit.Tons, HowMuchUnit.Lots, x => new HowMuch(x.Value * 10, HowMuchUnit.Lots));
 unitConverter.SetConversionFunction<HowMuch>(HowMuchUnit.Tons, HowMuchUnit.Some, x => new HowMuch(x.Value * 20, HowMuchUnit.Some));
@@ -272,21 +301,30 @@ Console.WriteLine(Convert(HowMuchUnit.Tons)); // 10 tns
 ```
 
 #### Parse custom quantity
-[QuantityParser](UnitsNet/CustomCode/QuantityParser.cs) parses quantity strings to `IQuantity` by providing a `UnitAbbreviationsCache` with custom units and unit abbreviations.
+[QuantityParser](UnitsNet/CustomCode/QuantityParser.cs) parses quantity strings to `IQuantity` by mapping custom units to unit abbreviations in `UnitAbbreviationsCache`.
 
 ```c#
-// Alternatively, manipulate the global UnitAbbreviationsCache.Default.
-var unitAbbreviationsCache = new UnitAbbreviationsCache();
+// Map custom units to abbreviations
+var unitAbbreviationsCache = UnitsNetSetup.Default.UnitAbbreviations;
 unitAbbreviationsCache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
 unitAbbreviationsCache.MapUnitToAbbreviation(HowMuchUnit.ATon, "tn");
 
-var quantityParser = new QuantityParser(unitAbbreviationsCache);
+var quantityParser = UnitsNetSetup.Default.QuantityParser;
 
-// 1 Some
+// "1 sm" => new HowMuch(1, HowMuchUnit.Some)
 HowMuch q = quantityParser.Parse<HowMuch, HowMuchUnit>(
     str: "1 sm",
     formatProvider: null,
     fromDelegate: (value, unit) => new HowMuch((double) value, unit));
+```
+
+```c#
+// Alternatively, create your own instances to not change the global singleton instances.
+var unitAbbreviationsCache = UnitAbbreviationsCache.CreateDefault(); // or .CreateEmpty()
+unitAbbreviationsCache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
+unitAbbreviationsCache.MapUnitToAbbreviation(HowMuchUnit.ATon, "tn");
+
+var quantityParser = new QuantityParser(unitAbbreviationsCache);
 ```
 
 
@@ -297,25 +335,28 @@ HowMuch q = quantityParser.Parse<HowMuch, HowMuchUnit>(
 ![image](https://user-images.githubusercontent.com/787816/34920961-9b697004-f97b-11e7-9e9a-51ff7142969b.png)
 
 This example shows how you can create a dynamic unit converter, where the user selects the quantity to convert, such as `Temperature`, then selects to convert from `DegreeCelsius` to `DegreeFahrenheit` and types in a numeric value for how many degrees Celsius to convert.
-The quantity list box contains `QuantityType` values such as `QuantityType.Length` and the two unit list boxes contain `Enum` values, such as `LengthUnit.Meter`.
+The quantity list box contains quantity names, such as `"Length"`. The two unit list boxes contain `Enum` values, such as `LengthUnit.Meter`.
 
 #### Populate quantity selector
-Use `Quantity` to enumerate all quantity type enum values, such as `QuantityType.Length` and `QuantityType.Mass`.
+Use `Quantity` to enumerate all quantity names, such as `"Length"` and `"Mass"`.
 
 ```c#
-this.Quantities = Quantity.Types; // QuantityType[]
+this.Quantities = Quantity.Names; // string[]
+
+// or
+this.Quantities = Quantity.Infos.Select(i => i.Name).ToList();
 ```
 
 #### Update unit lists when selecting new quantity
 So user can only choose from/to units compatible with the quantity type.
 
 ```c#
-QuantityInfo quantityInfo = Quantity.GetInfo(quantityType);
+QuantityInfo quantityInfo = Quantity.ByName[quantityName];
 
 _units.Clear();
-foreach (Enum unitValue in quantityInfo.Units)
+foreach (Enum unitValue in quantityInfo.UnitInfos.Select(ui => ui.Value))
 {
-    _units.Add(unitValue);
+    _units.Add(new UnitListItem(unitValue));
 }
 ```
 
@@ -331,7 +372,7 @@ double convertedValue = UnitConverter.Convert(
 
 ### Example: WPF app using IValueConverter to parse input
 
-Src: [Samples/WpfMVVMSample](https://github.com/angularsen/UnitsNet/tree/master/Samples/WpfMVVMSample)
+Src: [Samples/MvvmSample.Wpf](https://github.com/angularsen/UnitsNet/tree/master/Samples/MvvmSample.Wpf)
 
 ![wpfmvvmsample_219w](https://user-images.githubusercontent.com/787816/34913417-094332e2-f8fd-11e7-9d8a-92db105fbbc9.png)
 
@@ -364,7 +405,8 @@ Read the wiki on [Serializing to JSON, XML and more](https://github.com/angulars
 * Build and test pull requests, notifies on success or error
 * Deploy nugets on master branch, if nuspec versions changed
 
-### Who are Using This?
+
+### Who are Using UnitsNet?
 
 It would be awesome to know who are using this library. If you would like your project listed here, [create an issue](https://github.com/angularsen/UnitsNet/issues) or edit the [README.md](https://github.com/angularsen/UnitsNet/edit/master/README.md) and send a pull request. Max logo size is `300x35 pixels` and should be in `.png`, `.gif` or `.jpg` formats.
 
@@ -445,11 +487,30 @@ https://github.com/StructuralAnalysisFormat/StructuralAnalysisFormat-SDK
 
 *- Dirk Schuermans, Software Engineer for [SCIA nv](https://www.scia.net)*
 
+### Top Usages by GitHub Repos
+
+Produced with [ghtopdep](https://github.com/github-tooling/ghtopdep).
+
+| Repo                                                            | Stars   |
+|-----------------------------------------------------------------|---------|
+| https://github.com/microsoft/PowerToys                          | 105K    |
+| https://github.com/dotnet/iot                                   | 2.1K    |
+| https://github.com/genielabs/HomeGenie                          | 388     |
+| https://github.com/raspberry-sharp/raspberry-sharp-io           | 340     |
+| https://github.com/nanoframework/nanoFramework.IoT.Device       | 202     |
+| https://github.com/porrey/Virtual-ZPL-Printer                   | 166     |
+| https://github.com/chino-os/chino-os                            | 147     |
+| https://github.com/BriefFiniteElementNet/BriefFiniteElement.Net | 143     |
+| https://github.com/WhiteBlackGoose/UnitsOfMeasure               | 57      |
+| https://github.com/pi-top/pi-top-4-.NET-SDK                     | 48      |
+
+
 ### Units.NET on other platforms
 
 Get the same strongly typed units on other platforms, based on the same [unit definitions](/Common/UnitDefinitions).
 
-| Language                   | Name        | Package                                          | Repository                                           | Maintainers  |
-|----------------------------|-------------|--------------------------------------------------|------------------------------------------------------|--------------|
-| JavaScript /<br>TypeScript | unitsnet-js | [npm](https://www.npmjs.com/package/unitsnet-js) | [github](https://github.com/haimkastner/unitsnet-js) | @haimkastner |
-| Python                     | unitsnet-py | [pypi](https://pypi.org/project/unitsnet-py)     | [github](https://github.com/haimkastner/unitsnet-py) | @haimkastner |
+| Language                   | Name        | Package                                                             | Repository                                           | Maintainers  |
+|----------------------------|-------------|---------------------------------------------------------------------|------------------------------------------------------|--------------|
+| JavaScript /<br>TypeScript | unitsnet-js | [npm](https://www.npmjs.com/package/unitsnet-js)                    | [github](https://github.com/haimkastner/unitsnet-js) | @haimkastner |
+| Python                     | unitsnet-py | [pypi](https://pypi.org/project/unitsnet-py)                        | [github](https://github.com/haimkastner/unitsnet-py) | @haimkastner |
+| Golang                     | unitsnet-go | [pkg.go.dev](https://pkg.go.dev/github.com/haimkastner/unitsnet-go) | [github](https://github.com/haimkastner/unitsnet-go) | @haimkastner |
