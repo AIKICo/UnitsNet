@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -35,7 +36,12 @@ namespace UnitsNet
     /// <summary>
     ///     The Volt-ampere reactive hour (expressed as varh) is the reactive power of one Volt-ampere reactive produced in one hour.
     /// </summary>
+    /// <remarks>
+    ///     <c>ReactiveEnergy</c> has been renamed to <c>ElectricReactiveEnergy</c>, and will be removed in a later major version.
+    /// </remarks>
+    [Obsolete("ReactiveEnergy has been renamed to ElectricReactiveEnergy, and will be removed in a later major version.")]
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct ReactiveEnergy :
         IArithmeticQuantity<ReactiveEnergy, ReactiveEnergyUnit, double>,
         IComparable,
@@ -47,18 +53,18 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly ReactiveEnergyUnit? _unit;
 
         static ReactiveEnergy()
         {
-            BaseDimensions = new BaseDimensions(2, 1, -1, 0, 0, 0, 0);
+            BaseDimensions = new BaseDimensions(2, 1, -2, 0, 0, 0, 0);
             BaseUnit = ReactiveEnergyUnit.VoltampereReactiveHour;
             Units = Enum.GetValues(typeof(ReactiveEnergyUnit)).Cast<ReactiveEnergyUnit>().ToArray();
             Zero = new ReactiveEnergy(0, BaseUnit);
@@ -226,7 +232,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(ReactiveEnergyUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -330,7 +336,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static ReactiveEnergy Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<ReactiveEnergy, ReactiveEnergyUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<ReactiveEnergy, ReactiveEnergyUnit>(
                 str,
                 provider,
                 From);
@@ -361,7 +367,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out ReactiveEnergy result)
         {
-            return QuantityParser.Default.TryParse<ReactiveEnergy, ReactiveEnergyUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<ReactiveEnergy, ReactiveEnergyUnit>(
                 str,
                 provider,
                 From,
@@ -394,7 +400,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static ReactiveEnergyUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<ReactiveEnergyUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<ReactiveEnergyUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.ReactiveEnergyUnit)"/>
@@ -415,7 +421,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out ReactiveEnergyUnit unit)
         {
-            return UnitParser.Default.TryParse<ReactiveEnergyUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<ReactiveEnergyUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -617,7 +623,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />

@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace UnitsNet
     ///     In physics, power is the rate of doing work. It is equivalent to an amount of energy consumed per unit time.
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct Power :
         IArithmeticQuantity<Power, PowerUnit, decimal>,
         IDecimalQuantity,
@@ -48,13 +50,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly decimal _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly PowerUnit? _unit;
 
         static Power()
@@ -91,6 +93,7 @@ namespace UnitsNet
                     new UnitInfo<PowerUnit>(PowerUnit.Petawatt, "Petawatts", BaseUnits.Undefined, "Power"),
                     new UnitInfo<PowerUnit>(PowerUnit.Picowatt, "Picowatts", BaseUnits.Undefined, "Power"),
                     new UnitInfo<PowerUnit>(PowerUnit.Terawatt, "Terawatts", BaseUnits.Undefined, "Power"),
+                    new UnitInfo<PowerUnit>(PowerUnit.TonOfRefrigeration, "TonsOfRefrigeration", BaseUnits.Undefined, "Power"),
                     new UnitInfo<PowerUnit>(PowerUnit.Watt, "Watts", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second), "Power"),
                 },
                 BaseUnit, Zero, BaseDimensions);
@@ -321,6 +324,11 @@ namespace UnitsNet
         public decimal Terawatts => As(PowerUnit.Terawatt);
 
         /// <summary>
+        ///     Gets a <see cref="decimal"/> value of this quantity converted into <see cref="PowerUnit.TonOfRefrigeration"/>
+        /// </summary>
+        public decimal TonsOfRefrigeration => As(PowerUnit.TonOfRefrigeration);
+
+        /// <summary>
         ///     Gets a <see cref="decimal"/> value of this quantity converted into <see cref="PowerUnit.Watt"/>
         /// </summary>
         public decimal Watts => As(PowerUnit.Watt);
@@ -361,6 +369,7 @@ namespace UnitsNet
             unitConverter.SetConversionFunction<Power>(PowerUnit.Petawatt, PowerUnit.Watt, quantity => quantity.ToUnit(PowerUnit.Watt));
             unitConverter.SetConversionFunction<Power>(PowerUnit.Picowatt, PowerUnit.Watt, quantity => quantity.ToUnit(PowerUnit.Watt));
             unitConverter.SetConversionFunction<Power>(PowerUnit.Terawatt, PowerUnit.Watt, quantity => quantity.ToUnit(PowerUnit.Watt));
+            unitConverter.SetConversionFunction<Power>(PowerUnit.TonOfRefrigeration, PowerUnit.Watt, quantity => quantity.ToUnit(PowerUnit.Watt));
 
             // Register in unit converter: BaseUnit <-> BaseUnit
             unitConverter.SetConversionFunction<Power>(PowerUnit.Watt, PowerUnit.Watt, quantity => quantity);
@@ -391,6 +400,7 @@ namespace UnitsNet
             unitConverter.SetConversionFunction<Power>(PowerUnit.Watt, PowerUnit.Petawatt, quantity => quantity.ToUnit(PowerUnit.Petawatt));
             unitConverter.SetConversionFunction<Power>(PowerUnit.Watt, PowerUnit.Picowatt, quantity => quantity.ToUnit(PowerUnit.Picowatt));
             unitConverter.SetConversionFunction<Power>(PowerUnit.Watt, PowerUnit.Terawatt, quantity => quantity.ToUnit(PowerUnit.Terawatt));
+            unitConverter.SetConversionFunction<Power>(PowerUnit.Watt, PowerUnit.TonOfRefrigeration, quantity => quantity.ToUnit(PowerUnit.TonOfRefrigeration));
         }
 
         /// <summary>
@@ -411,7 +421,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(PowerUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -669,6 +679,16 @@ namespace UnitsNet
         }
 
         /// <summary>
+        ///     Creates a <see cref="Power"/> from <see cref="PowerUnit.TonOfRefrigeration"/>.
+        /// </summary>
+        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
+        public static Power FromTonsOfRefrigeration(QuantityValue tonsofrefrigeration)
+        {
+            decimal value = (decimal) tonsofrefrigeration;
+            return new Power(value, PowerUnit.TonOfRefrigeration);
+        }
+
+        /// <summary>
         ///     Creates a <see cref="Power"/> from <see cref="PowerUnit.Watt"/>.
         /// </summary>
         /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
@@ -745,7 +765,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static Power Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<Power, PowerUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<Power, PowerUnit>(
                 str,
                 provider,
                 From);
@@ -776,7 +796,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out Power result)
         {
-            return QuantityParser.Default.TryParse<Power, PowerUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<Power, PowerUnit>(
                 str,
                 provider,
                 From,
@@ -809,7 +829,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static PowerUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<PowerUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<PowerUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.PowerUnit)"/>
@@ -830,7 +850,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out PowerUnit unit)
         {
-            return UnitParser.Default.TryParse<PowerUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<PowerUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -1032,7 +1052,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />
@@ -1207,6 +1227,7 @@ namespace UnitsNet
                 (PowerUnit.Petawatt, PowerUnit.Watt) => new Power((_value) * 1e15m, PowerUnit.Watt),
                 (PowerUnit.Picowatt, PowerUnit.Watt) => new Power((_value) * 1e-12m, PowerUnit.Watt),
                 (PowerUnit.Terawatt, PowerUnit.Watt) => new Power((_value) * 1e12m, PowerUnit.Watt),
+                (PowerUnit.TonOfRefrigeration, PowerUnit.Watt) => new Power(_value * 3516.853m, PowerUnit.Watt),
 
                 // BaseUnit -> PowerUnit
                 (PowerUnit.Watt, PowerUnit.BoilerHorsepower) => new Power(_value / 9812.5m, PowerUnit.BoilerHorsepower),
@@ -1234,6 +1255,7 @@ namespace UnitsNet
                 (PowerUnit.Watt, PowerUnit.Petawatt) => new Power((_value) / 1e15m, PowerUnit.Petawatt),
                 (PowerUnit.Watt, PowerUnit.Picowatt) => new Power((_value) / 1e-12m, PowerUnit.Picowatt),
                 (PowerUnit.Watt, PowerUnit.Terawatt) => new Power((_value) / 1e12m, PowerUnit.Terawatt),
+                (PowerUnit.Watt, PowerUnit.TonOfRefrigeration) => new Power(_value / 3516.853m, PowerUnit.TonOfRefrigeration),
 
                 _ => null
             };

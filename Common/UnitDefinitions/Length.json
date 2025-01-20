@@ -14,7 +14,7 @@
       },
       "FromUnitToBaseFunc": "{x}",
       "FromBaseToUnitFunc": "{x}",
-      "Prefixes": [ "Nano", "Micro", "Milli", "Centi", "Deci", "Deca", "Hecto", "Kilo", "Mega" ],
+      "Prefixes": [ "Femto", "Pico", "Nano", "Micro", "Milli", "Centi", "Deci", "Deca", "Hecto", "Kilo", "Mega", "Giga" ],
       "Localization": [
         {
           "Culture": "en-US",
@@ -63,6 +63,7 @@
       },
       "FromUnitToBaseFunc": "{x} * 0.9144",
       "FromBaseToUnitFunc": "{x} / 0.9144",
+      "Prefixes":  [ "Kilo" ],
       "XmlDocSummary": "The yard (symbol: yd) is an English unit of length in both the British imperial and US customary systems of measurement equalling 3 feet (or 36 inches). Since 1959 the yard has been by international agreement standardized as exactly 0.9144 meter. A distance of 1,760 yards is equal to 1 mile.",
       "XmlDocRemarks": "https://en.wikipedia.org/wiki/Yard",
       "Localization": [
@@ -178,7 +179,7 @@
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "NM" ]
+          "Abbreviations": [ "NM", "nmi" ]
         },
         {
           "Culture": "ru-RU",
@@ -380,8 +381,8 @@
     {
       "SingularName": "SolarRadius",
       "PluralName": "SolarRadiuses",
-      "FromUnitToBaseFunc": "{x} * 6.95510000E+08",
-      "FromBaseToUnitFunc": "{x} / 6.95510000E+08",
+      "FromUnitToBaseFunc": "{x} * 6.95700e8",
+      "FromBaseToUnitFunc": "{x} / 6.95700e8",
       "XmlDocSummary": "Solar radius is a ratio unit to the radius of the solar system star, the sun.",
       "XmlDocRemarks": "https://en.wikipedia.org/wiki/Stellar_classification",
       "Localization": [

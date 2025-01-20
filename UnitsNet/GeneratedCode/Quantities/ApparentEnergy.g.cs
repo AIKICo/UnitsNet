@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -35,7 +36,12 @@ namespace UnitsNet
     /// <summary>
     ///     A unit for expressing the integral of apparent power over time, equal to the product of 1 volt-ampere and 1 hour, or to 3600 joules.
     /// </summary>
+    /// <remarks>
+    ///     <c>ApparentEnergy</c> has been renamed to <c>ElectricApparentEnergy</c>, and will be removed in a later major version.
+    /// </remarks>
+    [Obsolete("ApparentEnergy has been renamed to ElectricApparentEnergy, and will be removed in a later major version.")]
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct ApparentEnergy :
         IArithmeticQuantity<ApparentEnergy, ApparentEnergyUnit, double>,
         IComparable,
@@ -47,13 +53,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly ApparentEnergyUnit? _unit;
 
         static ApparentEnergy()
@@ -226,7 +232,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(ApparentEnergyUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -330,7 +336,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static ApparentEnergy Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<ApparentEnergy, ApparentEnergyUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<ApparentEnergy, ApparentEnergyUnit>(
                 str,
                 provider,
                 From);
@@ -361,7 +367,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out ApparentEnergy result)
         {
-            return QuantityParser.Default.TryParse<ApparentEnergy, ApparentEnergyUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<ApparentEnergy, ApparentEnergyUnit>(
                 str,
                 provider,
                 From,
@@ -394,7 +400,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static ApparentEnergyUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<ApparentEnergyUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<ApparentEnergyUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.ApparentEnergyUnit)"/>
@@ -415,7 +421,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out ApparentEnergyUnit unit)
         {
-            return UnitParser.Default.TryParse<ApparentEnergyUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<ApparentEnergyUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -617,7 +623,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />

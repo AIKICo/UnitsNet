@@ -47,6 +47,7 @@ namespace UnitsNet.Serialization.JsonNet
         /// <returns>A <see cref="ValueUnit"/></returns>
         protected ValueUnit? ReadValueUnit(JToken jsonToken)
         {
+            // Empty JSON "{}"
             if (!jsonToken.HasValues)
             {
                 return null;
@@ -109,7 +110,8 @@ namespace UnitsNet.Serialization.JsonNet
 
             if (registeredQuantity is not null)
             {
-                return (IQuantity)Activator.CreateInstance(registeredQuantity, valueUnit.Value, unit);
+                return (IQuantity)(Activator.CreateInstance(registeredQuantity, valueUnit.Value, unit) ??
+                                   throw new InvalidOperationException($"Failed to create instance of {registeredQuantity}."));
             }
 
             return valueUnit switch

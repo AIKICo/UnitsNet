@@ -59,17 +59,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Power, which is Second. All conversions go via this value.
         /// </summary>
         public static PowerUnit BaseUnit { get; } = PowerUnit.Watt;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Power.
         /// </summary>
         public static Power MaxValue { get; } = new Power(79228162514264337593543950335d, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Power.
         /// </summary>
         public static Power MinValue { get; } = new Power(-79228162514264337593543950335d, BaseUnit);
 
@@ -203,6 +203,11 @@ namespace UnitsNet
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="PowerUnit.Terawatt"/>
         /// </summary>
         public double Terawatts => As(PowerUnit.Terawatt);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="PowerUnit.TonOfRefrigeration"/>
+        /// </summary>
+        public double TonsOfRefrigeration => As(PowerUnit.TonOfRefrigeration);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="PowerUnit.Watt"/>
@@ -364,6 +369,12 @@ namespace UnitsNet
         public static Power FromTerawatts(double terawatts) => new Power(terawatts, PowerUnit.Terawatt);
 
         /// <summary>
+        ///     Creates a <see cref="Power"/> from <see cref="PowerUnit.TonOfRefrigeration"/>.
+        /// </summary>
+        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
+        public static Power FromTonsOfRefrigeration(double tonsofrefrigeration) => new Power(tonsofrefrigeration, PowerUnit.TonOfRefrigeration);
+
+        /// <summary>
         ///     Creates a <see cref="Power"/> from <see cref="PowerUnit.Watt"/>.
         /// </summary>
         /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
@@ -391,9 +402,9 @@ namespace UnitsNet
                 public double As(PowerUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Power to another Power with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Power with the specified unit.</returns>
                 public Power ToUnit(PowerUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -434,6 +445,7 @@ namespace UnitsNet
                         PowerUnit.Petawatt => (_value) * 1e15d,
                         PowerUnit.Picowatt => (_value) * 1e-12d,
                         PowerUnit.Terawatt => (_value) * 1e12d,
+                        PowerUnit.TonOfRefrigeration => _value * 3516.853d,
                         PowerUnit.Watt => _value,
                         _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
                     };
@@ -473,6 +485,7 @@ namespace UnitsNet
                         PowerUnit.Petawatt => (baseUnitValue) / 1e15d,
                         PowerUnit.Picowatt => (baseUnitValue) / 1e-12d,
                         PowerUnit.Terawatt => (baseUnitValue) / 1e12d,
+                        PowerUnit.TonOfRefrigeration => baseUnitValue / 3516.853d,
                         PowerUnit.Watt => baseUnitValue,
                         _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
                     };

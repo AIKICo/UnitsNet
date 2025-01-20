@@ -37,6 +37,7 @@ namespace CodeGen.Generators.UnitsNetGen
             Writer.WL(GeneratedFileHeader);
             Writer.WL(@"
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -64,6 +65,7 @@ namespace UnitsNet
             Writer.WLIfText(1, GetObsoleteAttributeOrNull(_quantity));
             Writer.WL(@$"
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct {_quantity.Name} :
         {(_quantity.GenerateArithmetic ? "IArithmeticQuantity" : "IQuantity")}<{_quantity.Name}, {_unitEnumName}, {_quantity.ValueType}>,");
 
@@ -82,13 +84,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = ""Value"", Order = 0)]
+        [DataMember(Name = ""Value"", Order = 1)]
         private readonly {_quantity.ValueType} _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = ""Unit"", Order = 1)]
+        [DataMember(Name = ""Unit"", Order = 2)]
         private readonly {_unitEnumName}? _unit;
 ");
             GenerateStaticConstructor();
@@ -377,7 +379,7 @@ namespace UnitsNet
         /// <param name=""provider"">Format to use for localization. Defaults to <see cref=""CultureInfo.CurrentCulture"" /> if null.</param>
         public static string GetAbbreviation({_unitEnumName} unit, IFormatProvider? provider)
         {{
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }}
 
         #endregion
@@ -482,7 +484,7 @@ namespace UnitsNet
         /// <param name=""provider"">Format to use when parsing number and unit. Defaults to <see cref=""CultureInfo.CurrentCulture"" /> if null.</param>
         public static {_quantity.Name} Parse(string str, IFormatProvider? provider)
         {{
-            return QuantityParser.Default.Parse<{_quantity.Name}, {_unitEnumName}>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<{_quantity.Name}, {_unitEnumName}>(
                 str,
                 provider,
                 From);
@@ -513,7 +515,7 @@ namespace UnitsNet
         /// <param name=""provider"">Format to use when parsing number and unit. Defaults to <see cref=""CultureInfo.CurrentCulture"" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out {_quantity.Name} result)
         {{
-            return QuantityParser.Default.TryParse<{_quantity.Name}, {_unitEnumName}>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<{_quantity.Name}, {_unitEnumName}>(
                 str,
                 provider,
                 From,
@@ -546,7 +548,7 @@ namespace UnitsNet
         /// <exception cref=""UnitsNetException"">Error parsing string.</exception>
         public static {_unitEnumName} ParseUnit(string str, IFormatProvider? provider)
         {{
-            return UnitParser.Default.Parse<{_unitEnumName}>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<{_unitEnumName}>(str, provider);
         }}
 
         /// <inheritdoc cref=""TryParseUnit(string,IFormatProvider,out UnitsNet.Units.{_unitEnumName})""/>
@@ -567,7 +569,7 @@ namespace UnitsNet
         /// <param name=""provider"">Format to use when parsing number and unit. Defaults to <see cref=""CultureInfo.CurrentCulture"" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out {_unitEnumName} unit)
         {{
-            return UnitParser.Default.TryParse<{_unitEnumName}>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<{_unitEnumName}>(str, provider, out unit);
         }}
 
         #endregion
@@ -850,7 +852,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }}
 
         /// <inheritdoc />

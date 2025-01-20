@@ -26,6 +26,9 @@ namespace UnitsNet
     /// <summary>
     ///     An electric current is a flow of electric charge. In electric circuits this charge is often carried by moving electrons in a wire. It can also be carried by ions in an electrolyte, or by both ions and electrons such as in a plasma.
     /// </summary>
+    /// <remarks>
+    ///     If you want to map more parameters into the <c>ElectricCurrent</c> class (amps RMS, phase angle, etc.), create your own wrapper type such as a record or named tuple.
+    /// </remarks>
     public struct  ElectricCurrent
     {
         /// <summary>
@@ -59,17 +62,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricCurrent, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricCurrentUnit BaseUnit { get; } = ElectricCurrentUnit.Ampere;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricCurrent.
         /// </summary>
         public static ElectricCurrent MaxValue { get; } = new ElectricCurrent(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricCurrent.
         /// </summary>
         public static ElectricCurrent MinValue { get; } = new ElectricCurrent(double.MinValue, BaseUnit);
 
@@ -204,9 +207,9 @@ namespace UnitsNet
                 public double As(ElectricCurrentUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricCurrent to another ElectricCurrent with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricCurrent with the specified unit.</returns>
                 public ElectricCurrent ToUnit(ElectricCurrentUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);

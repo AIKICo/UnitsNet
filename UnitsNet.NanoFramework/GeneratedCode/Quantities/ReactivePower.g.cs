@@ -26,6 +26,10 @@ namespace UnitsNet
     /// <summary>
     ///     Volt-ampere reactive (var) is a unit by which reactive power is expressed in an AC electric power system. Reactive power exists in an AC circuit when the current and voltage are not in phase.
     /// </summary>
+    /// <remarks>
+    ///     <c>ReactivePower</c> has been renamed to <c>ElectricReactivePower</c>, and will be removed in a later major version.
+    /// </remarks>
+    [Obsolete("ReactivePower has been renamed to ElectricReactivePower, and will be removed in a later major version.")]
     public struct  ReactivePower
     {
         /// <summary>
@@ -59,17 +63,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ReactivePower, which is Second. All conversions go via this value.
         /// </summary>
         public static ReactivePowerUnit BaseUnit { get; } = ReactivePowerUnit.VoltampereReactive;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ReactivePower.
         /// </summary>
         public static ReactivePower MaxValue { get; } = new ReactivePower(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ReactivePower.
         /// </summary>
         public static ReactivePower MinValue { get; } = new ReactivePower(double.MinValue, BaseUnit);
 
@@ -149,9 +153,9 @@ namespace UnitsNet
                 public double As(ReactivePowerUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ReactivePower to another ReactivePower with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ReactivePower with the specified unit.</returns>
                 public ReactivePower ToUnit(ReactivePowerUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);

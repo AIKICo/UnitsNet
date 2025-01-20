@@ -93,7 +93,7 @@ namespace UnitsNet
             if (TryParse(str, formatProvider, out result))
                 return true;
 
-            var quantityParser = QuantityParser.Default;
+            var quantityParser = UnitsNetSetup.Default.QuantityParser;
             string footRegex = quantityParser.CreateRegexPatternForUnit(LengthUnit.Foot, formatProvider, matchEntireString: false);
             string inchRegex = quantityParser.CreateRegexPatternForUnit(LengthUnit.Inch, formatProvider, matchEntireString: false);
 
@@ -139,6 +139,18 @@ namespace UnitsNet
         public static Duration operator /(Length length, Speed speed)
         {
             return Duration.FromSeconds(length.Meters/speed.MetersPerSecond);
+        }
+
+        /// <summary>Get <see cref="ReciprocalLength"/> from <see cref="Length"/> divided by <see cref="Area"/>.</summary>
+        public static ReciprocalLength operator /(Length length, Area area)
+        {
+            return ReciprocalLength.FromInverseMeters(length.Meters / area.SquareMeters);
+        }
+
+        /// <summary>Get <see cref="ReciprocalArea"/> from <see cref="Length"/> divided by <see cref="Volume"/>.</summary>
+        public static ReciprocalArea operator /(Length length, Volume volume)
+        {
+            return ReciprocalArea.FromInverseSquareMeters(length.Meters / volume.CubicMeters);
         }
 
         /// <summary>Get <see cref="Area"/> from <see cref="Length"/> times <see cref="Length"/>.</summary>

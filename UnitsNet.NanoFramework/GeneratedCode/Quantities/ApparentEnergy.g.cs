@@ -26,6 +26,10 @@ namespace UnitsNet
     /// <summary>
     ///     A unit for expressing the integral of apparent power over time, equal to the product of 1 volt-ampere and 1 hour, or to 3600 joules.
     /// </summary>
+    /// <remarks>
+    ///     <c>ApparentEnergy</c> has been renamed to <c>ElectricApparentEnergy</c>, and will be removed in a later major version.
+    /// </remarks>
+    [Obsolete("ApparentEnergy has been renamed to ElectricApparentEnergy, and will be removed in a later major version.")]
     public struct  ApparentEnergy
     {
         /// <summary>
@@ -59,17 +63,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ApparentEnergy, which is Second. All conversions go via this value.
         /// </summary>
         public static ApparentEnergyUnit BaseUnit { get; } = ApparentEnergyUnit.VoltampereHour;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ApparentEnergy.
         /// </summary>
         public static ApparentEnergy MaxValue { get; } = new ApparentEnergy(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ApparentEnergy.
         /// </summary>
         public static ApparentEnergy MinValue { get; } = new ApparentEnergy(double.MinValue, BaseUnit);
 
@@ -138,9 +142,9 @@ namespace UnitsNet
                 public double As(ApparentEnergyUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ApparentEnergy to another ApparentEnergy with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ApparentEnergy with the specified unit.</returns>
                 public ApparentEnergy ToUnit(ApparentEnergyUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);

@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -359,6 +360,8 @@ namespace UnitsNet.Tests
             var v = Permittivity.FromFaradsPerMeter(1);
             Assert.True(v.Equals(Permittivity.FromFaradsPerMeter(1), FaradsPerMeterTolerance, ComparisonType.Relative));
             Assert.False(v.Equals(Permittivity.Zero, FaradsPerMeterTolerance, ComparisonType.Relative));
+            Assert.True(Permittivity.FromFaradsPerMeter(100).Equals(Permittivity.FromFaradsPerMeter(120), (double)0.3m, ComparisonType.Relative));
+            Assert.False(Permittivity.FromFaradsPerMeter(100).Equals(Permittivity.FromFaradsPerMeter(120), (double)0.1m, ComparisonType.Relative));
         }
 
         [Fact]
@@ -388,7 +391,7 @@ namespace UnitsNet.Tests
             var units = Enum.GetValues(typeof(PermittivityUnit)).Cast<PermittivityUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -401,15 +404,8 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 F/m", new Permittivity(1, PermittivityUnit.FaradPerMeter).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 F/m", new Permittivity(1, PermittivityUnit.FaradPerMeter).ToString());
         }
 
         [Fact]
@@ -424,19 +420,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s1"));
-                Assert.Equal("0.12 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s2"));
-                Assert.Equal("0.123 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s3"));
-                Assert.Equal("0.1235 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s1"));
+            Assert.Equal("0.12 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s2"));
+            Assert.Equal("0.123 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s3"));
+            Assert.Equal("0.1235 F/m", new Permittivity(0.123456, PermittivityUnit.FaradPerMeter).ToString("s4"));
         }
 
         [Fact]

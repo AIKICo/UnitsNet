@@ -18,6 +18,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace UnitsNet
     ///     
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct Compressibility :
         IArithmeticQuantity<Compressibility, CompressibilityUnit, double>,
         IComparable,
@@ -47,13 +49,13 @@ namespace UnitsNet
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly CompressibilityUnit? _unit;
 
         static Compressibility()
@@ -258,7 +260,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(CompressibilityUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -402,7 +404,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static Compressibility Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<Compressibility, CompressibilityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<Compressibility, CompressibilityUnit>(
                 str,
                 provider,
                 From);
@@ -433,7 +435,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParse(string? str, IFormatProvider? provider, out Compressibility result)
         {
-            return QuantityParser.Default.TryParse<Compressibility, CompressibilityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<Compressibility, CompressibilityUnit>(
                 str,
                 provider,
                 From,
@@ -466,7 +468,7 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static CompressibilityUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<CompressibilityUnit>(str, provider);
+            return UnitsNetSetup.Default.UnitParser.Parse<CompressibilityUnit>(str, provider);
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.CompressibilityUnit)"/>
@@ -487,7 +489,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static bool TryParseUnit(string str, IFormatProvider? provider, out CompressibilityUnit unit)
         {
-            return UnitParser.Default.TryParse<CompressibilityUnit>(str, provider, out unit);
+            return UnitsNetSetup.Default.UnitParser.TryParse<CompressibilityUnit>(str, provider, out unit);
         }
 
         #endregion
@@ -689,7 +691,7 @@ namespace UnitsNet
                 referenceValue: this.Value,
                 otherValue: other.As(this.Unit),
                 tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
+                comparisonType: comparisonType);
         }
 
         /// <inheritdoc />

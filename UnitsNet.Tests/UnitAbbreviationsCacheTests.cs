@@ -9,7 +9,8 @@ using Xunit;
 
 namespace UnitsNet.Tests
 {
-    [Collection(nameof(UnitAbbreviationsCacheFixture))]
+    // Disable parallelization due to manipulating global state, like UnitsNetSetup.Default.UnitAbbreviations.MapUnitToDefaultAbbreviation().
+    [Collection(nameof(DisableParallelizationCollectionFixture))]
     public class UnitAbbreviationsCacheTests
     {
         private const string AmericanCultureName = "en-US";
@@ -20,7 +21,7 @@ namespace UnitsNet.Tests
         private static readonly IFormatProvider NorwegianCulture = CultureInfo.GetCultureInfo(NorwegianCultureName);
         private static readonly IFormatProvider RussianCulture = CultureInfo.GetCultureInfo(RussianCultureName);
 
-        // The default, parameterless ToString() method uses 2 sigifnificant digits after the radix point.
+        // The default, parameterless ToString() method uses 2 significant digits after the radix point.
         [Theory]
         [InlineData(0, "0 m")]
         [InlineData(0.1, "0.1 m")]
@@ -217,7 +218,6 @@ namespace UnitsNet.Tests
             // CurrentCulture also affects localization of unit abbreviations.
             // Zulu (South Africa)
             var zuluCulture = CultureInfo.GetCultureInfo("zu-ZA");
-            // CultureInfo.CurrentCulture = zuluCulture;
 
             var abbreviationsCache = new UnitAbbreviationsCache();
             abbreviationsCache.MapUnitToAbbreviation(CustomUnit.Unit1, AmericanCulture, "US english abbreviation for Unit1");
@@ -270,7 +270,7 @@ namespace UnitsNet.Tests
         {
             // Use a distinct culture here so that we don't mess up other tests that may rely on the default cache.
             var newZealandCulture = GetCulture("en-NZ");
-            UnitAbbreviationsCache.Default.MapUnitToDefaultAbbreviation(AreaUnit.SquareMeter, newZealandCulture, "m^2");
+            UnitsNetSetup.Default.UnitAbbreviations.MapUnitToDefaultAbbreviation(AreaUnit.SquareMeter, newZealandCulture, "m^2");
 
             Assert.Equal("1 m^2", Area.FromSquareMeters(1).ToString(newZealandCulture));
         }
@@ -280,13 +280,13 @@ namespace UnitsNet.Tests
         {
             var cache = new UnitAbbreviationsCache();
 
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
 
-            Assert.Equal("soome", cache.GetDefaultAbbreviation(HowMuchUnit.Some));
-            Assert.Equal(new[] { "soome" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
-            Assert.Equal(new[] { "soome" }, cache.GetAllUnitAbbreviationsForQuantity(typeof(HowMuchUnit)));
+            Assert.Equal("sm", cache.GetDefaultAbbreviation(HowMuchUnit.Some));
+            Assert.Equal(new[] { "sm" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
+            Assert.Equal(new[] { "sm" }, cache.GetAllUnitAbbreviationsForQuantity(typeof(HowMuchUnit)));
         }
 
         [Fact]
@@ -294,12 +294,41 @@ namespace UnitsNet.Tests
         {
             var cache = new UnitAbbreviationsCache();
 
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
             cache.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "1st default");
             cache.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "2nd default");
 
             Assert.Equal("2nd default", cache.GetDefaultAbbreviation(HowMuchUnit.Some));
-            Assert.Equal(new[] { "2nd default", "1st default", "soome" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
+            Assert.Equal(new[] { "2nd default", "1st default", "sm" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
+        }
+
+        /// <summary>
+        /// Test that lookup works when specifying unit enum value both as cast to <see cref="Enum"/> and as specific enum value type.
+        /// We have had subtle bugs when <see cref="Enum"/> is passed to generic methods with constraint TUnitEnum : Enum,
+        /// which the Enum type satisfies, but trying to use typeof(TUnitEnum) no longer represent the actual enum type so unitEnumValue.GetType() should be used.
+        /// </summary>
+        [Fact]
+        public void MapAndLookup_WithSpecificEnumType()
+        {
+            UnitsNetSetup.Default.UnitAbbreviations.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "sm");
+            Assert.Equal("sm", UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(HowMuchUnit.Some));
+        }
+
+        /// <inheritdoc cref="MapAndLookup_WithSpecificEnumType"/>
+        [Fact]
+        public void MapAndLookup_WithEnumType()
+        {
+            Enum valueAsEnumType = HowMuchUnit.Some;
+            UnitsNetSetup.Default.UnitAbbreviations.MapUnitToDefaultAbbreviation(valueAsEnumType, "sm");
+            Assert.Equal("sm", UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(valueAsEnumType));
+        }
+
+        /// <inheritdoc cref="MapAndLookup_WithSpecificEnumType"/>
+        [Fact]
+        public void MapAndLookup_MapWithSpecificEnumType_LookupWithEnumType()
+        {
+            UnitsNetSetup.Default.UnitAbbreviations.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "sm");
+            Assert.Equal("sm", UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation((Enum)HowMuchUnit.Some));
         }
 
         /// <summary>
