@@ -1,9 +1,6 @@
 ﻿// Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System.Collections.Generic;
-using UnitsNet.Units;
-
 namespace UnitsNet;
 
 /// <summary>
@@ -13,14 +10,16 @@ namespace UnitsNet;
 ///     abbreviations.<br />
 ///     Alternatively, a setup instance may be provided for most static methods, such as
 ///     <see cref="Quantity.Parse(System.Type,string)" /> and
-///     <see cref="QuantityFormatter.Format{TUnitType}(UnitsNet.IQuantity{TUnitType},string)" />.
+///     <see cref="QuantityFormatter.Format{TQuantity}(TQuantity,string?,IFormatProvider?)" />.
 /// </summary>
 public sealed class UnitsNetSetup
 {
     static UnitsNetSetup()
     {
+        IReadOnlyCollection<QuantityInfo> quantityInfos = Quantity.DefaultProvider.Quantities;
+
+        // note: in order to support the ConvertByAbbreviation, the unit converter should require a UnitParser in the constructor
         var unitConverter = UnitConverter.CreateDefault();
-        ICollection<QuantityInfo> quantityInfos = Quantity.ByName.Values;
 
         Default = new UnitsNetSetup(quantityInfos, unitConverter);
     }
@@ -30,16 +29,17 @@ public sealed class UnitsNetSetup
     /// </summary>
     /// <param name="quantityInfos">The quantities and their units to support for unit conversions, Parse() and ToString().</param>
     /// <param name="unitConverter">The unit converter instance.</param>
-    public UnitsNetSetup(ICollection<QuantityInfo> quantityInfos, UnitConverter unitConverter)
+    public UnitsNetSetup(IEnumerable<QuantityInfo> quantityInfos, UnitConverter unitConverter)
     {
         var quantityInfoLookup = new QuantityInfoLookup(quantityInfos);
         var unitAbbreviations = new UnitAbbreviationsCache(quantityInfoLookup);
 
         UnitConverter = unitConverter;
         UnitAbbreviations = unitAbbreviations;
+        Formatter = new QuantityFormatter(unitAbbreviations);
         UnitParser = new UnitParser(unitAbbreviations);
         QuantityParser = new QuantityParser(unitAbbreviations);
-        QuantityInfoLookup = quantityInfoLookup;
+        Quantities = quantityInfoLookup;
     }
 
     /// <summary>
@@ -66,6 +66,11 @@ public sealed class UnitsNetSetup
     public UnitAbbreviationsCache UnitAbbreviations { get; }
 
     /// <summary>
+    ///     Converts a quantity to string using the specified format strings and culture-specific format providers.
+    /// </summary>
+    public QuantityFormatter Formatter { get; }
+
+    /// <summary>
     ///     Parses units from strings, such as <see cref="LengthUnit.Centimeter" /> from "cm".
     /// </summary>
     public UnitParser UnitParser { get; }
@@ -73,13 +78,10 @@ public sealed class UnitsNetSetup
     /// <summary>
     ///     Parses quantities from strings, such as parsing <see cref="Mass" /> from "1.2 kg".
     /// </summary>
-    internal QuantityParser QuantityParser { get; }
+    public QuantityParser QuantityParser { get; }
 
     /// <summary>
     ///     The quantities and units that are loaded.
     /// </summary>
-    /// <remarks>
-    ///     Access type is <c>internal</c> until this class is matured and ready for external use.
-    /// </remarks>
-    internal QuantityInfoLookup QuantityInfoLookup { get; }
+    public QuantityInfoLookup Quantities { get; }
 }

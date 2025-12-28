@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricCurrentDensity(double value, ElectricCurrentDensityUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricCurrentDensity, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricCurrentDensityUnit BaseUnit { get; } = ElectricCurrentDensityUnit.AmperePerSquareMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricCurrentDensity.
         /// </summary>
         public static ElectricCurrentDensity MaxValue { get; } = new ElectricCurrentDensity(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricCurrentDensity.
         /// </summary>
         public static ElectricCurrentDensity MinValue { get; } = new ElectricCurrentDensity(double.MinValue, BaseUnit);
 
@@ -104,19 +103,16 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricCurrentDensity"/> from <see cref="ElectricCurrentDensityUnit.AmperePerSquareFoot"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrentDensity FromAmperesPerSquareFoot(double amperespersquarefoot) => new ElectricCurrentDensity(amperespersquarefoot, ElectricCurrentDensityUnit.AmperePerSquareFoot);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrentDensity"/> from <see cref="ElectricCurrentDensityUnit.AmperePerSquareInch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrentDensity FromAmperesPerSquareInch(double amperespersquareinch) => new ElectricCurrentDensity(amperespersquareinch, ElectricCurrentDensityUnit.AmperePerSquareInch);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrentDensity"/> from <see cref="ElectricCurrentDensityUnit.AmperePerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrentDensity FromAmperesPerSquareMeter(double amperespersquaremeter) => new ElectricCurrentDensity(amperespersquaremeter, ElectricCurrentDensityUnit.AmperePerSquareMeter);
 
         /// <summary>
@@ -141,9 +137,9 @@ namespace UnitsNet
                 public double As(ElectricCurrentDensityUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricCurrentDensity to another ElectricCurrentDensity with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricCurrentDensity with the specified unit.</returns>
                 public ElectricCurrentDensity ToUnit(ElectricCurrentDensityUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -159,10 +155,10 @@ namespace UnitsNet
                 {
                     return Unit switch
                     {
-                        ElectricCurrentDensityUnit.AmperePerSquareFoot => _value * 1.0763910416709722e1,
-                        ElectricCurrentDensityUnit.AmperePerSquareInch => _value * 1.5500031000062000e3,
+                        ElectricCurrentDensityUnit.AmperePerSquareFoot => _value / 9.290304e-2,
+                        ElectricCurrentDensityUnit.AmperePerSquareInch => _value / 0.00064516,
                         ElectricCurrentDensityUnit.AmperePerSquareMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -175,10 +171,10 @@ namespace UnitsNet
 
                     return unit switch
                     {
-                        ElectricCurrentDensityUnit.AmperePerSquareFoot => baseUnitValue / 1.0763910416709722e1,
-                        ElectricCurrentDensityUnit.AmperePerSquareInch => baseUnitValue / 1.5500031000062000e3,
+                        ElectricCurrentDensityUnit.AmperePerSquareFoot => baseUnitValue * 9.290304e-2,
+                        ElectricCurrentDensityUnit.AmperePerSquareInch => baseUnitValue * 0.00064516,
                         ElectricCurrentDensityUnit.AmperePerSquareMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

@@ -26,7 +26,6 @@ namespace UnitsNet.Tests.CustomCode
 {
     public class SpecificVolumeTests : SpecificVolumeTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
         protected override double CubicMetersPerKilogramInOneCubicMeterPerKilogram => 1;
 
         protected override double CubicFeetPerPoundInOneCubicMeterPerKilogram => 16.01846353;
@@ -41,9 +40,9 @@ namespace UnitsNet.Tests.CustomCode
         }
 
         [Fact]
-        public static void ConstantOverSpecificVolumeEqualsDensity()
+        public static void InverseSpecificVolumeEqualsDensity()
         {
-            Density density = 5 / SpecificVolume.FromCubicMetersPerKilogram(20);
+            Density density = SpecificVolume.FromCubicMetersPerKilogram(4).Inverse();
             Assert.Equal(density, Density.FromKilogramsPerCubicMeter(0.25));
         }
     }

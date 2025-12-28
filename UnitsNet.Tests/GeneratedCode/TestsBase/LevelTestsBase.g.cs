@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -71,51 +73,39 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Level(double.PositiveInfinity, LevelUnit.Decibel));
-            Assert.Throws<ArgumentException>(() => new Level(double.NegativeInfinity, LevelUnit.Decibel));
+            var exception1 = Record.Exception(() => new Level(double.PositiveInfinity, LevelUnit.Decibel));
+            var exception2 = Record.Exception(() => new Level(double.NegativeInfinity, LevelUnit.Decibel));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Level(double.NaN, LevelUnit.Decibel));
-        }
+            var exception = Record.Exception(() => new Level(double.NaN, LevelUnit.Decibel));
 
-        [Fact]
-        public void Ctor_NullAsUnitSystem_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Level(value: 1, unitSystem: null));
-        }
-
-        [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
-        {
-            Func<object> TestCode = () => new Level(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Level) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            Assert.Null(exception);
         }
 
         [Fact]
         public void Level_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            LevelUnit[] unitsOrderedByName = EnumHelper.GetValues<LevelUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Level(1, LevelUnit.Decibel);
 
-            QuantityInfo<LevelUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Level, LevelUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Level.Zero, quantityInfo.Zero);
             Assert.Equal("Level", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<LevelUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Level.Zero, quantityInfo.Zero);
+            Assert.Equal(Level.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Level.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<LevelUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -129,27 +119,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Level.From(1, LevelUnit.Decibel);
-            AssertEx.EqualTolerance(1, quantity00.Decibels, DecibelsTolerance);
-            Assert.Equal(LevelUnit.Decibel, quantity00.Unit);
-
-            var quantity01 = Level.From(1, LevelUnit.Neper);
-            AssertEx.EqualTolerance(1, quantity01.Nepers, NepersTolerance);
-            Assert.Equal(LevelUnit.Neper, quantity01.Unit);
-
+            Assert.All(EnumHelper.GetValues<LevelUnit>(), unit =>
+            {
+                var quantity = Level.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromDecibels_WithInfinityValue_ThrowsArgumentException()
+        public void FromDecibels_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Level.FromDecibels(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Level.FromDecibels(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Level.FromDecibels(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Level.FromDecibels(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromDecibels_WithNanValue_ThrowsArgumentException()
+        public void FromDecibels_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Level.FromDecibels(double.NaN));
+            var exception = Record.Exception(() => Level.FromDecibels(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -161,88 +154,177 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public void As_UnitSystem_ReturnsValueInDimensionlessUnit()
+        {
+            var quantity = new Level(value: 1, unit: LevelUnit.Decibel);
+
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(quantity.Value, convertedValue);
+        }
+
+        [Fact]
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
             var quantity = new Level(value: 1, unit: Level.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
-
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void Parse()
+        public void ToUnit_UnitSystem_ReturnsValueInDimensionlessUnit()
         {
-            try
-            {
-                var parsed = Level.Parse("1 dB", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Decibels, DecibelsTolerance);
-                Assert.Equal(LevelUnit.Decibel, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Level(value: 1, unit: LevelUnit.Decibel);
 
-            try
-            {
-                var parsed = Level.Parse("1 Np", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Nepers, NepersTolerance);
-                Assert.Equal(LevelUnit.Neper, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            Level convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
+            Assert.Equal(LevelUnit.Decibel, convertedQuantity.Unit);
+            Assert.Equal(quantity.Value, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParse()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
+            UnitSystem nullUnitSystem = null!;
+            Assert.Multiple(() =>
             {
-                Assert.True(Level.TryParse("1 dB", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Decibels, DecibelsTolerance);
-                Assert.Equal(LevelUnit.Decibel, parsed.Unit);
-            }
-
+                var quantity = new Level(value: 1, unit: Level.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
             {
-                Assert.True(Level.TryParse("1 Np", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Nepers, NepersTolerance);
-                Assert.Equal(LevelUnit.Neper, parsed.Unit);
-            }
+                IQuantity<LevelUnit> quantity = new Level(value: 1, unit: Level.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
+            {
+                IQuantity quantity = new Level(value: 1, unit: Level.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            });
+        }
 
+        [Theory]
+        [InlineData("en-US", "4.2 dB", LevelUnit.Decibel, 4.2)]
+        [InlineData("en-US", "4.2 Np", LevelUnit.Neper, 4.2)]
+        public void Parse(string culture, string quantityString, LevelUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Level.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 dB", LevelUnit.Decibel, 4.2)]
+        [InlineData("en-US", "4.2 Np", LevelUnit.Neper, 4.2)]
+        public void TryParse(string culture, string quantityString, LevelUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Level.TryParse(quantityString, out Level parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("dB", LevelUnit.Decibel)]
+        [InlineData("Np", LevelUnit.Neper)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, LevelUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            LevelUnit parsedUnit = Level.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("dB", LevelUnit.Decibel)]
+        [InlineData("Np", LevelUnit.Neper)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, LevelUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            LevelUnit parsedUnit = Level.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "dB", LevelUnit.Decibel)]
+        [InlineData("en-US", "Np", LevelUnit.Neper)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, LevelUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            LevelUnit parsedUnit = Level.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "dB", LevelUnit.Decibel)]
+        [InlineData("en-US", "Np", LevelUnit.Neper)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, LevelUnit expectedUnit)
+        {
+            LevelUnit parsedUnit = Level.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("dB", LevelUnit.Decibel)]
+        [InlineData("Np", LevelUnit.Neper)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, LevelUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Level.TryParseUnit(abbreviation, out LevelUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("dB", LevelUnit.Decibel)]
+        [InlineData("Np", LevelUnit.Neper)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, LevelUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Level.TryParseUnit(abbreviation, out LevelUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "dB", LevelUnit.Decibel)]
+        [InlineData("en-US", "Np", LevelUnit.Neper)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, LevelUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Level.TryParseUnit(abbreviation, out LevelUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "dB", LevelUnit.Decibel)]
+        [InlineData("en-US", "Np", LevelUnit.Neper)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, LevelUnit expectedUnit)
+        {
+            Assert.True(Level.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out LevelUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", LevelUnit.Decibel, "dB")]
+        [InlineData("en-US", LevelUnit.Neper, "Np")]
+        public void GetAbbreviationForCulture(string culture, LevelUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Level.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
         }
 
         [Fact]
-        public void ParseUnit()
+        public void GetAbbreviationWithDefaultCulture()
         {
-            try
+            Assert.All(Level.Units, unit =>
             {
-                var parsedUnit = Level.ParseUnit("dB", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(LevelUnit.Decibel, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-            try
-            {
-                var parsedUnit = Level.ParseUnit("Np", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(LevelUnit.Neper, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+                var defaultAbbreviation = Level.GetAbbreviation(unit);
 
-        }
-
-        [Fact]
-        public void TryParseUnit()
-        {
-            {
-                Assert.True(Level.TryParseUnit("dB", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(LevelUnit.Decibel, parsedUnit);
-            }
-
-            {
-                Assert.True(Level.TryParseUnit("Np", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(LevelUnit.Neper, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -270,12 +352,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(LevelUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Level.Units.First(u => u != Level.BaseUnit);
-
-            var quantity = Level.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Level.Units.Where(u => u != Level.BaseUnit), fromUnit =>
+            {
+                var quantity = Level.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -285,6 +367,25 @@ namespace UnitsNet.Tests
             var quantity = default(Level);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(LevelUnit unit)
+        {
+            var quantity = Level.From(3, Level.BaseUnit);
+            Level expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<LevelUnit> quantityToConvert = quantity;
+                IQuantity<LevelUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -394,21 +495,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Level.FromDecibels(1);
-            Assert.True(v.Equals(Level.FromDecibels(1), DecibelsTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Level.Zero, DecibelsTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Level.FromDecibels(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Level.FromDecibels(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Level decibel = Level.FromDecibels(1);
@@ -422,13 +508,41 @@ namespace UnitsNet.Tests
             Assert.False(decibel.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_Logarithmic_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Level.FromDecibels(firstValue);
+            var otherQuantity = Level.FromDecibels(secondValue);
+            Level maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Level.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+            // note: it's currently not possible to test this due to the rounding error from (quantity - otherQuantity)
+            // Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+        }
+
+        [Fact]
+        public void Equals_Logarithmic_WithNegativeTolerance_DoesNotThrowArgumentOutOfRangeException()
+        {
+            // note: unlike with vector quantities- a small tolerance maybe positive in one unit and negative in another
+            var quantity = Level.FromDecibels(1);
+            var negativeTolerance = Level.FromDecibels(-1);
+            Assert.True(quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(LevelUnit)).Cast<LevelUnit>();
+            var units = Enum.GetValues<LevelUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -441,16 +555,9 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 dB", new Level(1, LevelUnit.Decibel).ToString());
-                Assert.Equal("1 Np", new Level(1, LevelUnit.Neper).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 dB", new Level(1, LevelUnit.Decibel).ToString());
+            Assert.Equal("1 Np", new Level(1, LevelUnit.Neper).ToString());
         }
 
         [Fact]
@@ -466,19 +573,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s1"));
-                Assert.Equal("0.12 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s2"));
-                Assert.Equal("0.123 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s3"));
-                Assert.Equal("0.1235 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s1"));
+            Assert.Equal("0.12 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s2"));
+            Assert.Equal("0.123 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s3"));
+            Assert.Equal("0.1235 dB", new Level(0.123456, LevelUnit.Decibel).ToString("s4"));
         }
 
         [Fact]
@@ -501,7 +600,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -514,150 +613,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Level)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(LevelUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal(Level.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Equal(Level.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Level.FromDecibels(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Level.FromDecibels(1.0);
-            Assert.Equal(new {Level.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

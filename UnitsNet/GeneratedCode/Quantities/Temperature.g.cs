@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -36,48 +35,103 @@ namespace UnitsNet
     ///     A temperature is a numerical measure of hot or cold. Its measurement is by detection of heat radiation or particle velocity or kinetic energy, or by the bulk behavior of a thermometric material. It may be calibrated in any of various temperature scales, Celsius, Fahrenheit, Kelvin, etc. The fundamental physical definition of temperature is provided by thermodynamics.
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct Temperature :
-        IQuantity<Temperature, TemperatureUnit, double>,
+        IAffineQuantity<Temperature, TemperatureUnit, TemperatureDelta>,
+#if NET7_0_OR_GREATER
+        IComparisonOperators<Temperature, Temperature, bool>,
+        IParsable<Temperature>,
+#endif
         IComparable,
         IComparable<Temperature>,
-        IConvertible,
         IEquatable<Temperature>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly TemperatureUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="Temperature"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class TemperatureInfo: QuantityInfo<Temperature, TemperatureUnit>
+        {
+            /// <inheritdoc />
+            public TemperatureInfo(string name, TemperatureUnit baseUnit, IEnumerable<IUnitDefinition<TemperatureUnit>> unitMappings, Temperature zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<Temperature, TemperatureUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public TemperatureInfo(string name, TemperatureUnit baseUnit, IEnumerable<IUnitDefinition<TemperatureUnit>> unitMappings, Temperature zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, Temperature.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.Temperature", typeof(Temperature).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="TemperatureInfo"/> class with the default settings for the Temperature quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="TemperatureInfo"/> class with the default settings.</returns>
+            public static TemperatureInfo CreateDefault()
+            {
+                return new TemperatureInfo(nameof(Temperature), DefaultBaseUnit, GetDefaultMappings(), new Temperature(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="TemperatureInfo"/> class with the default settings for the Temperature quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="TemperatureInfo"/> class with the default settings.
+            /// </returns>
+            public static TemperatureInfo CreateDefault(Func<IEnumerable<UnitDefinition<TemperatureUnit>>, IEnumerable<IUnitDefinition<TemperatureUnit>>> customizeUnits)
+            {
+                return new TemperatureInfo(nameof(Temperature), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new Temperature(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="Temperature"/> is [Θ].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(0, 0, 0, 0, 1, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of Temperature is Kelvin. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static TemperatureUnit DefaultBaseUnit { get; } = TemperatureUnit.Kelvin;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="TemperatureUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{TemperatureUnit}"/> representing the default unit mappings for Temperature.</returns>
+            public static IEnumerable<UnitDefinition<TemperatureUnit>> GetDefaultMappings()
+            {
+                yield return new (TemperatureUnit.DegreeCelsius, "DegreeCelsius", "DegreesCelsius", new BaseUnits(temperature: TemperatureUnit.DegreeCelsius));
+                yield return new (TemperatureUnit.DegreeDelisle, "DegreeDelisle", "DegreesDelisle", new BaseUnits(temperature: TemperatureUnit.DegreeDelisle));
+                yield return new (TemperatureUnit.DegreeFahrenheit, "DegreeFahrenheit", "DegreesFahrenheit", new BaseUnits(temperature: TemperatureUnit.DegreeFahrenheit));
+                yield return new (TemperatureUnit.DegreeNewton, "DegreeNewton", "DegreesNewton", new BaseUnits(temperature: TemperatureUnit.DegreeNewton));
+                yield return new (TemperatureUnit.DegreeRankine, "DegreeRankine", "DegreesRankine", new BaseUnits(temperature: TemperatureUnit.DegreeRankine));
+                yield return new (TemperatureUnit.DegreeReaumur, "DegreeReaumur", "DegreesReaumur", new BaseUnits(temperature: TemperatureUnit.DegreeReaumur));
+                yield return new (TemperatureUnit.DegreeRoemer, "DegreeRoemer", "DegreesRoemer", new BaseUnits(temperature: TemperatureUnit.DegreeRoemer));
+                yield return new (TemperatureUnit.Kelvin, "Kelvin", "Kelvins", new BaseUnits(temperature: TemperatureUnit.Kelvin));
+                yield return new (TemperatureUnit.MillidegreeCelsius, "MillidegreeCelsius", "MillidegreesCelsius", new BaseUnits(temperature: TemperatureUnit.MillidegreeCelsius));
+                yield return new (TemperatureUnit.SolarTemperature, "SolarTemperature", "SolarTemperatures", new BaseUnits(temperature: TemperatureUnit.SolarTemperature));
+            }
+        }
 
         static Temperature()
         {
-            BaseDimensions = new BaseDimensions(0, 0, 0, 0, 1, 0, 0);
-            BaseUnit = TemperatureUnit.Kelvin;
-            Units = Enum.GetValues(typeof(TemperatureUnit)).Cast<TemperatureUnit>().ToArray();
-            Zero = new Temperature(0, BaseUnit);
-            Info = new QuantityInfo<TemperatureUnit>("Temperature",
-                new UnitInfo<TemperatureUnit>[]
-                {
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.DegreeCelsius, "DegreesCelsius", new BaseUnits(temperature: TemperatureUnit.DegreeCelsius), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.DegreeDelisle, "DegreesDelisle", new BaseUnits(temperature: TemperatureUnit.DegreeDelisle), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.DegreeFahrenheit, "DegreesFahrenheit", new BaseUnits(temperature: TemperatureUnit.DegreeFahrenheit), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.DegreeNewton, "DegreesNewton", new BaseUnits(temperature: TemperatureUnit.DegreeNewton), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.DegreeRankine, "DegreesRankine", new BaseUnits(temperature: TemperatureUnit.DegreeRankine), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.DegreeReaumur, "DegreesReaumur", new BaseUnits(temperature: TemperatureUnit.DegreeReaumur), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.DegreeRoemer, "DegreesRoemer", new BaseUnits(temperature: TemperatureUnit.DegreeRoemer), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.Kelvin, "Kelvins", new BaseUnits(temperature: TemperatureUnit.Kelvin), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.MillidegreeCelsius, "MillidegreesCelsius", new BaseUnits(temperature: TemperatureUnit.DegreeCelsius), "Temperature"),
-                    new UnitInfo<TemperatureUnit>(TemperatureUnit.SolarTemperature, "SolarTemperatures", BaseUnits.Undefined, "Temperature"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = TemperatureInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -87,10 +141,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Temperature(double value, TemperatureUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -104,13 +157,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public Temperature(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -121,27 +169,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<TemperatureUnit> Info { get; }
+        public static QuantityInfo<Temperature, TemperatureUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of Temperature, which is Kelvin. All conversions go via this value.
         /// </summary>
-        public static TemperatureUnit BaseUnit { get; }
+        public static TemperatureUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the Temperature quantity.
         /// </summary>
-        public static TemperatureUnit[] Units { get; }
+        public static IReadOnlyCollection<TemperatureUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit Kelvin.
         /// </summary>
-        public static Temperature Zero { get; }
+        public static Temperature Zero => Info.Zero;
 
         #endregion
 
@@ -153,23 +201,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public TemperatureUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<TemperatureUnit> QuantityInfo => Info;
+        public QuantityInfo<Temperature, TemperatureUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<Temperature> IQuantityOfType<Temperature>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<TemperatureUnit> IQuantity<TemperatureUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => Temperature.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -279,7 +335,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(TemperatureUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -289,100 +345,80 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.DegreeCelsius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromDegreesCelsius(QuantityValue degreescelsius)
+        public static Temperature FromDegreesCelsius(double value)
         {
-            double value = (double) degreescelsius;
             return new Temperature(value, TemperatureUnit.DegreeCelsius);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.DegreeDelisle"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromDegreesDelisle(QuantityValue degreesdelisle)
+        public static Temperature FromDegreesDelisle(double value)
         {
-            double value = (double) degreesdelisle;
             return new Temperature(value, TemperatureUnit.DegreeDelisle);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.DegreeFahrenheit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromDegreesFahrenheit(QuantityValue degreesfahrenheit)
+        public static Temperature FromDegreesFahrenheit(double value)
         {
-            double value = (double) degreesfahrenheit;
             return new Temperature(value, TemperatureUnit.DegreeFahrenheit);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.DegreeNewton"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromDegreesNewton(QuantityValue degreesnewton)
+        public static Temperature FromDegreesNewton(double value)
         {
-            double value = (double) degreesnewton;
             return new Temperature(value, TemperatureUnit.DegreeNewton);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.DegreeRankine"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromDegreesRankine(QuantityValue degreesrankine)
+        public static Temperature FromDegreesRankine(double value)
         {
-            double value = (double) degreesrankine;
             return new Temperature(value, TemperatureUnit.DegreeRankine);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.DegreeReaumur"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromDegreesReaumur(QuantityValue degreesreaumur)
+        public static Temperature FromDegreesReaumur(double value)
         {
-            double value = (double) degreesreaumur;
             return new Temperature(value, TemperatureUnit.DegreeReaumur);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.DegreeRoemer"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromDegreesRoemer(QuantityValue degreesroemer)
+        public static Temperature FromDegreesRoemer(double value)
         {
-            double value = (double) degreesroemer;
             return new Temperature(value, TemperatureUnit.DegreeRoemer);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.Kelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromKelvins(QuantityValue kelvins)
+        public static Temperature FromKelvins(double value)
         {
-            double value = (double) kelvins;
             return new Temperature(value, TemperatureUnit.Kelvin);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.MillidegreeCelsius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromMillidegreesCelsius(QuantityValue millidegreescelsius)
+        public static Temperature FromMillidegreesCelsius(double value)
         {
-            double value = (double) millidegreescelsius;
             return new Temperature(value, TemperatureUnit.MillidegreeCelsius);
         }
 
         /// <summary>
         ///     Creates a <see cref="Temperature"/> from <see cref="TemperatureUnit.SolarTemperature"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Temperature FromSolarTemperatures(QuantityValue solartemperatures)
+        public static Temperature FromSolarTemperatures(double value)
         {
-            double value = (double) solartemperatures;
             return new Temperature(value, TemperatureUnit.SolarTemperature);
         }
 
@@ -392,9 +428,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>Temperature unit value.</returns>
-        public static Temperature From(QuantityValue value, TemperatureUnit fromUnit)
+        public static Temperature From(double value, TemperatureUnit fromUnit)
         {
-            return new Temperature((double)value, fromUnit);
+            return new Temperature(value, fromUnit);
         }
 
         #endregion
@@ -453,7 +489,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static Temperature Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<Temperature, TemperatureUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<Temperature, TemperatureUnit>(
                 str,
                 provider,
                 From);
@@ -467,7 +503,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out Temperature result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out Temperature result)
         {
             return TryParse(str, null, out result);
         }
@@ -482,9 +518,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out Temperature result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out Temperature result)
         {
-            return QuantityParser.Default.TryParse<Temperature, TemperatureUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<Temperature, TemperatureUnit>(
                 str,
                 provider,
                 From,
@@ -517,11 +553,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static TemperatureUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<TemperatureUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.TemperatureUnit)"/>
-        public static bool TryParseUnit(string str, out TemperatureUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out TemperatureUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -536,9 +572,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out TemperatureUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out TemperatureUnit unit)
         {
-            return UnitParser.Default.TryParse<TemperatureUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -608,6 +644,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current Temperature.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="Temperature"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -644,88 +689,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another Temperature within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(Temperature other, Temperature tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(Temperature other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is Temperature otherTyped
-                   && (tolerance is Temperature toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'Temperature'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(Temperature other, Temperature tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current Temperature.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -742,37 +705,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is TemperatureUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(TemperatureUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is TemperatureUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(TemperatureUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<TemperatureUnit>());
         }
 
         /// <summary>
@@ -812,7 +748,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -867,6 +803,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not TemperatureUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(TemperatureUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -876,41 +822,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public Temperature ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<TemperatureUnit> IQuantity<TemperatureUnit>.ToUnit(TemperatureUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<TemperatureUnit> IQuantity<TemperatureUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not TemperatureUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(TemperatureUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -922,140 +837,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<TemperatureUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Temperature)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Temperature)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Temperature)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(Temperature))
-                return this;
-            else if (conversionType == typeof(TemperatureUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return Temperature.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return Temperature.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(Temperature)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

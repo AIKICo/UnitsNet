@@ -27,8 +27,6 @@ namespace UnitsNet.Tests.CustomCode
 {
     public class MassMomentOfInertiaTests : MassMomentOfInertiaTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
-
         protected override double GramSquareCentimetersInOneKilogramSquareMeter => 1e7;
 
         protected override double GramSquareDecimetersInOneKilogramSquareMeter => 1e5;
@@ -67,7 +65,7 @@ namespace UnitsNet.Tests.CustomCode
 
         protected override double KilotonneSquareMetersInOneKilogramSquareMeter => 1e-6;
 
-        protected override double KilotonneSquareMilimetersInOneKilogramSquareMeter => 1e0;
+        protected override double KilotonneSquareMillimetersInOneKilogramSquareMeter => 1e0;
 
         protected override double MegatonneSquareCentimetersInOneKilogramSquareMeter => 1e-5;
 
@@ -75,7 +73,7 @@ namespace UnitsNet.Tests.CustomCode
 
         protected override double MegatonneSquareMetersInOneKilogramSquareMeter => 1e-9;
 
-        protected override double MegatonneSquareMilimetersInOneKilogramSquareMeter => 1e-3;
+        protected override double MegatonneSquareMillimetersInOneKilogramSquareMeter => 1e-3;
 
         protected override double TonneSquareCentimetersInOneKilogramSquareMeter => 1e1;
 
@@ -83,6 +81,6 @@ namespace UnitsNet.Tests.CustomCode
 
         protected override double TonneSquareMetersInOneKilogramSquareMeter => 1e-3;
 
-        protected override double TonneSquareMilimetersInOneKilogramSquareMeter => 1e3;
+        protected override double TonneSquareMillimetersInOneKilogramSquareMeter => 1e3;
     }
 }

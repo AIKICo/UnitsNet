@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -39,41 +38,97 @@ namespace UnitsNet
     ///     https://en.wikipedia.org/wiki/Charge_density
     /// </remarks>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct ElectricSurfaceChargeDensity :
-        IArithmeticQuantity<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit, double>,
+        IArithmeticQuantity<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensity, double>,
+        IComparisonOperators<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensity, bool>,
+        IParsable<ElectricSurfaceChargeDensity>,
+#endif
         IComparable,
         IComparable<ElectricSurfaceChargeDensity>,
-        IConvertible,
         IEquatable<ElectricSurfaceChargeDensity>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly ElectricSurfaceChargeDensityUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="ElectricSurfaceChargeDensity"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class ElectricSurfaceChargeDensityInfo: QuantityInfo<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit>
+        {
+            /// <inheritdoc />
+            public ElectricSurfaceChargeDensityInfo(string name, ElectricSurfaceChargeDensityUnit baseUnit, IEnumerable<IUnitDefinition<ElectricSurfaceChargeDensityUnit>> unitMappings, ElectricSurfaceChargeDensity zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public ElectricSurfaceChargeDensityInfo(string name, ElectricSurfaceChargeDensityUnit baseUnit, IEnumerable<IUnitDefinition<ElectricSurfaceChargeDensityUnit>> unitMappings, ElectricSurfaceChargeDensity zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, ElectricSurfaceChargeDensity.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.ElectricSurfaceChargeDensity", typeof(ElectricSurfaceChargeDensity).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricSurfaceChargeDensityInfo"/> class with the default settings for the ElectricSurfaceChargeDensity quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="ElectricSurfaceChargeDensityInfo"/> class with the default settings.</returns>
+            public static ElectricSurfaceChargeDensityInfo CreateDefault()
+            {
+                return new ElectricSurfaceChargeDensityInfo(nameof(ElectricSurfaceChargeDensity), DefaultBaseUnit, GetDefaultMappings(), new ElectricSurfaceChargeDensity(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricSurfaceChargeDensityInfo"/> class with the default settings for the ElectricSurfaceChargeDensity quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="ElectricSurfaceChargeDensityInfo"/> class with the default settings.
+            /// </returns>
+            public static ElectricSurfaceChargeDensityInfo CreateDefault(Func<IEnumerable<UnitDefinition<ElectricSurfaceChargeDensityUnit>>, IEnumerable<IUnitDefinition<ElectricSurfaceChargeDensityUnit>>> customizeUnits)
+            {
+                return new ElectricSurfaceChargeDensityInfo(nameof(ElectricSurfaceChargeDensity), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new ElectricSurfaceChargeDensity(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="ElectricSurfaceChargeDensity"/> is [T][L^-2][I].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(-2, 0, 1, 1, 0, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of ElectricSurfaceChargeDensity is CoulombPerSquareMeter. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static ElectricSurfaceChargeDensityUnit DefaultBaseUnit { get; } = ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="ElectricSurfaceChargeDensityUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{ElectricSurfaceChargeDensityUnit}"/> representing the default unit mappings for ElectricSurfaceChargeDensity.</returns>
+            public static IEnumerable<UnitDefinition<ElectricSurfaceChargeDensityUnit>> GetDefaultMappings()
+            {
+                yield return new (ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter, "CoulombPerSquareCentimeter", "CoulombsPerSquareCentimeter", new BaseUnits(length: LengthUnit.Centimeter, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch, "CoulombPerSquareInch", "CoulombsPerSquareInch", new BaseUnits(length: LengthUnit.Inch, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter, "CoulombPerSquareMeter", "CoulombsPerSquareMeter", new BaseUnits(length: LengthUnit.Meter, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+            }
+        }
 
         static ElectricSurfaceChargeDensity()
         {
-            BaseDimensions = new BaseDimensions(-2, 0, 1, 1, 0, 0, 0);
-            BaseUnit = ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter;
-            Units = Enum.GetValues(typeof(ElectricSurfaceChargeDensityUnit)).Cast<ElectricSurfaceChargeDensityUnit>().ToArray();
-            Zero = new ElectricSurfaceChargeDensity(0, BaseUnit);
-            Info = new QuantityInfo<ElectricSurfaceChargeDensityUnit>("ElectricSurfaceChargeDensity",
-                new UnitInfo<ElectricSurfaceChargeDensityUnit>[]
-                {
-                    new UnitInfo<ElectricSurfaceChargeDensityUnit>(ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter, "CoulombsPerSquareCentimeter", new BaseUnits(length: LengthUnit.Centimeter, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere), "ElectricSurfaceChargeDensity"),
-                    new UnitInfo<ElectricSurfaceChargeDensityUnit>(ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch, "CoulombsPerSquareInch", new BaseUnits(length: LengthUnit.Inch, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere), "ElectricSurfaceChargeDensity"),
-                    new UnitInfo<ElectricSurfaceChargeDensityUnit>(ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter, "CoulombsPerSquareMeter", new BaseUnits(length: LengthUnit.Meter, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere), "ElectricSurfaceChargeDensity"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = ElectricSurfaceChargeDensityInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -83,10 +138,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricSurfaceChargeDensity(double value, ElectricSurfaceChargeDensityUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -100,13 +154,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public ElectricSurfaceChargeDensity(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -117,30 +166,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<ElectricSurfaceChargeDensityUnit> Info { get; }
+        public static QuantityInfo<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of ElectricSurfaceChargeDensity, which is CoulombPerSquareMeter. All conversions go via this value.
         /// </summary>
-        public static ElectricSurfaceChargeDensityUnit BaseUnit { get; }
+        public static ElectricSurfaceChargeDensityUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the ElectricSurfaceChargeDensity quantity.
         /// </summary>
-        public static ElectricSurfaceChargeDensityUnit[] Units { get; }
+        public static IReadOnlyCollection<ElectricSurfaceChargeDensityUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit CoulombPerSquareMeter.
         /// </summary>
-        public static ElectricSurfaceChargeDensity Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static ElectricSurfaceChargeDensity AdditiveIdentity => Zero;
+        public static ElectricSurfaceChargeDensity Zero => Info.Zero;
 
         #endregion
 
@@ -152,23 +198,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public ElectricSurfaceChargeDensityUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<ElectricSurfaceChargeDensityUnit> QuantityInfo => Info;
+        public QuantityInfo<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<ElectricSurfaceChargeDensity> IQuantityOfType<ElectricSurfaceChargeDensity>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<ElectricSurfaceChargeDensityUnit> IQuantity<ElectricSurfaceChargeDensityUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => ElectricSurfaceChargeDensity.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -229,7 +283,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(ElectricSurfaceChargeDensityUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -239,30 +293,24 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricSurfaceChargeDensity"/> from <see cref="ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricSurfaceChargeDensity FromCoulombsPerSquareCentimeter(QuantityValue coulombspersquarecentimeter)
+        public static ElectricSurfaceChargeDensity FromCoulombsPerSquareCentimeter(double value)
         {
-            double value = (double) coulombspersquarecentimeter;
             return new ElectricSurfaceChargeDensity(value, ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricSurfaceChargeDensity"/> from <see cref="ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricSurfaceChargeDensity FromCoulombsPerSquareInch(QuantityValue coulombspersquareinch)
+        public static ElectricSurfaceChargeDensity FromCoulombsPerSquareInch(double value)
         {
-            double value = (double) coulombspersquareinch;
             return new ElectricSurfaceChargeDensity(value, ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricSurfaceChargeDensity"/> from <see cref="ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricSurfaceChargeDensity FromCoulombsPerSquareMeter(QuantityValue coulombspersquaremeter)
+        public static ElectricSurfaceChargeDensity FromCoulombsPerSquareMeter(double value)
         {
-            double value = (double) coulombspersquaremeter;
             return new ElectricSurfaceChargeDensity(value, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter);
         }
 
@@ -272,9 +320,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>ElectricSurfaceChargeDensity unit value.</returns>
-        public static ElectricSurfaceChargeDensity From(QuantityValue value, ElectricSurfaceChargeDensityUnit fromUnit)
+        public static ElectricSurfaceChargeDensity From(double value, ElectricSurfaceChargeDensityUnit fromUnit)
         {
-            return new ElectricSurfaceChargeDensity((double)value, fromUnit);
+            return new ElectricSurfaceChargeDensity(value, fromUnit);
         }
 
         #endregion
@@ -333,7 +381,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static ElectricSurfaceChargeDensity Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit>(
                 str,
                 provider,
                 From);
@@ -347,7 +395,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out ElectricSurfaceChargeDensity result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out ElectricSurfaceChargeDensity result)
         {
             return TryParse(str, null, out result);
         }
@@ -362,9 +410,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out ElectricSurfaceChargeDensity result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricSurfaceChargeDensity result)
         {
-            return QuantityParser.Default.TryParse<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<ElectricSurfaceChargeDensity, ElectricSurfaceChargeDensityUnit>(
                 str,
                 provider,
                 From,
@@ -397,11 +445,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static ElectricSurfaceChargeDensityUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<ElectricSurfaceChargeDensityUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.ElectricSurfaceChargeDensityUnit)"/>
-        public static bool TryParseUnit(string str, out ElectricSurfaceChargeDensityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out ElectricSurfaceChargeDensityUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -416,9 +464,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out ElectricSurfaceChargeDensityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricSurfaceChargeDensityUnit unit)
         {
-            return UnitParser.Default.TryParse<ElectricSurfaceChargeDensityUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -534,6 +582,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current ElectricSurfaceChargeDensity.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="ElectricSurfaceChargeDensity"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -570,88 +627,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another ElectricSurfaceChargeDensity within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(ElectricSurfaceChargeDensity other, ElectricSurfaceChargeDensity tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(ElectricSurfaceChargeDensity other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is ElectricSurfaceChargeDensity otherTyped
-                   && (tolerance is ElectricSurfaceChargeDensity toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'ElectricSurfaceChargeDensity'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(ElectricSurfaceChargeDensity other, ElectricSurfaceChargeDensity tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current ElectricSurfaceChargeDensity.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -668,37 +643,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is ElectricSurfaceChargeDensityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricSurfaceChargeDensityUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is ElectricSurfaceChargeDensityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricSurfaceChargeDensityUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<ElectricSurfaceChargeDensityUnit>());
         }
 
         /// <summary>
@@ -738,7 +686,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -760,11 +708,11 @@ namespace UnitsNet
             {
                 // ElectricSurfaceChargeDensityUnit -> BaseUnit
                 (ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter) => new ElectricSurfaceChargeDensity(_value * 1.0e4, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter),
-                (ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter) => new ElectricSurfaceChargeDensity(_value * 1.5500031000062000e3, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter),
+                (ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter) => new ElectricSurfaceChargeDensity(_value / 0.00064516, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter),
 
                 // BaseUnit -> ElectricSurfaceChargeDensityUnit
                 (ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter, ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter) => new ElectricSurfaceChargeDensity(_value / 1.0e4, ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter),
-                (ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter, ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch) => new ElectricSurfaceChargeDensity(_value / 1.5500031000062000e3, ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch),
+                (ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter, ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch) => new ElectricSurfaceChargeDensity(_value * 0.00064516, ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch),
 
                 _ => null
             };
@@ -779,6 +727,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not ElectricSurfaceChargeDensityUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricSurfaceChargeDensityUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -788,41 +746,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public ElectricSurfaceChargeDensity ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<ElectricSurfaceChargeDensityUnit> IQuantity<ElectricSurfaceChargeDensityUnit>.ToUnit(ElectricSurfaceChargeDensityUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<ElectricSurfaceChargeDensityUnit> IQuantity<ElectricSurfaceChargeDensityUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not ElectricSurfaceChargeDensityUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricSurfaceChargeDensityUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -834,140 +761,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<ElectricSurfaceChargeDensityUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricSurfaceChargeDensity)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricSurfaceChargeDensity)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricSurfaceChargeDensity)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(ElectricSurfaceChargeDensity))
-                return this;
-            else if (conversionType == typeof(ElectricSurfaceChargeDensityUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return ElectricSurfaceChargeDensity.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return ElectricSurfaceChargeDensity.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(ElectricSurfaceChargeDensity)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

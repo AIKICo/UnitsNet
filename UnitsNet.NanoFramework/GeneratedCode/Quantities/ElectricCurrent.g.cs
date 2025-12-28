@@ -26,6 +26,9 @@ namespace UnitsNet
     /// <summary>
     ///     An electric current is a flow of electric charge. In electric circuits this charge is often carried by moving electrons in a wire. It can also be carried by ions in an electrolyte, or by both ions and electrons such as in a plasma.
     /// </summary>
+    /// <remarks>
+    ///     If you want to map more parameters into the <c>ElectricCurrent</c> class (amps RMS, phase angle, etc.), create your own wrapper type such as a record or named tuple.
+    /// </remarks>
     public struct  ElectricCurrent
     {
         /// <summary>
@@ -51,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricCurrent(double value, ElectricCurrentUnit unit)
         {
             _value = value;
@@ -59,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricCurrent, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricCurrentUnit BaseUnit { get; } = ElectricCurrentUnit.Ampere;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricCurrent.
         /// </summary>
         public static ElectricCurrent MaxValue { get; } = new ElectricCurrent(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricCurrent.
         /// </summary>
         public static ElectricCurrent MinValue { get; } = new ElectricCurrent(double.MinValue, BaseUnit);
 
@@ -131,55 +133,46 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Ampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromAmperes(double amperes) => new ElectricCurrent(amperes, ElectricCurrentUnit.Ampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Centiampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromCentiamperes(double centiamperes) => new ElectricCurrent(centiamperes, ElectricCurrentUnit.Centiampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Femtoampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromFemtoamperes(double femtoamperes) => new ElectricCurrent(femtoamperes, ElectricCurrentUnit.Femtoampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Kiloampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromKiloamperes(double kiloamperes) => new ElectricCurrent(kiloamperes, ElectricCurrentUnit.Kiloampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Megaampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromMegaamperes(double megaamperes) => new ElectricCurrent(megaamperes, ElectricCurrentUnit.Megaampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Microampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromMicroamperes(double microamperes) => new ElectricCurrent(microamperes, ElectricCurrentUnit.Microampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Milliampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromMilliamperes(double milliamperes) => new ElectricCurrent(milliamperes, ElectricCurrentUnit.Milliampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Nanoampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromNanoamperes(double nanoamperes) => new ElectricCurrent(nanoamperes, ElectricCurrentUnit.Nanoampere);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCurrent"/> from <see cref="ElectricCurrentUnit.Picoampere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCurrent FromPicoamperes(double picoamperes) => new ElectricCurrent(picoamperes, ElectricCurrentUnit.Picoampere);
 
         /// <summary>
@@ -204,9 +197,9 @@ namespace UnitsNet
                 public double As(ElectricCurrentUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricCurrent to another ElectricCurrent with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricCurrent with the specified unit.</returns>
                 public ElectricCurrent ToUnit(ElectricCurrentUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -231,7 +224,7 @@ namespace UnitsNet
                         ElectricCurrentUnit.Milliampere => (_value) * 1e-3d,
                         ElectricCurrentUnit.Nanoampere => (_value) * 1e-9d,
                         ElectricCurrentUnit.Picoampere => (_value) * 1e-12d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -253,7 +246,7 @@ namespace UnitsNet
                         ElectricCurrentUnit.Milliampere => (baseUnitValue) / 1e-3d,
                         ElectricCurrentUnit.Nanoampere => (baseUnitValue) / 1e-9d,
                         ElectricCurrentUnit.Picoampere => (baseUnitValue) / 1e-12d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

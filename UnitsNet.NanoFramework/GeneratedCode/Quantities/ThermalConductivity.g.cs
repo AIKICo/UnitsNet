@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ThermalConductivity(double value, ThermalConductivityUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ThermalConductivity, which is Second. All conversions go via this value.
         /// </summary>
         public static ThermalConductivityUnit BaseUnit { get; } = ThermalConductivityUnit.WattPerMeterKelvin;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ThermalConductivity.
         /// </summary>
         public static ThermalConductivity MaxValue { get; } = new ThermalConductivity(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ThermalConductivity.
         /// </summary>
         public static ThermalConductivity MinValue { get; } = new ThermalConductivity(double.MinValue, BaseUnit);
 
@@ -99,13 +98,11 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ThermalConductivity"/> from <see cref="ThermalConductivityUnit.BtuPerHourFootFahrenheit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ThermalConductivity FromBtusPerHourFootFahrenheit(double btusperhourfootfahrenheit) => new ThermalConductivity(btusperhourfootfahrenheit, ThermalConductivityUnit.BtuPerHourFootFahrenheit);
 
         /// <summary>
         ///     Creates a <see cref="ThermalConductivity"/> from <see cref="ThermalConductivityUnit.WattPerMeterKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ThermalConductivity FromWattsPerMeterKelvin(double wattspermeterkelvin) => new ThermalConductivity(wattspermeterkelvin, ThermalConductivityUnit.WattPerMeterKelvin);
 
         /// <summary>
@@ -130,9 +127,9 @@ namespace UnitsNet
                 public double As(ThermalConductivityUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ThermalConductivity to another ThermalConductivity with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ThermalConductivity with the specified unit.</returns>
                 public ThermalConductivity ToUnit(ThermalConductivityUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -148,9 +145,9 @@ namespace UnitsNet
                 {
                     return Unit switch
                     {
-                        ThermalConductivityUnit.BtuPerHourFootFahrenheit => _value * 1.73073467,
+                        ThermalConductivityUnit.BtuPerHourFootFahrenheit => _value * ((1055.05585262 / (0.3048 * 3600)) * 1.8),
                         ThermalConductivityUnit.WattPerMeterKelvin => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -163,9 +160,9 @@ namespace UnitsNet
 
                     return unit switch
                     {
-                        ThermalConductivityUnit.BtuPerHourFootFahrenheit => baseUnitValue / 1.73073467,
+                        ThermalConductivityUnit.BtuPerHourFootFahrenheit => baseUnitValue / ((1055.05585262 / (0.3048 * 3600)) * 1.8),
                         ThermalConductivityUnit.WattPerMeterKelvin => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

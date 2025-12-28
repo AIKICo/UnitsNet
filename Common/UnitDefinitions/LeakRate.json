@@ -12,6 +12,11 @@
     {
       "SingularName": "PascalCubicMeterPerSecond",
       "PluralName": "PascalCubicMetersPerSecond",
+      "BaseUnits": {
+        "L": "Meter",
+        "M": "Kilogram",
+        "T": "Second"
+      },
       "FromUnitToBaseFunc": "{x}",
       "FromBaseToUnitFunc": "{x}",
       "Localization": [
@@ -47,6 +52,20 @@
           "Culture": "en-US",
           "Abbreviations": [
             "Torr·l/s"
+          ]
+        }
+      ]
+    },
+	{
+      "SingularName": "AtmCubicCentimeterPerSecond",
+      "PluralName": "AtmCubicCentimetersPerSecond",
+	  "FromUnitToBaseFunc": "{x} / (1e6 / 101325)",
+	  "FromBaseToUnitFunc": "{x} * (1e6 / 101325)",
+      "Localization": [
+        {
+          "Culture": "en-US",
+          "Abbreviations": [
+            "atm·cm³/s"
           ]
         }
       ]

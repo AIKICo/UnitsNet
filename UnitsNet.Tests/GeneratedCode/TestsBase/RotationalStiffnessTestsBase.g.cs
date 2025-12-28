@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -52,6 +54,7 @@ namespace UnitsNet.Tests
         protected abstract double KilonewtonMillimetersPerDegreeInOneNewtonMeterPerRadian { get; }
         protected abstract double KilonewtonMillimetersPerRadianInOneNewtonMeterPerRadian { get; }
         protected abstract double KilopoundForceFeetPerDegreesInOneNewtonMeterPerRadian { get; }
+        protected abstract double KilopoundForceFeetPerRadianInOneNewtonMeterPerRadian { get; }
         protected abstract double MeganewtonMetersPerDegreeInOneNewtonMeterPerRadian { get; }
         protected abstract double MeganewtonMetersPerRadianInOneNewtonMeterPerRadian { get; }
         protected abstract double MeganewtonMillimetersPerDegreeInOneNewtonMeterPerRadian { get; }
@@ -87,6 +90,7 @@ namespace UnitsNet.Tests
         protected virtual double KilonewtonMillimetersPerDegreeTolerance { get { return 1e-5; } }
         protected virtual double KilonewtonMillimetersPerRadianTolerance { get { return 1e-5; } }
         protected virtual double KilopoundForceFeetPerDegreesTolerance { get { return 1e-5; } }
+        protected virtual double KilopoundForceFeetPerRadianTolerance { get { return 1e-5; } }
         protected virtual double MeganewtonMetersPerDegreeTolerance { get { return 1e-5; } }
         protected virtual double MeganewtonMetersPerRadianTolerance { get { return 1e-5; } }
         protected virtual double MeganewtonMillimetersPerDegreeTolerance { get { return 1e-5; } }
@@ -126,6 +130,7 @@ namespace UnitsNet.Tests
                 RotationalStiffnessUnit.KilonewtonMillimeterPerDegree => (KilonewtonMillimetersPerDegreeInOneNewtonMeterPerRadian, KilonewtonMillimetersPerDegreeTolerance),
                 RotationalStiffnessUnit.KilonewtonMillimeterPerRadian => (KilonewtonMillimetersPerRadianInOneNewtonMeterPerRadian, KilonewtonMillimetersPerRadianTolerance),
                 RotationalStiffnessUnit.KilopoundForceFootPerDegrees => (KilopoundForceFeetPerDegreesInOneNewtonMeterPerRadian, KilopoundForceFeetPerDegreesTolerance),
+                RotationalStiffnessUnit.KilopoundForceFootPerRadian => (KilopoundForceFeetPerRadianInOneNewtonMeterPerRadian, KilopoundForceFeetPerRadianTolerance),
                 RotationalStiffnessUnit.MeganewtonMeterPerDegree => (MeganewtonMetersPerDegreeInOneNewtonMeterPerRadian, MeganewtonMetersPerDegreeTolerance),
                 RotationalStiffnessUnit.MeganewtonMeterPerRadian => (MeganewtonMetersPerRadianInOneNewtonMeterPerRadian, MeganewtonMetersPerRadianTolerance),
                 RotationalStiffnessUnit.MeganewtonMillimeterPerDegree => (MeganewtonMillimetersPerDegreeInOneNewtonMeterPerRadian, MeganewtonMillimetersPerDegreeTolerance),
@@ -165,6 +170,7 @@ namespace UnitsNet.Tests
             new object[] { RotationalStiffnessUnit.KilonewtonMillimeterPerDegree },
             new object[] { RotationalStiffnessUnit.KilonewtonMillimeterPerRadian },
             new object[] { RotationalStiffnessUnit.KilopoundForceFootPerDegrees },
+            new object[] { RotationalStiffnessUnit.KilopoundForceFootPerRadian },
             new object[] { RotationalStiffnessUnit.MeganewtonMeterPerDegree },
             new object[] { RotationalStiffnessUnit.MeganewtonMeterPerRadian },
             new object[] { RotationalStiffnessUnit.MeganewtonMillimeterPerDegree },
@@ -195,16 +201,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new RotationalStiffness(double.PositiveInfinity, RotationalStiffnessUnit.NewtonMeterPerRadian));
-            Assert.Throws<ArgumentException>(() => new RotationalStiffness(double.NegativeInfinity, RotationalStiffnessUnit.NewtonMeterPerRadian));
+            var exception1 = Record.Exception(() => new RotationalStiffness(double.PositiveInfinity, RotationalStiffnessUnit.NewtonMeterPerRadian));
+            var exception2 = Record.Exception(() => new RotationalStiffness(double.NegativeInfinity, RotationalStiffnessUnit.NewtonMeterPerRadian));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new RotationalStiffness(double.NaN, RotationalStiffnessUnit.NewtonMeterPerRadian));
+            var exception = Record.Exception(() => new RotationalStiffness(double.NaN, RotationalStiffnessUnit.NewtonMeterPerRadian));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -214,32 +225,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new RotationalStiffness(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (RotationalStiffness) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new RotationalStiffness(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new RotationalStiffness(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void RotationalStiffness_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            RotationalStiffnessUnit[] unitsOrderedByName = EnumHelper.GetValues<RotationalStiffnessUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMeterPerRadian);
 
-            QuantityInfo<RotationalStiffnessUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<RotationalStiffness, RotationalStiffnessUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(RotationalStiffness.Zero, quantityInfo.Zero);
             Assert.Equal("RotationalStiffness", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<RotationalStiffnessUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(RotationalStiffness.Zero, quantityInfo.Zero);
+            Assert.Equal(RotationalStiffness.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(RotationalStiffness.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<RotationalStiffnessUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -260,6 +275,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(KilonewtonMillimetersPerDegreeInOneNewtonMeterPerRadian, newtonmeterperradian.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
             AssertEx.EqualTolerance(KilonewtonMillimetersPerRadianInOneNewtonMeterPerRadian, newtonmeterperradian.KilonewtonMillimetersPerRadian, KilonewtonMillimetersPerRadianTolerance);
             AssertEx.EqualTolerance(KilopoundForceFeetPerDegreesInOneNewtonMeterPerRadian, newtonmeterperradian.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
+            AssertEx.EqualTolerance(KilopoundForceFeetPerRadianInOneNewtonMeterPerRadian, newtonmeterperradian.KilopoundForceFeetPerRadian, KilopoundForceFeetPerRadianTolerance);
             AssertEx.EqualTolerance(MeganewtonMetersPerDegreeInOneNewtonMeterPerRadian, newtonmeterperradian.MeganewtonMetersPerDegree, MeganewtonMetersPerDegreeTolerance);
             AssertEx.EqualTolerance(MeganewtonMetersPerRadianInOneNewtonMeterPerRadian, newtonmeterperradian.MeganewtonMetersPerRadian, MeganewtonMetersPerRadianTolerance);
             AssertEx.EqualTolerance(MeganewtonMillimetersPerDegreeInOneNewtonMeterPerRadian, newtonmeterperradian.MeganewtonMillimetersPerDegree, MeganewtonMillimetersPerDegreeTolerance);
@@ -284,151 +300,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = RotationalStiffness.From(1, RotationalStiffnessUnit.CentinewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity00.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, quantity00.Unit);
-
-            var quantity01 = RotationalStiffness.From(1, RotationalStiffnessUnit.CentinewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity01.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, quantity01.Unit);
-
-            var quantity02 = RotationalStiffness.From(1, RotationalStiffnessUnit.CentinewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity02.CentinewtonMillimetersPerRadian, CentinewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, quantity02.Unit);
-
-            var quantity03 = RotationalStiffness.From(1, RotationalStiffnessUnit.DecanewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity03.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, quantity03.Unit);
-
-            var quantity04 = RotationalStiffness.From(1, RotationalStiffnessUnit.DecanewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity04.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, quantity04.Unit);
-
-            var quantity05 = RotationalStiffness.From(1, RotationalStiffnessUnit.DecanewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity05.DecanewtonMillimetersPerRadian, DecanewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, quantity05.Unit);
-
-            var quantity06 = RotationalStiffness.From(1, RotationalStiffnessUnit.DecinewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity06.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, quantity06.Unit);
-
-            var quantity07 = RotationalStiffness.From(1, RotationalStiffnessUnit.DecinewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity07.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, quantity07.Unit);
-
-            var quantity08 = RotationalStiffness.From(1, RotationalStiffnessUnit.DecinewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity08.DecinewtonMillimetersPerRadian, DecinewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, quantity08.Unit);
-
-            var quantity09 = RotationalStiffness.From(1, RotationalStiffnessUnit.KilonewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity09.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, quantity09.Unit);
-
-            var quantity10 = RotationalStiffness.From(1, RotationalStiffnessUnit.KilonewtonMeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity10.KilonewtonMetersPerRadian, KilonewtonMetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, quantity10.Unit);
-
-            var quantity11 = RotationalStiffness.From(1, RotationalStiffnessUnit.KilonewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity11.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, quantity11.Unit);
-
-            var quantity12 = RotationalStiffness.From(1, RotationalStiffnessUnit.KilonewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity12.KilonewtonMillimetersPerRadian, KilonewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, quantity12.Unit);
-
-            var quantity13 = RotationalStiffness.From(1, RotationalStiffnessUnit.KilopoundForceFootPerDegrees);
-            AssertEx.EqualTolerance(1, quantity13.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-            Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, quantity13.Unit);
-
-            var quantity14 = RotationalStiffness.From(1, RotationalStiffnessUnit.MeganewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity14.MeganewtonMetersPerDegree, MeganewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, quantity14.Unit);
-
-            var quantity15 = RotationalStiffness.From(1, RotationalStiffnessUnit.MeganewtonMeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity15.MeganewtonMetersPerRadian, MeganewtonMetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, quantity15.Unit);
-
-            var quantity16 = RotationalStiffness.From(1, RotationalStiffnessUnit.MeganewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity16.MeganewtonMillimetersPerDegree, MeganewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, quantity16.Unit);
-
-            var quantity17 = RotationalStiffness.From(1, RotationalStiffnessUnit.MeganewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity17.MeganewtonMillimetersPerRadian, MeganewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, quantity17.Unit);
-
-            var quantity18 = RotationalStiffness.From(1, RotationalStiffnessUnit.MicronewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity18.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, quantity18.Unit);
-
-            var quantity19 = RotationalStiffness.From(1, RotationalStiffnessUnit.MicronewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity19.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, quantity19.Unit);
-
-            var quantity20 = RotationalStiffness.From(1, RotationalStiffnessUnit.MicronewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity20.MicronewtonMillimetersPerRadian, MicronewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, quantity20.Unit);
-
-            var quantity21 = RotationalStiffness.From(1, RotationalStiffnessUnit.MillinewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity21.MillinewtonMetersPerDegree, MillinewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, quantity21.Unit);
-
-            var quantity22 = RotationalStiffness.From(1, RotationalStiffnessUnit.MillinewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity22.MillinewtonMillimetersPerDegree, MillinewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, quantity22.Unit);
-
-            var quantity23 = RotationalStiffness.From(1, RotationalStiffnessUnit.MillinewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity23.MillinewtonMillimetersPerRadian, MillinewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, quantity23.Unit);
-
-            var quantity24 = RotationalStiffness.From(1, RotationalStiffnessUnit.NanonewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity24.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, quantity24.Unit);
-
-            var quantity25 = RotationalStiffness.From(1, RotationalStiffnessUnit.NanonewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity25.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, quantity25.Unit);
-
-            var quantity26 = RotationalStiffness.From(1, RotationalStiffnessUnit.NanonewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity26.NanonewtonMillimetersPerRadian, NanonewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, quantity26.Unit);
-
-            var quantity27 = RotationalStiffness.From(1, RotationalStiffnessUnit.NewtonMeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity27.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, quantity27.Unit);
-
-            var quantity28 = RotationalStiffness.From(1, RotationalStiffnessUnit.NewtonMeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity28.NewtonMetersPerRadian, NewtonMetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, quantity28.Unit);
-
-            var quantity29 = RotationalStiffness.From(1, RotationalStiffnessUnit.NewtonMillimeterPerDegree);
-            AssertEx.EqualTolerance(1, quantity29.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-            Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, quantity29.Unit);
-
-            var quantity30 = RotationalStiffness.From(1, RotationalStiffnessUnit.NewtonMillimeterPerRadian);
-            AssertEx.EqualTolerance(1, quantity30.NewtonMillimetersPerRadian, NewtonMillimetersPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, quantity30.Unit);
-
-            var quantity31 = RotationalStiffness.From(1, RotationalStiffnessUnit.PoundForceFeetPerRadian);
-            AssertEx.EqualTolerance(1, quantity31.PoundForceFeetPerRadian, PoundForceFeetPerRadianTolerance);
-            Assert.Equal(RotationalStiffnessUnit.PoundForceFeetPerRadian, quantity31.Unit);
-
-            var quantity32 = RotationalStiffness.From(1, RotationalStiffnessUnit.PoundForceFootPerDegrees);
-            AssertEx.EqualTolerance(1, quantity32.PoundForceFeetPerDegrees, PoundForceFeetPerDegreesTolerance);
-            Assert.Equal(RotationalStiffnessUnit.PoundForceFootPerDegrees, quantity32.Unit);
-
+            Assert.All(EnumHelper.GetValues<RotationalStiffnessUnit>(), unit =>
+            {
+                var quantity = RotationalStiffness.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromNewtonMetersPerRadian_WithInfinityValue_ThrowsArgumentException()
+        public void FromNewtonMetersPerRadian_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RotationalStiffness.FromNewtonMetersPerRadian(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => RotationalStiffness.FromNewtonMetersPerRadian(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => RotationalStiffness.FromNewtonMetersPerRadian(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => RotationalStiffness.FromNewtonMetersPerRadian(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromNewtonMetersPerRadian_WithNanValue_ThrowsArgumentException()
+        public void FromNewtonMetersPerRadian_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RotationalStiffness.FromNewtonMetersPerRadian(double.NaN));
+            var exception = Record.Exception(() => RotationalStiffness.FromNewtonMetersPerRadian(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -449,6 +344,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(KilonewtonMillimetersPerDegreeInOneNewtonMeterPerRadian, newtonmeterperradian.As(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree), KilonewtonMillimetersPerDegreeTolerance);
             AssertEx.EqualTolerance(KilonewtonMillimetersPerRadianInOneNewtonMeterPerRadian, newtonmeterperradian.As(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian), KilonewtonMillimetersPerRadianTolerance);
             AssertEx.EqualTolerance(KilopoundForceFeetPerDegreesInOneNewtonMeterPerRadian, newtonmeterperradian.As(RotationalStiffnessUnit.KilopoundForceFootPerDegrees), KilopoundForceFeetPerDegreesTolerance);
+            AssertEx.EqualTolerance(KilopoundForceFeetPerRadianInOneNewtonMeterPerRadian, newtonmeterperradian.As(RotationalStiffnessUnit.KilopoundForceFootPerRadian), KilopoundForceFeetPerRadianTolerance);
             AssertEx.EqualTolerance(MeganewtonMetersPerDegreeInOneNewtonMeterPerRadian, newtonmeterperradian.As(RotationalStiffnessUnit.MeganewtonMeterPerDegree), MeganewtonMetersPerDegreeTolerance);
             AssertEx.EqualTolerance(MeganewtonMetersPerRadianInOneNewtonMeterPerRadian, newtonmeterperradian.As(RotationalStiffnessUnit.MeganewtonMeterPerRadian), MeganewtonMetersPerRadianTolerance);
             AssertEx.EqualTolerance(MeganewtonMillimetersPerDegreeInOneNewtonMeterPerRadian, newtonmeterperradian.As(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree), MeganewtonMillimetersPerDegreeTolerance);
@@ -471,2316 +367,1274 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = RotationalStiffness.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new RotationalStiffness(value: 1, unit: RotationalStiffness.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(RotationalStiffness.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerRadian, CentinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 cNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerRadian, CentinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerRadian, DecanewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 daNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerRadian, DecanewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerRadian, DecinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 dNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerRadian, DecinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kN·m/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerRadian, KilonewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kNm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerRadian, KilonewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerRadian, KilonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerRadian, KilonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kipf·ft/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kip·ft/°g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 k·ft/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kipf·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 kip·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 k·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerDegree, MeganewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerDegree, MeganewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerDegree, MeganewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerDegree, MeganewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MN·m/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerRadian, MeganewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MNm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerRadian, MeganewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimetersPerDegree, MeganewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimetersPerDegree, MeganewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimetersPerDegree, MeganewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimetersPerDegree, MeganewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimetersPerRadian, MeganewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 MNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimetersPerRadian, MeganewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerRadian, MicronewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 µNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerRadian, MicronewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMetersPerDegree, MillinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMetersPerDegree, MillinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMetersPerDegree, MillinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMetersPerDegree, MillinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMillimetersPerDegree, MillinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMillimetersPerDegree, MillinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMillimetersPerDegree, MillinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMillimetersPerDegree, MillinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMillimetersPerRadian, MillinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 mNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillinewtonMillimetersPerRadian, MillinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nNm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerRadian, NanonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 nNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerRadian, NanonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 N·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 Nm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 N·m/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 Nm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 N·m/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerRadian, NewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 Nm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerRadian, NewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 N·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 Nmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 N·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 Nmm/°", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 N·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerRadian, NewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 Nmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerRadian, NewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 lbf·ft/rad", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundForceFeetPerRadian, PoundForceFeetPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFeetPerRadian, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RotationalStiffness.Parse("1 lbf·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundForceFeetPerDegrees, PoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFootPerDegrees, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new RotationalStiffness(value: 1, unit: RotationalStiffness.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMetersPerDegree, CentinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerDegree, CentinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerRadian, CentinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 cNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentinewtonMillimetersPerRadian, CentinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMetersPerDegree, DecanewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerDegree, DecanewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerRadian, DecanewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 daNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecanewtonMillimetersPerRadian, DecanewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMetersPerDegree, DecinewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerDegree, DecinewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerRadian, DecinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 dNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecinewtonMillimetersPerRadian, DecinewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerDegree, KilonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kN·m/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerRadian, KilonewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kNm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMetersPerRadian, KilonewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerDegree, KilonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerRadian, KilonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimetersPerRadian, KilonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kipf·ft/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kip·ft/°g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 k·ft/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kipf·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 kip·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 k·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeetPerDegrees, KilopoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 MN·m/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerRadian, MeganewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 MNm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMetersPerRadian, MeganewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMetersPerDegree, MicronewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerDegree, MicronewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerRadian, MicronewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 µNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicronewtonMillimetersPerRadian, MicronewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMetersPerDegree, NanonewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerDegree, NanonewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerRadian, NanonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 nNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanonewtonMillimetersPerRadian, NanonewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 N·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 Nm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 N·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 Nm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerDegree, NewtonMetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 N·m/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerRadian, NewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 Nm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMetersPerRadian, NewtonMetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 N·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 Nmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 N·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 Nmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerDegree, NewtonMillimetersPerDegreeTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 N·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerRadian, NewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 Nmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimetersPerRadian, NewtonMillimetersPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 lbf·ft/rad", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundForceFeetPerRadian, PoundForceFeetPerRadianTolerance);
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFeetPerRadian, parsed.Unit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParse("1 lbf·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundForceFeetPerDegrees, PoundForceFeetPerDegreesTolerance);
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFootPerDegrees, parsed.Unit);
-            }
-
+            var quantity = new RotationalStiffness(value: 1, unit: RotationalStiffness.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new RotationalStiffness(value: 1, unit: RotationalStiffness.BaseUnit);
+            var expectedUnit = RotationalStiffness.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            RotationalStiffness convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("cNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("daNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("dNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kN·m/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kNm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kipf·ft/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kip·ft/°g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("k·ft/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kipf·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("kip·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("k·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MN·m/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MNm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("MNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("µNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("mNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nN·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nNm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nN·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nNm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nN·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nNmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nN·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nNmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nN·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("nNmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("N·m/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("Nm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("N·m/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("Nm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("N·m/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("Nm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("N·mm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("Nmm/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("N·mm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("Nmm/°", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("N·mm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("Nmm/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("lbf·ft/rad", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFeetPerRadian, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = RotationalStiffness.ParseUnit("lbf·ft/deg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFootPerDegrees, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("cNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("daNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("dNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kN·m/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kNm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kipf·ft/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kip·ft/°g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("k·ft/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kipf·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("kip·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("k·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.KilopoundForceFootPerDegrees, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("MN·m/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("MNm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MeganewtonMeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("µNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nN·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nNm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nN·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nNm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nN·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nNmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nN·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nNmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nN·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("nNmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("N·m/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("Nm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("N·m/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("Nm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("N·m/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("Nm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("N·mm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("Nmm/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("N·mm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("Nmm/°", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerDegree, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("N·mm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("Nmm/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.NewtonMillimeterPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("lbf·ft/rad", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFeetPerRadian, parsedUnit);
-            }
-
-            {
-                Assert.True(RotationalStiffness.TryParseUnit("lbf·ft/deg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RotationalStiffnessUnit.PoundForceFootPerDegrees, parsedUnit);
-            }
-
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new RotationalStiffness(value: 1, unit: RotationalStiffness.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
+
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new RotationalStiffness(value: 1, unit: RotationalStiffness.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees, 4.2)]
+        public void Parse(string culture, string quantityString, RotationalStiffnessUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = RotationalStiffness.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree, 4.2)]
+        [InlineData("en-US", "4.2 N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian, 4.2)]
+        [InlineData("en-US", "4.2 lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees, 4.2)]
+        public void TryParse(string culture, string quantityString, RotationalStiffnessUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(RotationalStiffness.TryParse(quantityString, out RotationalStiffness parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            RotationalStiffnessUnit parsedUnit = RotationalStiffness.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            RotationalStiffnessUnit parsedUnit = RotationalStiffness.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("en-US", "lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            RotationalStiffnessUnit parsedUnit = RotationalStiffness.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("en-US", "lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            RotationalStiffnessUnit parsedUnit = RotationalStiffness.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(RotationalStiffness.TryParseUnit(abbreviation, out RotationalStiffnessUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(RotationalStiffness.TryParseUnit(abbreviation, out RotationalStiffnessUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("en-US", "lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(RotationalStiffness.TryParseUnit(abbreviation, out RotationalStiffnessUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "cN·m/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/deg", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·m/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cNm/°", RotationalStiffnessUnit.CentinewtonMeterPerDegree)]
+        [InlineData("en-US", "cN·mm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/deg", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cNmm/°", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "cN·mm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "cNmm/rad", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daN·m/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/deg", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·m/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daNm/°", RotationalStiffnessUnit.DecanewtonMeterPerDegree)]
+        [InlineData("en-US", "daN·mm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/deg", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daNmm/°", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree)]
+        [InlineData("en-US", "daN·mm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "daNmm/rad", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dN·m/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/deg", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·m/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dNm/°", RotationalStiffnessUnit.DecinewtonMeterPerDegree)]
+        [InlineData("en-US", "dN·mm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/deg", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dNmm/°", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "dN·mm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "dNmm/rad", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kN·m/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/deg", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kNm/°", RotationalStiffnessUnit.KilonewtonMeterPerDegree)]
+        [InlineData("en-US", "kN·m/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kNm/rad", RotationalStiffnessUnit.KilonewtonMeterPerRadian)]
+        [InlineData("en-US", "kN·mm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/deg", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kNmm/°", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "kN·mm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kNmm/rad", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "kipf·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/°g", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/°", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kip·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "k·ft/deg", RotationalStiffnessUnit.KilopoundForceFootPerDegrees)]
+        [InlineData("en-US", "kipf·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "kip·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "k·ft/rad", RotationalStiffnessUnit.KilopoundForceFootPerRadian)]
+        [InlineData("en-US", "MN·m/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/deg", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MNm/°", RotationalStiffnessUnit.MeganewtonMeterPerDegree)]
+        [InlineData("en-US", "MN·m/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MNm/rad", RotationalStiffnessUnit.MeganewtonMeterPerRadian)]
+        [InlineData("en-US", "MN·mm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/deg", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MNmm/°", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree)]
+        [InlineData("en-US", "MN·mm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "MNmm/rad", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µN·m/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/deg", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·m/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µNm/°", RotationalStiffnessUnit.MicronewtonMeterPerDegree)]
+        [InlineData("en-US", "µN·mm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/deg", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µNmm/°", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree)]
+        [InlineData("en-US", "µN·mm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "µNmm/rad", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mN·m/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/deg", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·m/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mNm/°", RotationalStiffnessUnit.MillinewtonMeterPerDegree)]
+        [InlineData("en-US", "mN·mm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/deg", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mNmm/°", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree)]
+        [InlineData("en-US", "mN·mm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "mNmm/rad", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nN·m/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/deg", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·m/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nNm/°", RotationalStiffnessUnit.NanonewtonMeterPerDegree)]
+        [InlineData("en-US", "nN·mm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/deg", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nNmm/°", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree)]
+        [InlineData("en-US", "nN·mm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "nNmm/rad", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian)]
+        [InlineData("en-US", "N·m/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/deg", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "Nm/°", RotationalStiffnessUnit.NewtonMeterPerDegree)]
+        [InlineData("en-US", "N·m/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "Nm/rad", RotationalStiffnessUnit.NewtonMeterPerRadian)]
+        [InlineData("en-US", "N·mm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/deg", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "Nmm/°", RotationalStiffnessUnit.NewtonMillimeterPerDegree)]
+        [InlineData("en-US", "N·mm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "Nmm/rad", RotationalStiffnessUnit.NewtonMillimeterPerRadian)]
+        [InlineData("en-US", "lbf·ft/rad", RotationalStiffnessUnit.PoundForceFeetPerRadian)]
+        [InlineData("en-US", "lbf·ft/deg", RotationalStiffnessUnit.PoundForceFootPerDegrees)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, RotationalStiffnessUnit expectedUnit)
+        {
+            Assert.True(RotationalStiffness.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out RotationalStiffnessUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", RotationalStiffnessUnit.CentinewtonMeterPerDegree, "cN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.CentinewtonMillimeterPerDegree, "cN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.CentinewtonMillimeterPerRadian, "cN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.DecanewtonMeterPerDegree, "daN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.DecanewtonMillimeterPerDegree, "daN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.DecanewtonMillimeterPerRadian, "daN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.DecinewtonMeterPerDegree, "dN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.DecinewtonMillimeterPerDegree, "dN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.DecinewtonMillimeterPerRadian, "dN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.KilonewtonMeterPerDegree, "kN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.KilonewtonMeterPerRadian, "kN·m/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.KilonewtonMillimeterPerDegree, "kN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.KilonewtonMillimeterPerRadian, "kN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.KilopoundForceFootPerDegrees, "kipf·ft/°")]
+        [InlineData("en-US", RotationalStiffnessUnit.KilopoundForceFootPerRadian, "kipf·ft/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.MeganewtonMeterPerDegree, "MN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.MeganewtonMeterPerRadian, "MN·m/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.MeganewtonMillimeterPerDegree, "MN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.MeganewtonMillimeterPerRadian, "MN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.MicronewtonMeterPerDegree, "µN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.MicronewtonMillimeterPerDegree, "µN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.MicronewtonMillimeterPerRadian, "µN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.MillinewtonMeterPerDegree, "mN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.MillinewtonMillimeterPerDegree, "mN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.MillinewtonMillimeterPerRadian, "mN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.NanonewtonMeterPerDegree, "nN·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.NanonewtonMillimeterPerDegree, "nN·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.NanonewtonMillimeterPerRadian, "nN·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.NewtonMeterPerDegree, "N·m/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.NewtonMeterPerRadian, "N·m/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.NewtonMillimeterPerDegree, "N·mm/deg")]
+        [InlineData("en-US", RotationalStiffnessUnit.NewtonMillimeterPerRadian, "N·mm/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.PoundForceFeetPerRadian, "lbf·ft/rad")]
+        [InlineData("en-US", RotationalStiffnessUnit.PoundForceFootPerDegrees, "lbf·ft/deg")]
+        public void GetAbbreviationForCulture(string culture, RotationalStiffnessUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = RotationalStiffness.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(RotationalStiffness.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = RotationalStiffness.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -2808,12 +1662,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(RotationalStiffnessUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = RotationalStiffness.Units.First(u => u != RotationalStiffness.BaseUnit);
-
-            var quantity = RotationalStiffness.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(RotationalStiffness.Units.Where(u => u != RotationalStiffness.BaseUnit), fromUnit =>
+            {
+                var quantity = RotationalStiffness.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -2823,6 +1677,25 @@ namespace UnitsNet.Tests
             var quantity = default(RotationalStiffness);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(RotationalStiffnessUnit unit)
+        {
+            var quantity = RotationalStiffness.From(3, RotationalStiffness.BaseUnit);
+            RotationalStiffness expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<RotationalStiffnessUnit> quantityToConvert = quantity;
+                IQuantity<RotationalStiffnessUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -2843,6 +1716,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(1, RotationalStiffness.FromKilonewtonMillimetersPerDegree(newtonmeterperradian.KilonewtonMillimetersPerDegree).NewtonMetersPerRadian, KilonewtonMillimetersPerDegreeTolerance);
             AssertEx.EqualTolerance(1, RotationalStiffness.FromKilonewtonMillimetersPerRadian(newtonmeterperradian.KilonewtonMillimetersPerRadian).NewtonMetersPerRadian, KilonewtonMillimetersPerRadianTolerance);
             AssertEx.EqualTolerance(1, RotationalStiffness.FromKilopoundForceFeetPerDegrees(newtonmeterperradian.KilopoundForceFeetPerDegrees).NewtonMetersPerRadian, KilopoundForceFeetPerDegreesTolerance);
+            AssertEx.EqualTolerance(1, RotationalStiffness.FromKilopoundForceFeetPerRadian(newtonmeterperradian.KilopoundForceFeetPerRadian).NewtonMetersPerRadian, KilopoundForceFeetPerRadianTolerance);
             AssertEx.EqualTolerance(1, RotationalStiffness.FromMeganewtonMetersPerDegree(newtonmeterperradian.MeganewtonMetersPerDegree).NewtonMetersPerRadian, MeganewtonMetersPerDegreeTolerance);
             AssertEx.EqualTolerance(1, RotationalStiffness.FromMeganewtonMetersPerRadian(newtonmeterperradian.MeganewtonMetersPerRadian).NewtonMetersPerRadian, MeganewtonMetersPerRadianTolerance);
             AssertEx.EqualTolerance(1, RotationalStiffness.FromMeganewtonMillimetersPerDegree(newtonmeterperradian.MeganewtonMillimetersPerDegree).NewtonMetersPerRadian, MeganewtonMillimetersPerDegreeTolerance);
@@ -2959,21 +1833,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = RotationalStiffness.FromNewtonMetersPerRadian(1);
-            Assert.True(v.Equals(RotationalStiffness.FromNewtonMetersPerRadian(1), NewtonMetersPerRadianTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(RotationalStiffness.Zero, NewtonMetersPerRadianTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = RotationalStiffness.FromNewtonMetersPerRadian(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(RotationalStiffness.FromNewtonMetersPerRadian(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             RotationalStiffness newtonmeterperradian = RotationalStiffness.FromNewtonMetersPerRadian(1);
@@ -2987,13 +1846,39 @@ namespace UnitsNet.Tests
             Assert.False(newtonmeterperradian.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(firstValue);
+            var otherQuantity = RotationalStiffness.FromNewtonMetersPerRadian(secondValue);
+            RotationalStiffness maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, RotationalStiffness.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1);
+            var negativeTolerance = RotationalStiffness.FromNewtonMetersPerRadian(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(RotationalStiffnessUnit)).Cast<RotationalStiffnessUnit>();
+            var units = Enum.GetValues<RotationalStiffnessUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -3006,47 +1891,41 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 cN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.CentinewtonMeterPerDegree).ToString());
-                Assert.Equal("1 cN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.CentinewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 cN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.CentinewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 daN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecanewtonMeterPerDegree).ToString());
-                Assert.Equal("1 daN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecanewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 daN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.DecanewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 dN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecinewtonMeterPerDegree).ToString());
-                Assert.Equal("1 dN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecinewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 dN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.DecinewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 kN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMeterPerDegree).ToString());
-                Assert.Equal("1 kN·m/rad", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMeterPerRadian).ToString());
-                Assert.Equal("1 kN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 kN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 kipf·ft/°", new RotationalStiffness(1, RotationalStiffnessUnit.KilopoundForceFootPerDegrees).ToString());
-                Assert.Equal("1 MN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMeterPerDegree).ToString());
-                Assert.Equal("1 MN·m/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMeterPerRadian).ToString());
-                Assert.Equal("1 MN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 MN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 µN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MicronewtonMeterPerDegree).ToString());
-                Assert.Equal("1 µN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MicronewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 µN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MicronewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 mN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MillinewtonMeterPerDegree).ToString());
-                Assert.Equal("1 mN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MillinewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 mN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MillinewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 nN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NanonewtonMeterPerDegree).ToString());
-                Assert.Equal("1 nN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NanonewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 nN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.NanonewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 N·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMeterPerDegree).ToString());
-                Assert.Equal("1 N·m/rad", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString());
-                Assert.Equal("1 N·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMillimeterPerDegree).ToString());
-                Assert.Equal("1 N·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMillimeterPerRadian).ToString());
-                Assert.Equal("1 lbf·ft/rad", new RotationalStiffness(1, RotationalStiffnessUnit.PoundForceFeetPerRadian).ToString());
-                Assert.Equal("1 lbf·ft/deg", new RotationalStiffness(1, RotationalStiffnessUnit.PoundForceFootPerDegrees).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 cN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.CentinewtonMeterPerDegree).ToString());
+            Assert.Equal("1 cN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.CentinewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 cN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.CentinewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 daN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecanewtonMeterPerDegree).ToString());
+            Assert.Equal("1 daN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecanewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 daN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.DecanewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 dN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecinewtonMeterPerDegree).ToString());
+            Assert.Equal("1 dN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.DecinewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 dN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.DecinewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 kN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMeterPerDegree).ToString());
+            Assert.Equal("1 kN·m/rad", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMeterPerRadian).ToString());
+            Assert.Equal("1 kN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 kN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 kipf·ft/°", new RotationalStiffness(1, RotationalStiffnessUnit.KilopoundForceFootPerDegrees).ToString());
+            Assert.Equal("1 kipf·ft/rad", new RotationalStiffness(1, RotationalStiffnessUnit.KilopoundForceFootPerRadian).ToString());
+            Assert.Equal("1 MN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMeterPerDegree).ToString());
+            Assert.Equal("1 MN·m/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMeterPerRadian).ToString());
+            Assert.Equal("1 MN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 MN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 µN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MicronewtonMeterPerDegree).ToString());
+            Assert.Equal("1 µN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MicronewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 µN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MicronewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 mN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MillinewtonMeterPerDegree).ToString());
+            Assert.Equal("1 mN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MillinewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 mN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MillinewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 nN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NanonewtonMeterPerDegree).ToString());
+            Assert.Equal("1 nN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NanonewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 nN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.NanonewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 N·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMeterPerDegree).ToString());
+            Assert.Equal("1 N·m/rad", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString());
+            Assert.Equal("1 N·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMillimeterPerDegree).ToString());
+            Assert.Equal("1 N·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.NewtonMillimeterPerRadian).ToString());
+            Assert.Equal("1 lbf·ft/rad", new RotationalStiffness(1, RotationalStiffnessUnit.PoundForceFeetPerRadian).ToString());
+            Assert.Equal("1 lbf·ft/deg", new RotationalStiffness(1, RotationalStiffnessUnit.PoundForceFootPerDegrees).ToString());
         }
 
         [Fact]
@@ -3069,6 +1948,7 @@ namespace UnitsNet.Tests
             Assert.Equal("1 kN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMillimeterPerDegree).ToString(swedishCulture));
             Assert.Equal("1 kN·mm/rad", new RotationalStiffness(1, RotationalStiffnessUnit.KilonewtonMillimeterPerRadian).ToString(swedishCulture));
             Assert.Equal("1 kipf·ft/°", new RotationalStiffness(1, RotationalStiffnessUnit.KilopoundForceFootPerDegrees).ToString(swedishCulture));
+            Assert.Equal("1 kipf·ft/rad", new RotationalStiffness(1, RotationalStiffnessUnit.KilopoundForceFootPerRadian).ToString(swedishCulture));
             Assert.Equal("1 MN·m/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMeterPerDegree).ToString(swedishCulture));
             Assert.Equal("1 MN·m/rad", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMeterPerRadian).ToString(swedishCulture));
             Assert.Equal("1 MN·mm/deg", new RotationalStiffness(1, RotationalStiffnessUnit.MeganewtonMillimeterPerDegree).ToString(swedishCulture));
@@ -3093,19 +1973,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s1"));
-                Assert.Equal("0.12 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s2"));
-                Assert.Equal("0.123 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s3"));
-                Assert.Equal("0.1235 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s1"));
+            Assert.Equal("0.12 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s2"));
+            Assert.Equal("0.123 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s3"));
+            Assert.Equal("0.1235 N·m/rad", new RotationalStiffness(0.123456, RotationalStiffnessUnit.NewtonMeterPerRadian).ToString("s4"));
         }
 
         [Fact]
@@ -3128,7 +2000,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -3141,150 +2013,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(RotationalStiffness)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(RotationalStiffnessUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal(RotationalStiffness.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal(RotationalStiffness.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = RotationalStiffness.FromNewtonMetersPerRadian(1.0);
-            Assert.Equal(new {RotationalStiffness.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public RotationalAcceleration(double value, RotationalAccelerationUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of RotationalAcceleration, which is Second. All conversions go via this value.
         /// </summary>
         public static RotationalAccelerationUnit BaseUnit { get; } = RotationalAccelerationUnit.RadianPerSecondSquared;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of RotationalAcceleration.
         /// </summary>
         public static RotationalAcceleration MaxValue { get; } = new RotationalAcceleration(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of RotationalAcceleration.
         /// </summary>
         public static RotationalAcceleration MinValue { get; } = new RotationalAcceleration(double.MinValue, BaseUnit);
 
@@ -106,25 +105,21 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="RotationalAcceleration"/> from <see cref="RotationalAccelerationUnit.DegreePerSecondSquared"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalAcceleration FromDegreesPerSecondSquared(double degreespersecondsquared) => new RotationalAcceleration(degreespersecondsquared, RotationalAccelerationUnit.DegreePerSecondSquared);
 
         /// <summary>
         ///     Creates a <see cref="RotationalAcceleration"/> from <see cref="RotationalAccelerationUnit.RadianPerSecondSquared"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalAcceleration FromRadiansPerSecondSquared(double radianspersecondsquared) => new RotationalAcceleration(radianspersecondsquared, RotationalAccelerationUnit.RadianPerSecondSquared);
 
         /// <summary>
         ///     Creates a <see cref="RotationalAcceleration"/> from <see cref="RotationalAccelerationUnit.RevolutionPerMinutePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalAcceleration FromRevolutionsPerMinutePerSecond(double revolutionsperminutepersecond) => new RotationalAcceleration(revolutionsperminutepersecond, RotationalAccelerationUnit.RevolutionPerMinutePerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalAcceleration"/> from <see cref="RotationalAccelerationUnit.RevolutionPerSecondSquared"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalAcceleration FromRevolutionsPerSecondSquared(double revolutionspersecondsquared) => new RotationalAcceleration(revolutionspersecondsquared, RotationalAccelerationUnit.RevolutionPerSecondSquared);
 
         /// <summary>
@@ -149,9 +144,9 @@ namespace UnitsNet
                 public double As(RotationalAccelerationUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this RotationalAcceleration to another RotationalAcceleration with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A RotationalAcceleration with the specified unit.</returns>
                 public RotationalAcceleration ToUnit(RotationalAccelerationUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -171,7 +166,7 @@ namespace UnitsNet
                         RotationalAccelerationUnit.RadianPerSecondSquared => _value,
                         RotationalAccelerationUnit.RevolutionPerMinutePerSecond => ((2 * 3.1415926535897931) / 60) * _value,
                         RotationalAccelerationUnit.RevolutionPerSecondSquared => (2 * 3.1415926535897931) * _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -188,7 +183,7 @@ namespace UnitsNet
                         RotationalAccelerationUnit.RadianPerSecondSquared => baseUnitValue,
                         RotationalAccelerationUnit.RevolutionPerMinutePerSecond => (60 / (2 * 3.1415926535897931)) * baseUnitValue,
                         RotationalAccelerationUnit.RevolutionPerSecondSquared => (1 / (2 * 3.1415926535897931)) * baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

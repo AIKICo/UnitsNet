@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -39,44 +38,100 @@ namespace UnitsNet
     ///     https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity
     /// </remarks>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct ElectricConductivity :
-        IArithmeticQuantity<ElectricConductivity, ElectricConductivityUnit, double>,
+        IArithmeticQuantity<ElectricConductivity, ElectricConductivityUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<ElectricConductivity, ElectricConductivity, double>,
+        IComparisonOperators<ElectricConductivity, ElectricConductivity, bool>,
+        IParsable<ElectricConductivity>,
+#endif
         IComparable,
         IComparable<ElectricConductivity>,
-        IConvertible,
         IEquatable<ElectricConductivity>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly ElectricConductivityUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="ElectricConductivity"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class ElectricConductivityInfo: QuantityInfo<ElectricConductivity, ElectricConductivityUnit>
+        {
+            /// <inheritdoc />
+            public ElectricConductivityInfo(string name, ElectricConductivityUnit baseUnit, IEnumerable<IUnitDefinition<ElectricConductivityUnit>> unitMappings, ElectricConductivity zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<ElectricConductivity, ElectricConductivityUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public ElectricConductivityInfo(string name, ElectricConductivityUnit baseUnit, IEnumerable<IUnitDefinition<ElectricConductivityUnit>> unitMappings, ElectricConductivity zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, ElectricConductivity.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.ElectricConductivity", typeof(ElectricConductivity).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricConductivityInfo"/> class with the default settings for the ElectricConductivity quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="ElectricConductivityInfo"/> class with the default settings.</returns>
+            public static ElectricConductivityInfo CreateDefault()
+            {
+                return new ElectricConductivityInfo(nameof(ElectricConductivity), DefaultBaseUnit, GetDefaultMappings(), new ElectricConductivity(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricConductivityInfo"/> class with the default settings for the ElectricConductivity quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="ElectricConductivityInfo"/> class with the default settings.
+            /// </returns>
+            public static ElectricConductivityInfo CreateDefault(Func<IEnumerable<UnitDefinition<ElectricConductivityUnit>>, IEnumerable<IUnitDefinition<ElectricConductivityUnit>>> customizeUnits)
+            {
+                return new ElectricConductivityInfo(nameof(ElectricConductivity), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new ElectricConductivity(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="ElectricConductivity"/> is [T^3][L^-3][M^-1][I^2].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(-3, -1, 3, 2, 0, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of ElectricConductivity is SiemensPerMeter. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static ElectricConductivityUnit DefaultBaseUnit { get; } = ElectricConductivityUnit.SiemensPerMeter;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="ElectricConductivityUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{ElectricConductivityUnit}"/> representing the default unit mappings for ElectricConductivity.</returns>
+            public static IEnumerable<UnitDefinition<ElectricConductivityUnit>> GetDefaultMappings()
+            {
+                yield return new (ElectricConductivityUnit.MicrosiemensPerCentimeter, "MicrosiemensPerCentimeter", "MicrosiemensPerCentimeter", BaseUnits.Undefined);
+                yield return new (ElectricConductivityUnit.MillisiemensPerCentimeter, "MillisiemensPerCentimeter", "MillisiemensPerCentimeter", BaseUnits.Undefined);
+                yield return new (ElectricConductivityUnit.SiemensPerCentimeter, "SiemensPerCentimeter", "SiemensPerCentimeter", BaseUnits.Undefined);
+                yield return new (ElectricConductivityUnit.SiemensPerFoot, "SiemensPerFoot", "SiemensPerFoot", BaseUnits.Undefined);
+                yield return new (ElectricConductivityUnit.SiemensPerInch, "SiemensPerInch", "SiemensPerInch", BaseUnits.Undefined);
+                yield return new (ElectricConductivityUnit.SiemensPerMeter, "SiemensPerMeter", "SiemensPerMeter", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+            }
+        }
 
         static ElectricConductivity()
         {
-            BaseDimensions = new BaseDimensions(-3, -1, 3, 2, 0, 0, 0);
-            BaseUnit = ElectricConductivityUnit.SiemensPerMeter;
-            Units = Enum.GetValues(typeof(ElectricConductivityUnit)).Cast<ElectricConductivityUnit>().ToArray();
-            Zero = new ElectricConductivity(0, BaseUnit);
-            Info = new QuantityInfo<ElectricConductivityUnit>("ElectricConductivity",
-                new UnitInfo<ElectricConductivityUnit>[]
-                {
-                    new UnitInfo<ElectricConductivityUnit>(ElectricConductivityUnit.MicrosiemensPerCentimeter, "MicrosiemensPerCentimeter", BaseUnits.Undefined, "ElectricConductivity"),
-                    new UnitInfo<ElectricConductivityUnit>(ElectricConductivityUnit.MillisiemensPerCentimeter, "MillisiemensPerCentimeter", BaseUnits.Undefined, "ElectricConductivity"),
-                    new UnitInfo<ElectricConductivityUnit>(ElectricConductivityUnit.SiemensPerCentimeter, "SiemensPerCentimeter", BaseUnits.Undefined, "ElectricConductivity"),
-                    new UnitInfo<ElectricConductivityUnit>(ElectricConductivityUnit.SiemensPerFoot, "SiemensPerFoot", BaseUnits.Undefined, "ElectricConductivity"),
-                    new UnitInfo<ElectricConductivityUnit>(ElectricConductivityUnit.SiemensPerInch, "SiemensPerInch", BaseUnits.Undefined, "ElectricConductivity"),
-                    new UnitInfo<ElectricConductivityUnit>(ElectricConductivityUnit.SiemensPerMeter, "SiemensPerMeter", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere), "ElectricConductivity"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = ElectricConductivityInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -86,10 +141,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricConductivity(double value, ElectricConductivityUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -103,13 +157,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public ElectricConductivity(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -120,30 +169,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<ElectricConductivityUnit> Info { get; }
+        public static QuantityInfo<ElectricConductivity, ElectricConductivityUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of ElectricConductivity, which is SiemensPerMeter. All conversions go via this value.
         /// </summary>
-        public static ElectricConductivityUnit BaseUnit { get; }
+        public static ElectricConductivityUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the ElectricConductivity quantity.
         /// </summary>
-        public static ElectricConductivityUnit[] Units { get; }
+        public static IReadOnlyCollection<ElectricConductivityUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit SiemensPerMeter.
         /// </summary>
-        public static ElectricConductivity Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static ElectricConductivity AdditiveIdentity => Zero;
+        public static ElectricConductivity Zero => Info.Zero;
 
         #endregion
 
@@ -155,23 +201,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public ElectricConductivityUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<ElectricConductivityUnit> QuantityInfo => Info;
+        public QuantityInfo<ElectricConductivity, ElectricConductivityUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<ElectricConductivity> IQuantityOfType<ElectricConductivity>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<ElectricConductivityUnit> IQuantity<ElectricConductivityUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => ElectricConductivity.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -253,7 +307,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(ElectricConductivityUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -263,60 +317,48 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricConductivity"/> from <see cref="ElectricConductivityUnit.MicrosiemensPerCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductivity FromMicrosiemensPerCentimeter(QuantityValue microsiemenspercentimeter)
+        public static ElectricConductivity FromMicrosiemensPerCentimeter(double value)
         {
-            double value = (double) microsiemenspercentimeter;
             return new ElectricConductivity(value, ElectricConductivityUnit.MicrosiemensPerCentimeter);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductivity"/> from <see cref="ElectricConductivityUnit.MillisiemensPerCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductivity FromMillisiemensPerCentimeter(QuantityValue millisiemenspercentimeter)
+        public static ElectricConductivity FromMillisiemensPerCentimeter(double value)
         {
-            double value = (double) millisiemenspercentimeter;
             return new ElectricConductivity(value, ElectricConductivityUnit.MillisiemensPerCentimeter);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductivity"/> from <see cref="ElectricConductivityUnit.SiemensPerCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductivity FromSiemensPerCentimeter(QuantityValue siemenspercentimeter)
+        public static ElectricConductivity FromSiemensPerCentimeter(double value)
         {
-            double value = (double) siemenspercentimeter;
             return new ElectricConductivity(value, ElectricConductivityUnit.SiemensPerCentimeter);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductivity"/> from <see cref="ElectricConductivityUnit.SiemensPerFoot"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductivity FromSiemensPerFoot(QuantityValue siemensperfoot)
+        public static ElectricConductivity FromSiemensPerFoot(double value)
         {
-            double value = (double) siemensperfoot;
             return new ElectricConductivity(value, ElectricConductivityUnit.SiemensPerFoot);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductivity"/> from <see cref="ElectricConductivityUnit.SiemensPerInch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductivity FromSiemensPerInch(QuantityValue siemensperinch)
+        public static ElectricConductivity FromSiemensPerInch(double value)
         {
-            double value = (double) siemensperinch;
             return new ElectricConductivity(value, ElectricConductivityUnit.SiemensPerInch);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductivity"/> from <see cref="ElectricConductivityUnit.SiemensPerMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductivity FromSiemensPerMeter(QuantityValue siemenspermeter)
+        public static ElectricConductivity FromSiemensPerMeter(double value)
         {
-            double value = (double) siemenspermeter;
             return new ElectricConductivity(value, ElectricConductivityUnit.SiemensPerMeter);
         }
 
@@ -326,9 +368,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>ElectricConductivity unit value.</returns>
-        public static ElectricConductivity From(QuantityValue value, ElectricConductivityUnit fromUnit)
+        public static ElectricConductivity From(double value, ElectricConductivityUnit fromUnit)
         {
-            return new ElectricConductivity((double)value, fromUnit);
+            return new ElectricConductivity(value, fromUnit);
         }
 
         #endregion
@@ -387,7 +429,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static ElectricConductivity Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<ElectricConductivity, ElectricConductivityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<ElectricConductivity, ElectricConductivityUnit>(
                 str,
                 provider,
                 From);
@@ -401,7 +443,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out ElectricConductivity result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out ElectricConductivity result)
         {
             return TryParse(str, null, out result);
         }
@@ -416,9 +458,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out ElectricConductivity result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricConductivity result)
         {
-            return QuantityParser.Default.TryParse<ElectricConductivity, ElectricConductivityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<ElectricConductivity, ElectricConductivityUnit>(
                 str,
                 provider,
                 From,
@@ -451,11 +493,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static ElectricConductivityUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<ElectricConductivityUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.ElectricConductivityUnit)"/>
-        public static bool TryParseUnit(string str, out ElectricConductivityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out ElectricConductivityUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -470,9 +512,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out ElectricConductivityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricConductivityUnit unit)
         {
-            return UnitParser.Default.TryParse<ElectricConductivityUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -519,6 +561,17 @@ namespace UnitsNet
         public static double operator /(ElectricConductivity left, ElectricConductivity right)
         {
             return left.SiemensPerMeter / right.SiemensPerMeter;
+        }
+
+        #endregion
+
+        #region Relational Operators
+
+        /// <summary>Calculates the inverse of this quantity.</summary>
+        /// <returns>The corresponding inverse quantity, <see cref="ElectricResistivity"/>.</returns>
+        public ElectricResistivity Inverse()
+        {
+            return ElectricResistivity.FromOhmMeters(1 / SiemensPerMeter);
         }
 
         #endregion
@@ -588,6 +641,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current ElectricConductivity.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="ElectricConductivity"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -624,88 +686,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another ElectricConductivity within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(ElectricConductivity other, ElectricConductivity tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(ElectricConductivity other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is ElectricConductivity otherTyped
-                   && (tolerance is ElectricConductivity toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'ElectricConductivity'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(ElectricConductivity other, ElectricConductivity tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current ElectricConductivity.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -722,37 +702,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is ElectricConductivityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductivityUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is ElectricConductivityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductivityUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<ElectricConductivityUnit>());
         }
 
         /// <summary>
@@ -792,7 +745,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -816,15 +769,15 @@ namespace UnitsNet
                 (ElectricConductivityUnit.MicrosiemensPerCentimeter, ElectricConductivityUnit.SiemensPerMeter) => new ElectricConductivity((_value * 1e2) * 1e-6d, ElectricConductivityUnit.SiemensPerMeter),
                 (ElectricConductivityUnit.MillisiemensPerCentimeter, ElectricConductivityUnit.SiemensPerMeter) => new ElectricConductivity((_value * 1e2) * 1e-3d, ElectricConductivityUnit.SiemensPerMeter),
                 (ElectricConductivityUnit.SiemensPerCentimeter, ElectricConductivityUnit.SiemensPerMeter) => new ElectricConductivity(_value * 1e2, ElectricConductivityUnit.SiemensPerMeter),
-                (ElectricConductivityUnit.SiemensPerFoot, ElectricConductivityUnit.SiemensPerMeter) => new ElectricConductivity(_value * 3.2808398950131234, ElectricConductivityUnit.SiemensPerMeter),
-                (ElectricConductivityUnit.SiemensPerInch, ElectricConductivityUnit.SiemensPerMeter) => new ElectricConductivity(_value * 3.937007874015748e1, ElectricConductivityUnit.SiemensPerMeter),
+                (ElectricConductivityUnit.SiemensPerFoot, ElectricConductivityUnit.SiemensPerMeter) => new ElectricConductivity(_value / 0.3048, ElectricConductivityUnit.SiemensPerMeter),
+                (ElectricConductivityUnit.SiemensPerInch, ElectricConductivityUnit.SiemensPerMeter) => new ElectricConductivity(_value / 2.54e-2, ElectricConductivityUnit.SiemensPerMeter),
 
                 // BaseUnit -> ElectricConductivityUnit
                 (ElectricConductivityUnit.SiemensPerMeter, ElectricConductivityUnit.MicrosiemensPerCentimeter) => new ElectricConductivity((_value / 1e2) / 1e-6d, ElectricConductivityUnit.MicrosiemensPerCentimeter),
                 (ElectricConductivityUnit.SiemensPerMeter, ElectricConductivityUnit.MillisiemensPerCentimeter) => new ElectricConductivity((_value / 1e2) / 1e-3d, ElectricConductivityUnit.MillisiemensPerCentimeter),
                 (ElectricConductivityUnit.SiemensPerMeter, ElectricConductivityUnit.SiemensPerCentimeter) => new ElectricConductivity(_value / 1e2, ElectricConductivityUnit.SiemensPerCentimeter),
-                (ElectricConductivityUnit.SiemensPerMeter, ElectricConductivityUnit.SiemensPerFoot) => new ElectricConductivity(_value / 3.2808398950131234, ElectricConductivityUnit.SiemensPerFoot),
-                (ElectricConductivityUnit.SiemensPerMeter, ElectricConductivityUnit.SiemensPerInch) => new ElectricConductivity(_value / 3.937007874015748e1, ElectricConductivityUnit.SiemensPerInch),
+                (ElectricConductivityUnit.SiemensPerMeter, ElectricConductivityUnit.SiemensPerFoot) => new ElectricConductivity(_value * 0.3048, ElectricConductivityUnit.SiemensPerFoot),
+                (ElectricConductivityUnit.SiemensPerMeter, ElectricConductivityUnit.SiemensPerInch) => new ElectricConductivity(_value * 2.54e-2, ElectricConductivityUnit.SiemensPerInch),
 
                 _ => null
             };
@@ -839,6 +792,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not ElectricConductivityUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductivityUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -848,41 +811,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public ElectricConductivity ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<ElectricConductivityUnit> IQuantity<ElectricConductivityUnit>.ToUnit(ElectricConductivityUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<ElectricConductivityUnit> IQuantity<ElectricConductivityUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not ElectricConductivityUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductivityUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -894,140 +826,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<ElectricConductivityUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricConductivity)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricConductivity)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricConductivity)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(ElectricConductivity))
-                return this;
-            else if (conversionType == typeof(ElectricConductivityUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return ElectricConductivity.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return ElectricConductivity.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(ElectricConductivity)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

@@ -53,10 +53,6 @@ namespace UnitsNet.Tests
             Assert.Equal(Pressure.FromDynesPerSquareCentimeter(2), 2.DynesPerSquareCentimeter());
 
         [Fact]
-        public void NumberToFeetOfElevationTest() =>
-            Assert.Equal(Pressure.FromFeetOfElevation(2), 2.FeetOfElevation());
-
-        [Fact]
         public void NumberToFeetOfHeadTest() =>
             Assert.Equal(Pressure.FromFeetOfHead(2), 2.FeetOfHead());
 
@@ -133,10 +129,6 @@ namespace UnitsNet.Tests
             Assert.Equal(Pressure.FromMegapascals(2), 2.Megapascals());
 
         [Fact]
-        public void NumberToMetersOfElevationTest() =>
-            Assert.Equal(Pressure.FromMetersOfElevation(2), 2.MetersOfElevation());
-
-        [Fact]
         public void NumberToMetersOfHeadTest() =>
             Assert.Equal(Pressure.FromMetersOfHead(2), 2.MetersOfHead());
 
@@ -167,6 +159,10 @@ namespace UnitsNet.Tests
         [Fact]
         public void NumberToMillipascalsTest() =>
             Assert.Equal(Pressure.FromMillipascals(2), 2.Millipascals());
+
+        [Fact]
+        public void NumberToMillitorrsTest() =>
+            Assert.Equal(Pressure.FromMillitorrs(2), 2.Millitorrs());
 
         [Fact]
         public void NumberToNewtonsPerSquareCentimeterTest() =>

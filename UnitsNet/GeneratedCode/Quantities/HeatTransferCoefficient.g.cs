@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -36,44 +35,99 @@ namespace UnitsNet
     ///     The heat transfer coefficient or film coefficient, or film effectiveness, in thermodynamics and in mechanics is the proportionality constant between the heat flux and the thermodynamic driving force for the flow of heat (i.e., the temperature difference, ΔT)
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct HeatTransferCoefficient :
-        IArithmeticQuantity<HeatTransferCoefficient, HeatTransferCoefficientUnit, double>,
+        IArithmeticQuantity<HeatTransferCoefficient, HeatTransferCoefficientUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<HeatTransferCoefficient, HeatTransferCoefficient, double>,
+        IComparisonOperators<HeatTransferCoefficient, HeatTransferCoefficient, bool>,
+        IParsable<HeatTransferCoefficient>,
+#endif
         IComparable,
         IComparable<HeatTransferCoefficient>,
-        IConvertible,
         IEquatable<HeatTransferCoefficient>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly HeatTransferCoefficientUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="HeatTransferCoefficient"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class HeatTransferCoefficientInfo: QuantityInfo<HeatTransferCoefficient, HeatTransferCoefficientUnit>
+        {
+            /// <inheritdoc />
+            public HeatTransferCoefficientInfo(string name, HeatTransferCoefficientUnit baseUnit, IEnumerable<IUnitDefinition<HeatTransferCoefficientUnit>> unitMappings, HeatTransferCoefficient zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<HeatTransferCoefficient, HeatTransferCoefficientUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public HeatTransferCoefficientInfo(string name, HeatTransferCoefficientUnit baseUnit, IEnumerable<IUnitDefinition<HeatTransferCoefficientUnit>> unitMappings, HeatTransferCoefficient zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, HeatTransferCoefficient.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.HeatTransferCoefficient", typeof(HeatTransferCoefficient).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="HeatTransferCoefficientInfo"/> class with the default settings for the HeatTransferCoefficient quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="HeatTransferCoefficientInfo"/> class with the default settings.</returns>
+            public static HeatTransferCoefficientInfo CreateDefault()
+            {
+                return new HeatTransferCoefficientInfo(nameof(HeatTransferCoefficient), DefaultBaseUnit, GetDefaultMappings(), new HeatTransferCoefficient(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="HeatTransferCoefficientInfo"/> class with the default settings for the HeatTransferCoefficient quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="HeatTransferCoefficientInfo"/> class with the default settings.
+            /// </returns>
+            public static HeatTransferCoefficientInfo CreateDefault(Func<IEnumerable<UnitDefinition<HeatTransferCoefficientUnit>>, IEnumerable<IUnitDefinition<HeatTransferCoefficientUnit>>> customizeUnits)
+            {
+                return new HeatTransferCoefficientInfo(nameof(HeatTransferCoefficient), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new HeatTransferCoefficient(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="HeatTransferCoefficient"/> is [T^-3][M][Θ^-1].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(0, 1, -3, 0, -1, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of HeatTransferCoefficient is WattPerSquareMeterKelvin. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static HeatTransferCoefficientUnit DefaultBaseUnit { get; } = HeatTransferCoefficientUnit.WattPerSquareMeterKelvin;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="HeatTransferCoefficientUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{HeatTransferCoefficientUnit}"/> representing the default unit mappings for HeatTransferCoefficient.</returns>
+            public static IEnumerable<UnitDefinition<HeatTransferCoefficientUnit>> GetDefaultMappings()
+            {
+                yield return new (HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit, "BtuPerHourSquareFootDegreeFahrenheit", "BtusPerHourSquareFootDegreeFahrenheit", BaseUnits.Undefined);
+                yield return new (HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius, "CaloriePerHourSquareMeterDegreeCelsius", "CaloriesPerHourSquareMeterDegreeCelsius", BaseUnits.Undefined);
+                yield return new (HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius, "KilocaloriePerHourSquareMeterDegreeCelsius", "KilocaloriesPerHourSquareMeterDegreeCelsius", BaseUnits.Undefined);
+                yield return new (HeatTransferCoefficientUnit.WattPerSquareMeterCelsius, "WattPerSquareMeterCelsius", "WattsPerSquareMeterCelsius", new BaseUnits(mass: MassUnit.Kilogram, time: DurationUnit.Second, temperature: TemperatureUnit.DegreeCelsius));
+                yield return new (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, "WattPerSquareMeterKelvin", "WattsPerSquareMeterKelvin", new BaseUnits(mass: MassUnit.Kilogram, time: DurationUnit.Second, temperature: TemperatureUnit.Kelvin));
+            }
+        }
 
         static HeatTransferCoefficient()
         {
-            BaseDimensions = new BaseDimensions(0, 1, -3, 0, -1, 0, 0);
-            BaseUnit = HeatTransferCoefficientUnit.WattPerSquareMeterKelvin;
-            Units = Enum.GetValues(typeof(HeatTransferCoefficientUnit)).Cast<HeatTransferCoefficientUnit>().ToArray();
-            Zero = new HeatTransferCoefficient(0, BaseUnit);
-            Info = new QuantityInfo<HeatTransferCoefficientUnit>("HeatTransferCoefficient",
-                new UnitInfo<HeatTransferCoefficientUnit>[]
-                {
-                    new UnitInfo<HeatTransferCoefficientUnit>(HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit, "BtusPerHourSquareFootDegreeFahrenheit", BaseUnits.Undefined, "HeatTransferCoefficient"),
-                    new UnitInfo<HeatTransferCoefficientUnit>(HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit, "BtusPerSquareFootDegreeFahrenheit", BaseUnits.Undefined, "HeatTransferCoefficient"),
-                    new UnitInfo<HeatTransferCoefficientUnit>(HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius, "CaloriesPerHourSquareMeterDegreeCelsius", BaseUnits.Undefined, "HeatTransferCoefficient"),
-                    new UnitInfo<HeatTransferCoefficientUnit>(HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius, "KilocaloriesPerHourSquareMeterDegreeCelsius", BaseUnits.Undefined, "HeatTransferCoefficient"),
-                    new UnitInfo<HeatTransferCoefficientUnit>(HeatTransferCoefficientUnit.WattPerSquareMeterCelsius, "WattsPerSquareMeterCelsius", BaseUnits.Undefined, "HeatTransferCoefficient"),
-                    new UnitInfo<HeatTransferCoefficientUnit>(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, "WattsPerSquareMeterKelvin", BaseUnits.Undefined, "HeatTransferCoefficient"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = HeatTransferCoefficientInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -83,10 +137,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public HeatTransferCoefficient(double value, HeatTransferCoefficientUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -100,13 +153,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public HeatTransferCoefficient(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -117,30 +165,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<HeatTransferCoefficientUnit> Info { get; }
+        public static QuantityInfo<HeatTransferCoefficient, HeatTransferCoefficientUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of HeatTransferCoefficient, which is WattPerSquareMeterKelvin. All conversions go via this value.
         /// </summary>
-        public static HeatTransferCoefficientUnit BaseUnit { get; }
+        public static HeatTransferCoefficientUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the HeatTransferCoefficient quantity.
         /// </summary>
-        public static HeatTransferCoefficientUnit[] Units { get; }
+        public static IReadOnlyCollection<HeatTransferCoefficientUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit WattPerSquareMeterKelvin.
         /// </summary>
-        public static HeatTransferCoefficient Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static HeatTransferCoefficient AdditiveIdentity => Zero;
+        public static HeatTransferCoefficient Zero => Info.Zero;
 
         #endregion
 
@@ -152,23 +197,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public HeatTransferCoefficientUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<HeatTransferCoefficientUnit> QuantityInfo => Info;
+        public QuantityInfo<HeatTransferCoefficient, HeatTransferCoefficientUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<HeatTransferCoefficient> IQuantityOfType<HeatTransferCoefficient>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<HeatTransferCoefficientUnit> IQuantity<HeatTransferCoefficientUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => HeatTransferCoefficient.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -178,12 +231,6 @@ namespace UnitsNet
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit"/>
         /// </summary>
         public double BtusPerHourSquareFootDegreeFahrenheit => As(HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit);
-
-        /// <summary>
-        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit"/>
-        /// </summary>
-        [Obsolete("The name of this definition incorrectly omitted time as divisor, please use BtuPerHourSquareFootDegreeFahrenheit instead")]
-        public double BtusPerSquareFootDegreeFahrenheit => As(HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius"/>
@@ -217,7 +264,6 @@ namespace UnitsNet
         {
             // Register in unit converter: HeatTransferCoefficientUnit -> BaseUnit
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin));
-            unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin));
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin));
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin));
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.WattPerSquareMeterCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin));
@@ -227,7 +273,6 @@ namespace UnitsNet
 
             // Register in unit converter: BaseUnit -> HeatTransferCoefficientUnit
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit));
-            unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit));
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius));
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius));
             unitConverter.SetConversionFunction<HeatTransferCoefficient>(HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.WattPerSquareMeterCelsius, quantity => quantity.ToUnit(HeatTransferCoefficientUnit.WattPerSquareMeterCelsius));
@@ -251,7 +296,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(HeatTransferCoefficientUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -261,61 +306,40 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="HeatTransferCoefficient"/> from <see cref="HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static HeatTransferCoefficient FromBtusPerHourSquareFootDegreeFahrenheit(QuantityValue btusperhoursquarefootdegreefahrenheit)
+        public static HeatTransferCoefficient FromBtusPerHourSquareFootDegreeFahrenheit(double value)
         {
-            double value = (double) btusperhoursquarefootdegreefahrenheit;
             return new HeatTransferCoefficient(value, HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit);
-        }
-
-        /// <summary>
-        ///     Creates a <see cref="HeatTransferCoefficient"/> from <see cref="HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit"/>.
-        /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        [Obsolete("The name of this definition incorrectly omitted time as divisor, please use BtuPerHourSquareFootDegreeFahrenheit instead")]
-        public static HeatTransferCoefficient FromBtusPerSquareFootDegreeFahrenheit(QuantityValue btuspersquarefootdegreefahrenheit)
-        {
-            double value = (double) btuspersquarefootdegreefahrenheit;
-            return new HeatTransferCoefficient(value, HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit);
         }
 
         /// <summary>
         ///     Creates a <see cref="HeatTransferCoefficient"/> from <see cref="HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static HeatTransferCoefficient FromCaloriesPerHourSquareMeterDegreeCelsius(QuantityValue caloriesperhoursquaremeterdegreecelsius)
+        public static HeatTransferCoefficient FromCaloriesPerHourSquareMeterDegreeCelsius(double value)
         {
-            double value = (double) caloriesperhoursquaremeterdegreecelsius;
             return new HeatTransferCoefficient(value, HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius);
         }
 
         /// <summary>
         ///     Creates a <see cref="HeatTransferCoefficient"/> from <see cref="HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static HeatTransferCoefficient FromKilocaloriesPerHourSquareMeterDegreeCelsius(QuantityValue kilocaloriesperhoursquaremeterdegreecelsius)
+        public static HeatTransferCoefficient FromKilocaloriesPerHourSquareMeterDegreeCelsius(double value)
         {
-            double value = (double) kilocaloriesperhoursquaremeterdegreecelsius;
             return new HeatTransferCoefficient(value, HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius);
         }
 
         /// <summary>
         ///     Creates a <see cref="HeatTransferCoefficient"/> from <see cref="HeatTransferCoefficientUnit.WattPerSquareMeterCelsius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static HeatTransferCoefficient FromWattsPerSquareMeterCelsius(QuantityValue wattspersquaremetercelsius)
+        public static HeatTransferCoefficient FromWattsPerSquareMeterCelsius(double value)
         {
-            double value = (double) wattspersquaremetercelsius;
             return new HeatTransferCoefficient(value, HeatTransferCoefficientUnit.WattPerSquareMeterCelsius);
         }
 
         /// <summary>
         ///     Creates a <see cref="HeatTransferCoefficient"/> from <see cref="HeatTransferCoefficientUnit.WattPerSquareMeterKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static HeatTransferCoefficient FromWattsPerSquareMeterKelvin(QuantityValue wattspersquaremeterkelvin)
+        public static HeatTransferCoefficient FromWattsPerSquareMeterKelvin(double value)
         {
-            double value = (double) wattspersquaremeterkelvin;
             return new HeatTransferCoefficient(value, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin);
         }
 
@@ -325,9 +349,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>HeatTransferCoefficient unit value.</returns>
-        public static HeatTransferCoefficient From(QuantityValue value, HeatTransferCoefficientUnit fromUnit)
+        public static HeatTransferCoefficient From(double value, HeatTransferCoefficientUnit fromUnit)
         {
-            return new HeatTransferCoefficient((double)value, fromUnit);
+            return new HeatTransferCoefficient(value, fromUnit);
         }
 
         #endregion
@@ -386,7 +410,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static HeatTransferCoefficient Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<HeatTransferCoefficient, HeatTransferCoefficientUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<HeatTransferCoefficient, HeatTransferCoefficientUnit>(
                 str,
                 provider,
                 From);
@@ -400,7 +424,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out HeatTransferCoefficient result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out HeatTransferCoefficient result)
         {
             return TryParse(str, null, out result);
         }
@@ -415,9 +439,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out HeatTransferCoefficient result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out HeatTransferCoefficient result)
         {
-            return QuantityParser.Default.TryParse<HeatTransferCoefficient, HeatTransferCoefficientUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<HeatTransferCoefficient, HeatTransferCoefficientUnit>(
                 str,
                 provider,
                 From,
@@ -450,11 +474,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static HeatTransferCoefficientUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<HeatTransferCoefficientUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.HeatTransferCoefficientUnit)"/>
-        public static bool TryParseUnit(string str, out HeatTransferCoefficientUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out HeatTransferCoefficientUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -469,9 +493,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out HeatTransferCoefficientUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out HeatTransferCoefficientUnit unit)
         {
-            return UnitParser.Default.TryParse<HeatTransferCoefficientUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -587,6 +611,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current HeatTransferCoefficient.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="HeatTransferCoefficient"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -623,88 +656,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another HeatTransferCoefficient within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(HeatTransferCoefficient other, HeatTransferCoefficient tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(HeatTransferCoefficient other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is HeatTransferCoefficient otherTyped
-                   && (tolerance is HeatTransferCoefficient toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'HeatTransferCoefficient'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(HeatTransferCoefficient other, HeatTransferCoefficient tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current HeatTransferCoefficient.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -721,37 +672,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is HeatTransferCoefficientUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(HeatTransferCoefficientUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is HeatTransferCoefficientUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(HeatTransferCoefficientUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<HeatTransferCoefficientUnit>());
         }
 
         /// <summary>
@@ -791,7 +715,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -812,17 +736,15 @@ namespace UnitsNet
             HeatTransferCoefficient? convertedOrNull = (Unit, unit) switch
             {
                 // HeatTransferCoefficientUnit -> BaseUnit
-                (HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient(_value * 5.6782633411134878, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
-                (HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient(_value * 5.6782633411134878, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
-                (HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient((_value * 4.1868) / 3600, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
-                (HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient(((_value * 4.1868) / 3600) * 1e3d, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
+                (HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient(_value * ((1055.05585262 / (0.3048 * 0.3048 * 3600)) * 1.8), HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
+                (HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient((_value * 4.184) / 3600, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
+                (HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient(((_value * 4.184) / 3600) * 1e3d, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
                 (HeatTransferCoefficientUnit.WattPerSquareMeterCelsius, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin) => new HeatTransferCoefficient(_value, HeatTransferCoefficientUnit.WattPerSquareMeterKelvin),
 
                 // BaseUnit -> HeatTransferCoefficientUnit
-                (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit) => new HeatTransferCoefficient(_value / 5.6782633411134878, HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit),
-                (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit) => new HeatTransferCoefficient(_value / 5.6782633411134878, HeatTransferCoefficientUnit.BtuPerSquareFootDegreeFahrenheit),
-                (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius) => new HeatTransferCoefficient((_value / 4.1868) * 3600, HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius),
-                (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius) => new HeatTransferCoefficient(((_value / 4.1868) * 3600) / 1e3d, HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius),
+                (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit) => new HeatTransferCoefficient(_value / ((1055.05585262 / (0.3048 * 0.3048 * 3600)) * 1.8), HeatTransferCoefficientUnit.BtuPerHourSquareFootDegreeFahrenheit),
+                (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius) => new HeatTransferCoefficient((_value / 4.184) * 3600, HeatTransferCoefficientUnit.CaloriePerHourSquareMeterDegreeCelsius),
+                (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius) => new HeatTransferCoefficient(((_value / 4.184) * 3600) / 1e3d, HeatTransferCoefficientUnit.KilocaloriePerHourSquareMeterDegreeCelsius),
                 (HeatTransferCoefficientUnit.WattPerSquareMeterKelvin, HeatTransferCoefficientUnit.WattPerSquareMeterCelsius) => new HeatTransferCoefficient(_value, HeatTransferCoefficientUnit.WattPerSquareMeterCelsius),
 
                 _ => null
@@ -838,6 +760,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not HeatTransferCoefficientUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(HeatTransferCoefficientUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -847,41 +779,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public HeatTransferCoefficient ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<HeatTransferCoefficientUnit> IQuantity<HeatTransferCoefficientUnit>.ToUnit(HeatTransferCoefficientUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<HeatTransferCoefficientUnit> IQuantity<HeatTransferCoefficientUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not HeatTransferCoefficientUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(HeatTransferCoefficientUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -893,140 +794,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<HeatTransferCoefficientUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(HeatTransferCoefficient)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(HeatTransferCoefficient)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(HeatTransferCoefficient)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(HeatTransferCoefficient))
-                return this;
-            else if (conversionType == typeof(HeatTransferCoefficientUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return HeatTransferCoefficient.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return HeatTransferCoefficient.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(HeatTransferCoefficient)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

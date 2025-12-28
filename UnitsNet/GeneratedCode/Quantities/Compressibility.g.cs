@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -36,45 +35,101 @@ namespace UnitsNet
     ///     
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct Compressibility :
-        IArithmeticQuantity<Compressibility, CompressibilityUnit, double>,
+        IArithmeticQuantity<Compressibility, CompressibilityUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<Compressibility, Compressibility, double>,
+        IComparisonOperators<Compressibility, Compressibility, bool>,
+        IParsable<Compressibility>,
+#endif
         IComparable,
         IComparable<Compressibility>,
-        IConvertible,
         IEquatable<Compressibility>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly CompressibilityUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="Compressibility"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class CompressibilityInfo: QuantityInfo<Compressibility, CompressibilityUnit>
+        {
+            /// <inheritdoc />
+            public CompressibilityInfo(string name, CompressibilityUnit baseUnit, IEnumerable<IUnitDefinition<CompressibilityUnit>> unitMappings, Compressibility zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<Compressibility, CompressibilityUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public CompressibilityInfo(string name, CompressibilityUnit baseUnit, IEnumerable<IUnitDefinition<CompressibilityUnit>> unitMappings, Compressibility zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, Compressibility.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.Compressibility", typeof(Compressibility).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="CompressibilityInfo"/> class with the default settings for the Compressibility quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="CompressibilityInfo"/> class with the default settings.</returns>
+            public static CompressibilityInfo CreateDefault()
+            {
+                return new CompressibilityInfo(nameof(Compressibility), DefaultBaseUnit, GetDefaultMappings(), new Compressibility(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="CompressibilityInfo"/> class with the default settings for the Compressibility quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="CompressibilityInfo"/> class with the default settings.
+            /// </returns>
+            public static CompressibilityInfo CreateDefault(Func<IEnumerable<UnitDefinition<CompressibilityUnit>>, IEnumerable<IUnitDefinition<CompressibilityUnit>>> customizeUnits)
+            {
+                return new CompressibilityInfo(nameof(Compressibility), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new Compressibility(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="Compressibility"/> is [T^2][L][M^-1].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(1, -1, 2, 0, 0, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of Compressibility is InversePascal. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static CompressibilityUnit DefaultBaseUnit { get; } = CompressibilityUnit.InversePascal;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="CompressibilityUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{CompressibilityUnit}"/> representing the default unit mappings for Compressibility.</returns>
+            public static IEnumerable<UnitDefinition<CompressibilityUnit>> GetDefaultMappings()
+            {
+                yield return new (CompressibilityUnit.InverseAtmosphere, "InverseAtmosphere", "InverseAtmospheres", BaseUnits.Undefined);
+                yield return new (CompressibilityUnit.InverseBar, "InverseBar", "InverseBars", BaseUnits.Undefined);
+                yield return new (CompressibilityUnit.InverseKilopascal, "InverseKilopascal", "InverseKilopascals", BaseUnits.Undefined);
+                yield return new (CompressibilityUnit.InverseMegapascal, "InverseMegapascal", "InverseMegapascals", BaseUnits.Undefined);
+                yield return new (CompressibilityUnit.InverseMillibar, "InverseMillibar", "InverseMillibars", BaseUnits.Undefined);
+                yield return new (CompressibilityUnit.InversePascal, "InversePascal", "InversePascals", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second));
+                yield return new (CompressibilityUnit.InversePoundForcePerSquareInch, "InversePoundForcePerSquareInch", "InversePoundsForcePerSquareInch", BaseUnits.Undefined);
+            }
+        }
 
         static Compressibility()
         {
-            BaseDimensions = new BaseDimensions(1, -1, 2, 0, 0, 0, 0);
-            BaseUnit = CompressibilityUnit.InversePascal;
-            Units = Enum.GetValues(typeof(CompressibilityUnit)).Cast<CompressibilityUnit>().ToArray();
-            Zero = new Compressibility(0, BaseUnit);
-            Info = new QuantityInfo<CompressibilityUnit>("Compressibility",
-                new UnitInfo<CompressibilityUnit>[]
-                {
-                    new UnitInfo<CompressibilityUnit>(CompressibilityUnit.InverseAtmosphere, "InverseAtmospheres", BaseUnits.Undefined, "Compressibility"),
-                    new UnitInfo<CompressibilityUnit>(CompressibilityUnit.InverseBar, "InverseBars", BaseUnits.Undefined, "Compressibility"),
-                    new UnitInfo<CompressibilityUnit>(CompressibilityUnit.InverseKilopascal, "InverseKilopascals", BaseUnits.Undefined, "Compressibility"),
-                    new UnitInfo<CompressibilityUnit>(CompressibilityUnit.InverseMegapascal, "InverseMegapascals", BaseUnits.Undefined, "Compressibility"),
-                    new UnitInfo<CompressibilityUnit>(CompressibilityUnit.InverseMillibar, "InverseMillibars", BaseUnits.Undefined, "Compressibility"),
-                    new UnitInfo<CompressibilityUnit>(CompressibilityUnit.InversePascal, "InversePascals", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second), "Compressibility"),
-                    new UnitInfo<CompressibilityUnit>(CompressibilityUnit.InversePoundForcePerSquareInch, "InversePoundsForcePerSquareInch", BaseUnits.Undefined, "Compressibility"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = CompressibilityInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -84,10 +139,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Compressibility(double value, CompressibilityUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -101,13 +155,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public Compressibility(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -118,30 +167,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<CompressibilityUnit> Info { get; }
+        public static QuantityInfo<Compressibility, CompressibilityUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of Compressibility, which is InversePascal. All conversions go via this value.
         /// </summary>
-        public static CompressibilityUnit BaseUnit { get; }
+        public static CompressibilityUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the Compressibility quantity.
         /// </summary>
-        public static CompressibilityUnit[] Units { get; }
+        public static IReadOnlyCollection<CompressibilityUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit InversePascal.
         /// </summary>
-        public static Compressibility Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static Compressibility AdditiveIdentity => Zero;
+        public static Compressibility Zero => Info.Zero;
 
         #endregion
 
@@ -153,23 +199,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public CompressibilityUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<CompressibilityUnit> QuantityInfo => Info;
+        public QuantityInfo<Compressibility, CompressibilityUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<Compressibility> IQuantityOfType<Compressibility>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<CompressibilityUnit> IQuantity<CompressibilityUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => Compressibility.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -258,7 +312,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(CompressibilityUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -268,70 +322,56 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Compressibility"/> from <see cref="CompressibilityUnit.InverseAtmosphere"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Compressibility FromInverseAtmospheres(QuantityValue inverseatmospheres)
+        public static Compressibility FromInverseAtmospheres(double value)
         {
-            double value = (double) inverseatmospheres;
             return new Compressibility(value, CompressibilityUnit.InverseAtmosphere);
         }
 
         /// <summary>
         ///     Creates a <see cref="Compressibility"/> from <see cref="CompressibilityUnit.InverseBar"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Compressibility FromInverseBars(QuantityValue inversebars)
+        public static Compressibility FromInverseBars(double value)
         {
-            double value = (double) inversebars;
             return new Compressibility(value, CompressibilityUnit.InverseBar);
         }
 
         /// <summary>
         ///     Creates a <see cref="Compressibility"/> from <see cref="CompressibilityUnit.InverseKilopascal"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Compressibility FromInverseKilopascals(QuantityValue inversekilopascals)
+        public static Compressibility FromInverseKilopascals(double value)
         {
-            double value = (double) inversekilopascals;
             return new Compressibility(value, CompressibilityUnit.InverseKilopascal);
         }
 
         /// <summary>
         ///     Creates a <see cref="Compressibility"/> from <see cref="CompressibilityUnit.InverseMegapascal"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Compressibility FromInverseMegapascals(QuantityValue inversemegapascals)
+        public static Compressibility FromInverseMegapascals(double value)
         {
-            double value = (double) inversemegapascals;
             return new Compressibility(value, CompressibilityUnit.InverseMegapascal);
         }
 
         /// <summary>
         ///     Creates a <see cref="Compressibility"/> from <see cref="CompressibilityUnit.InverseMillibar"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Compressibility FromInverseMillibars(QuantityValue inversemillibars)
+        public static Compressibility FromInverseMillibars(double value)
         {
-            double value = (double) inversemillibars;
             return new Compressibility(value, CompressibilityUnit.InverseMillibar);
         }
 
         /// <summary>
         ///     Creates a <see cref="Compressibility"/> from <see cref="CompressibilityUnit.InversePascal"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Compressibility FromInversePascals(QuantityValue inversepascals)
+        public static Compressibility FromInversePascals(double value)
         {
-            double value = (double) inversepascals;
             return new Compressibility(value, CompressibilityUnit.InversePascal);
         }
 
         /// <summary>
         ///     Creates a <see cref="Compressibility"/> from <see cref="CompressibilityUnit.InversePoundForcePerSquareInch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Compressibility FromInversePoundsForcePerSquareInch(QuantityValue inversepoundsforcepersquareinch)
+        public static Compressibility FromInversePoundsForcePerSquareInch(double value)
         {
-            double value = (double) inversepoundsforcepersquareinch;
             return new Compressibility(value, CompressibilityUnit.InversePoundForcePerSquareInch);
         }
 
@@ -341,9 +381,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>Compressibility unit value.</returns>
-        public static Compressibility From(QuantityValue value, CompressibilityUnit fromUnit)
+        public static Compressibility From(double value, CompressibilityUnit fromUnit)
         {
-            return new Compressibility((double)value, fromUnit);
+            return new Compressibility(value, fromUnit);
         }
 
         #endregion
@@ -402,7 +442,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static Compressibility Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<Compressibility, CompressibilityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<Compressibility, CompressibilityUnit>(
                 str,
                 provider,
                 From);
@@ -416,7 +456,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out Compressibility result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out Compressibility result)
         {
             return TryParse(str, null, out result);
         }
@@ -431,9 +471,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out Compressibility result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out Compressibility result)
         {
-            return QuantityParser.Default.TryParse<Compressibility, CompressibilityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<Compressibility, CompressibilityUnit>(
                 str,
                 provider,
                 From,
@@ -466,11 +506,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static CompressibilityUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<CompressibilityUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.CompressibilityUnit)"/>
-        public static bool TryParseUnit(string str, out CompressibilityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out CompressibilityUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -485,9 +525,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out CompressibilityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out CompressibilityUnit unit)
         {
-            return UnitParser.Default.TryParse<CompressibilityUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -603,6 +643,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current Compressibility.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="Compressibility"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -639,88 +688,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another Compressibility within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(Compressibility other, Compressibility tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(Compressibility other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is Compressibility otherTyped
-                   && (tolerance is Compressibility toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'Compressibility'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(Compressibility other, Compressibility tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current Compressibility.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -737,37 +704,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is CompressibilityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(CompressibilityUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is CompressibilityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(CompressibilityUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<CompressibilityUnit>());
         }
 
         /// <summary>
@@ -807,7 +747,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -856,6 +796,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not CompressibilityUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(CompressibilityUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -865,41 +815,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public Compressibility ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<CompressibilityUnit> IQuantity<CompressibilityUnit>.ToUnit(CompressibilityUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<CompressibilityUnit> IQuantity<CompressibilityUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not CompressibilityUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(CompressibilityUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -911,140 +830,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<CompressibilityUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Compressibility)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Compressibility)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Compressibility)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(Compressibility))
-                return this;
-            else if (conversionType == typeof(CompressibilityUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return Compressibility.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return Compressibility.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(Compressibility)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

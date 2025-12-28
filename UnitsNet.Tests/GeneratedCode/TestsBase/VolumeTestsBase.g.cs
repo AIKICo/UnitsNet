@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -77,6 +79,7 @@ namespace UnitsNet.Tests
         protected abstract double MegalitersInOneCubicMeter { get; }
         protected abstract double MegausGallonsInOneCubicMeter { get; }
         protected abstract double MetricCupsInOneCubicMeter { get; }
+        protected abstract double MetricTablespoonsInOneCubicMeter { get; }
         protected abstract double MetricTeaspoonsInOneCubicMeter { get; }
         protected abstract double MicrolitersInOneCubicMeter { get; }
         protected abstract double MillilitersInOneCubicMeter { get; }
@@ -133,6 +136,7 @@ namespace UnitsNet.Tests
         protected virtual double MegalitersTolerance { get { return 1e-5; } }
         protected virtual double MegausGallonsTolerance { get { return 1e-5; } }
         protected virtual double MetricCupsTolerance { get { return 1e-5; } }
+        protected virtual double MetricTablespoonsTolerance { get { return 1e-5; } }
         protected virtual double MetricTeaspoonsTolerance { get { return 1e-5; } }
         protected virtual double MicrolitersTolerance { get { return 1e-5; } }
         protected virtual double MillilitersTolerance { get { return 1e-5; } }
@@ -193,6 +197,7 @@ namespace UnitsNet.Tests
                 VolumeUnit.Megaliter => (MegalitersInOneCubicMeter, MegalitersTolerance),
                 VolumeUnit.MegausGallon => (MegausGallonsInOneCubicMeter, MegausGallonsTolerance),
                 VolumeUnit.MetricCup => (MetricCupsInOneCubicMeter, MetricCupsTolerance),
+                VolumeUnit.MetricTablespoon => (MetricTablespoonsInOneCubicMeter, MetricTablespoonsTolerance),
                 VolumeUnit.MetricTeaspoon => (MetricTeaspoonsInOneCubicMeter, MetricTeaspoonsTolerance),
                 VolumeUnit.Microliter => (MicrolitersInOneCubicMeter, MicrolitersTolerance),
                 VolumeUnit.Milliliter => (MillilitersInOneCubicMeter, MillilitersTolerance),
@@ -253,6 +258,7 @@ namespace UnitsNet.Tests
             new object[] { VolumeUnit.Megaliter },
             new object[] { VolumeUnit.MegausGallon },
             new object[] { VolumeUnit.MetricCup },
+            new object[] { VolumeUnit.MetricTablespoon },
             new object[] { VolumeUnit.MetricTeaspoon },
             new object[] { VolumeUnit.Microliter },
             new object[] { VolumeUnit.Milliliter },
@@ -279,16 +285,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Volume(double.PositiveInfinity, VolumeUnit.CubicMeter));
-            Assert.Throws<ArgumentException>(() => new Volume(double.NegativeInfinity, VolumeUnit.CubicMeter));
+            var exception1 = Record.Exception(() => new Volume(double.PositiveInfinity, VolumeUnit.CubicMeter));
+            var exception2 = Record.Exception(() => new Volume(double.NegativeInfinity, VolumeUnit.CubicMeter));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Volume(double.NaN, VolumeUnit.CubicMeter));
+            var exception = Record.Exception(() => new Volume(double.NaN, VolumeUnit.CubicMeter));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -298,32 +309,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new Volume(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Volume) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new Volume(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new Volume(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void Volume_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            VolumeUnit[] unitsOrderedByName = EnumHelper.GetValues<VolumeUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Volume(1, VolumeUnit.CubicMeter);
 
-            QuantityInfo<VolumeUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Volume, VolumeUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Volume.Zero, quantityInfo.Zero);
             Assert.Equal("Volume", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<VolumeUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Volume.Zero, quantityInfo.Zero);
+            Assert.Equal(Volume.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Volume.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<VolumeUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -369,6 +384,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(MegalitersInOneCubicMeter, cubicmeter.Megaliters, MegalitersTolerance);
             AssertEx.EqualTolerance(MegausGallonsInOneCubicMeter, cubicmeter.MegausGallons, MegausGallonsTolerance);
             AssertEx.EqualTolerance(MetricCupsInOneCubicMeter, cubicmeter.MetricCups, MetricCupsTolerance);
+            AssertEx.EqualTolerance(MetricTablespoonsInOneCubicMeter, cubicmeter.MetricTablespoons, MetricTablespoonsTolerance);
             AssertEx.EqualTolerance(MetricTeaspoonsInOneCubicMeter, cubicmeter.MetricTeaspoons, MetricTeaspoonsTolerance);
             AssertEx.EqualTolerance(MicrolitersInOneCubicMeter, cubicmeter.Microliters, MicrolitersTolerance);
             AssertEx.EqualTolerance(MillilitersInOneCubicMeter, cubicmeter.Milliliters, MillilitersTolerance);
@@ -389,235 +405,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Volume.From(1, VolumeUnit.AcreFoot);
-            AssertEx.EqualTolerance(1, quantity00.AcreFeet, AcreFeetTolerance);
-            Assert.Equal(VolumeUnit.AcreFoot, quantity00.Unit);
-
-            var quantity01 = Volume.From(1, VolumeUnit.AuTablespoon);
-            AssertEx.EqualTolerance(1, quantity01.AuTablespoons, AuTablespoonsTolerance);
-            Assert.Equal(VolumeUnit.AuTablespoon, quantity01.Unit);
-
-            var quantity02 = Volume.From(1, VolumeUnit.BoardFoot);
-            AssertEx.EqualTolerance(1, quantity02.BoardFeet, BoardFeetTolerance);
-            Assert.Equal(VolumeUnit.BoardFoot, quantity02.Unit);
-
-            var quantity03 = Volume.From(1, VolumeUnit.Centiliter);
-            AssertEx.EqualTolerance(1, quantity03.Centiliters, CentilitersTolerance);
-            Assert.Equal(VolumeUnit.Centiliter, quantity03.Unit);
-
-            var quantity04 = Volume.From(1, VolumeUnit.CubicCentimeter);
-            AssertEx.EqualTolerance(1, quantity04.CubicCentimeters, CubicCentimetersTolerance);
-            Assert.Equal(VolumeUnit.CubicCentimeter, quantity04.Unit);
-
-            var quantity05 = Volume.From(1, VolumeUnit.CubicDecimeter);
-            AssertEx.EqualTolerance(1, quantity05.CubicDecimeters, CubicDecimetersTolerance);
-            Assert.Equal(VolumeUnit.CubicDecimeter, quantity05.Unit);
-
-            var quantity06 = Volume.From(1, VolumeUnit.CubicFoot);
-            AssertEx.EqualTolerance(1, quantity06.CubicFeet, CubicFeetTolerance);
-            Assert.Equal(VolumeUnit.CubicFoot, quantity06.Unit);
-
-            var quantity07 = Volume.From(1, VolumeUnit.CubicHectometer);
-            AssertEx.EqualTolerance(1, quantity07.CubicHectometers, CubicHectometersTolerance);
-            Assert.Equal(VolumeUnit.CubicHectometer, quantity07.Unit);
-
-            var quantity08 = Volume.From(1, VolumeUnit.CubicInch);
-            AssertEx.EqualTolerance(1, quantity08.CubicInches, CubicInchesTolerance);
-            Assert.Equal(VolumeUnit.CubicInch, quantity08.Unit);
-
-            var quantity09 = Volume.From(1, VolumeUnit.CubicKilometer);
-            AssertEx.EqualTolerance(1, quantity09.CubicKilometers, CubicKilometersTolerance);
-            Assert.Equal(VolumeUnit.CubicKilometer, quantity09.Unit);
-
-            var quantity10 = Volume.From(1, VolumeUnit.CubicMeter);
-            AssertEx.EqualTolerance(1, quantity10.CubicMeters, CubicMetersTolerance);
-            Assert.Equal(VolumeUnit.CubicMeter, quantity10.Unit);
-
-            var quantity11 = Volume.From(1, VolumeUnit.CubicMicrometer);
-            AssertEx.EqualTolerance(1, quantity11.CubicMicrometers, CubicMicrometersTolerance);
-            Assert.Equal(VolumeUnit.CubicMicrometer, quantity11.Unit);
-
-            var quantity12 = Volume.From(1, VolumeUnit.CubicMile);
-            AssertEx.EqualTolerance(1, quantity12.CubicMiles, CubicMilesTolerance);
-            Assert.Equal(VolumeUnit.CubicMile, quantity12.Unit);
-
-            var quantity13 = Volume.From(1, VolumeUnit.CubicMillimeter);
-            AssertEx.EqualTolerance(1, quantity13.CubicMillimeters, CubicMillimetersTolerance);
-            Assert.Equal(VolumeUnit.CubicMillimeter, quantity13.Unit);
-
-            var quantity14 = Volume.From(1, VolumeUnit.CubicYard);
-            AssertEx.EqualTolerance(1, quantity14.CubicYards, CubicYardsTolerance);
-            Assert.Equal(VolumeUnit.CubicYard, quantity14.Unit);
-
-            var quantity15 = Volume.From(1, VolumeUnit.Decaliter);
-            AssertEx.EqualTolerance(1, quantity15.Decaliters, DecalitersTolerance);
-            Assert.Equal(VolumeUnit.Decaliter, quantity15.Unit);
-
-            var quantity16 = Volume.From(1, VolumeUnit.DecausGallon);
-            AssertEx.EqualTolerance(1, quantity16.DecausGallons, DecausGallonsTolerance);
-            Assert.Equal(VolumeUnit.DecausGallon, quantity16.Unit);
-
-            var quantity17 = Volume.From(1, VolumeUnit.Deciliter);
-            AssertEx.EqualTolerance(1, quantity17.Deciliters, DecilitersTolerance);
-            Assert.Equal(VolumeUnit.Deciliter, quantity17.Unit);
-
-            var quantity18 = Volume.From(1, VolumeUnit.DeciusGallon);
-            AssertEx.EqualTolerance(1, quantity18.DeciusGallons, DeciusGallonsTolerance);
-            Assert.Equal(VolumeUnit.DeciusGallon, quantity18.Unit);
-
-            var quantity19 = Volume.From(1, VolumeUnit.HectocubicFoot);
-            AssertEx.EqualTolerance(1, quantity19.HectocubicFeet, HectocubicFeetTolerance);
-            Assert.Equal(VolumeUnit.HectocubicFoot, quantity19.Unit);
-
-            var quantity20 = Volume.From(1, VolumeUnit.HectocubicMeter);
-            AssertEx.EqualTolerance(1, quantity20.HectocubicMeters, HectocubicMetersTolerance);
-            Assert.Equal(VolumeUnit.HectocubicMeter, quantity20.Unit);
-
-            var quantity21 = Volume.From(1, VolumeUnit.Hectoliter);
-            AssertEx.EqualTolerance(1, quantity21.Hectoliters, HectolitersTolerance);
-            Assert.Equal(VolumeUnit.Hectoliter, quantity21.Unit);
-
-            var quantity22 = Volume.From(1, VolumeUnit.HectousGallon);
-            AssertEx.EqualTolerance(1, quantity22.HectousGallons, HectousGallonsTolerance);
-            Assert.Equal(VolumeUnit.HectousGallon, quantity22.Unit);
-
-            var quantity23 = Volume.From(1, VolumeUnit.ImperialBeerBarrel);
-            AssertEx.EqualTolerance(1, quantity23.ImperialBeerBarrels, ImperialBeerBarrelsTolerance);
-            Assert.Equal(VolumeUnit.ImperialBeerBarrel, quantity23.Unit);
-
-            var quantity24 = Volume.From(1, VolumeUnit.ImperialGallon);
-            AssertEx.EqualTolerance(1, quantity24.ImperialGallons, ImperialGallonsTolerance);
-            Assert.Equal(VolumeUnit.ImperialGallon, quantity24.Unit);
-
-            var quantity25 = Volume.From(1, VolumeUnit.ImperialOunce);
-            AssertEx.EqualTolerance(1, quantity25.ImperialOunces, ImperialOuncesTolerance);
-            Assert.Equal(VolumeUnit.ImperialOunce, quantity25.Unit);
-
-            var quantity26 = Volume.From(1, VolumeUnit.ImperialPint);
-            AssertEx.EqualTolerance(1, quantity26.ImperialPints, ImperialPintsTolerance);
-            Assert.Equal(VolumeUnit.ImperialPint, quantity26.Unit);
-
-            var quantity27 = Volume.From(1, VolumeUnit.ImperialQuart);
-            AssertEx.EqualTolerance(1, quantity27.ImperialQuarts, ImperialQuartsTolerance);
-            Assert.Equal(VolumeUnit.ImperialQuart, quantity27.Unit);
-
-            var quantity28 = Volume.From(1, VolumeUnit.KilocubicFoot);
-            AssertEx.EqualTolerance(1, quantity28.KilocubicFeet, KilocubicFeetTolerance);
-            Assert.Equal(VolumeUnit.KilocubicFoot, quantity28.Unit);
-
-            var quantity29 = Volume.From(1, VolumeUnit.KilocubicMeter);
-            AssertEx.EqualTolerance(1, quantity29.KilocubicMeters, KilocubicMetersTolerance);
-            Assert.Equal(VolumeUnit.KilocubicMeter, quantity29.Unit);
-
-            var quantity30 = Volume.From(1, VolumeUnit.KiloimperialGallon);
-            AssertEx.EqualTolerance(1, quantity30.KiloimperialGallons, KiloimperialGallonsTolerance);
-            Assert.Equal(VolumeUnit.KiloimperialGallon, quantity30.Unit);
-
-            var quantity31 = Volume.From(1, VolumeUnit.Kiloliter);
-            AssertEx.EqualTolerance(1, quantity31.Kiloliters, KilolitersTolerance);
-            Assert.Equal(VolumeUnit.Kiloliter, quantity31.Unit);
-
-            var quantity32 = Volume.From(1, VolumeUnit.KilousGallon);
-            AssertEx.EqualTolerance(1, quantity32.KilousGallons, KilousGallonsTolerance);
-            Assert.Equal(VolumeUnit.KilousGallon, quantity32.Unit);
-
-            var quantity33 = Volume.From(1, VolumeUnit.Liter);
-            AssertEx.EqualTolerance(1, quantity33.Liters, LitersTolerance);
-            Assert.Equal(VolumeUnit.Liter, quantity33.Unit);
-
-            var quantity34 = Volume.From(1, VolumeUnit.MegacubicFoot);
-            AssertEx.EqualTolerance(1, quantity34.MegacubicFeet, MegacubicFeetTolerance);
-            Assert.Equal(VolumeUnit.MegacubicFoot, quantity34.Unit);
-
-            var quantity35 = Volume.From(1, VolumeUnit.MegaimperialGallon);
-            AssertEx.EqualTolerance(1, quantity35.MegaimperialGallons, MegaimperialGallonsTolerance);
-            Assert.Equal(VolumeUnit.MegaimperialGallon, quantity35.Unit);
-
-            var quantity36 = Volume.From(1, VolumeUnit.Megaliter);
-            AssertEx.EqualTolerance(1, quantity36.Megaliters, MegalitersTolerance);
-            Assert.Equal(VolumeUnit.Megaliter, quantity36.Unit);
-
-            var quantity37 = Volume.From(1, VolumeUnit.MegausGallon);
-            AssertEx.EqualTolerance(1, quantity37.MegausGallons, MegausGallonsTolerance);
-            Assert.Equal(VolumeUnit.MegausGallon, quantity37.Unit);
-
-            var quantity38 = Volume.From(1, VolumeUnit.MetricCup);
-            AssertEx.EqualTolerance(1, quantity38.MetricCups, MetricCupsTolerance);
-            Assert.Equal(VolumeUnit.MetricCup, quantity38.Unit);
-
-            var quantity39 = Volume.From(1, VolumeUnit.MetricTeaspoon);
-            AssertEx.EqualTolerance(1, quantity39.MetricTeaspoons, MetricTeaspoonsTolerance);
-            Assert.Equal(VolumeUnit.MetricTeaspoon, quantity39.Unit);
-
-            var quantity40 = Volume.From(1, VolumeUnit.Microliter);
-            AssertEx.EqualTolerance(1, quantity40.Microliters, MicrolitersTolerance);
-            Assert.Equal(VolumeUnit.Microliter, quantity40.Unit);
-
-            var quantity41 = Volume.From(1, VolumeUnit.Milliliter);
-            AssertEx.EqualTolerance(1, quantity41.Milliliters, MillilitersTolerance);
-            Assert.Equal(VolumeUnit.Milliliter, quantity41.Unit);
-
-            var quantity42 = Volume.From(1, VolumeUnit.Nanoliter);
-            AssertEx.EqualTolerance(1, quantity42.Nanoliters, NanolitersTolerance);
-            Assert.Equal(VolumeUnit.Nanoliter, quantity42.Unit);
-
-            var quantity43 = Volume.From(1, VolumeUnit.OilBarrel);
-            AssertEx.EqualTolerance(1, quantity43.OilBarrels, OilBarrelsTolerance);
-            Assert.Equal(VolumeUnit.OilBarrel, quantity43.Unit);
-
-            var quantity44 = Volume.From(1, VolumeUnit.UkTablespoon);
-            AssertEx.EqualTolerance(1, quantity44.UkTablespoons, UkTablespoonsTolerance);
-            Assert.Equal(VolumeUnit.UkTablespoon, quantity44.Unit);
-
-            var quantity45 = Volume.From(1, VolumeUnit.UsBeerBarrel);
-            AssertEx.EqualTolerance(1, quantity45.UsBeerBarrels, UsBeerBarrelsTolerance);
-            Assert.Equal(VolumeUnit.UsBeerBarrel, quantity45.Unit);
-
-            var quantity46 = Volume.From(1, VolumeUnit.UsCustomaryCup);
-            AssertEx.EqualTolerance(1, quantity46.UsCustomaryCups, UsCustomaryCupsTolerance);
-            Assert.Equal(VolumeUnit.UsCustomaryCup, quantity46.Unit);
-
-            var quantity47 = Volume.From(1, VolumeUnit.UsGallon);
-            AssertEx.EqualTolerance(1, quantity47.UsGallons, UsGallonsTolerance);
-            Assert.Equal(VolumeUnit.UsGallon, quantity47.Unit);
-
-            var quantity48 = Volume.From(1, VolumeUnit.UsLegalCup);
-            AssertEx.EqualTolerance(1, quantity48.UsLegalCups, UsLegalCupsTolerance);
-            Assert.Equal(VolumeUnit.UsLegalCup, quantity48.Unit);
-
-            var quantity49 = Volume.From(1, VolumeUnit.UsOunce);
-            AssertEx.EqualTolerance(1, quantity49.UsOunces, UsOuncesTolerance);
-            Assert.Equal(VolumeUnit.UsOunce, quantity49.Unit);
-
-            var quantity50 = Volume.From(1, VolumeUnit.UsPint);
-            AssertEx.EqualTolerance(1, quantity50.UsPints, UsPintsTolerance);
-            Assert.Equal(VolumeUnit.UsPint, quantity50.Unit);
-
-            var quantity51 = Volume.From(1, VolumeUnit.UsQuart);
-            AssertEx.EqualTolerance(1, quantity51.UsQuarts, UsQuartsTolerance);
-            Assert.Equal(VolumeUnit.UsQuart, quantity51.Unit);
-
-            var quantity52 = Volume.From(1, VolumeUnit.UsTablespoon);
-            AssertEx.EqualTolerance(1, quantity52.UsTablespoons, UsTablespoonsTolerance);
-            Assert.Equal(VolumeUnit.UsTablespoon, quantity52.Unit);
-
-            var quantity53 = Volume.From(1, VolumeUnit.UsTeaspoon);
-            AssertEx.EqualTolerance(1, quantity53.UsTeaspoons, UsTeaspoonsTolerance);
-            Assert.Equal(VolumeUnit.UsTeaspoon, quantity53.Unit);
-
+            Assert.All(EnumHelper.GetValues<VolumeUnit>(), unit =>
+            {
+                var quantity = Volume.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromCubicMeters_WithInfinityValue_ThrowsArgumentException()
+        public void FromCubicMeters_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Volume.FromCubicMeters(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Volume.FromCubicMeters(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Volume.FromCubicMeters(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Volume.FromCubicMeters(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromCubicMeters_WithNanValue_ThrowsArgumentException()
+        public void FromCubicMeters_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Volume.FromCubicMeters(double.NaN));
+            var exception = Record.Exception(() => Volume.FromCubicMeters(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -663,6 +474,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(MegalitersInOneCubicMeter, cubicmeter.As(VolumeUnit.Megaliter), MegalitersTolerance);
             AssertEx.EqualTolerance(MegausGallonsInOneCubicMeter, cubicmeter.As(VolumeUnit.MegausGallon), MegausGallonsTolerance);
             AssertEx.EqualTolerance(MetricCupsInOneCubicMeter, cubicmeter.As(VolumeUnit.MetricCup), MetricCupsTolerance);
+            AssertEx.EqualTolerance(MetricTablespoonsInOneCubicMeter, cubicmeter.As(VolumeUnit.MetricTablespoon), MetricTablespoonsTolerance);
             AssertEx.EqualTolerance(MetricTeaspoonsInOneCubicMeter, cubicmeter.As(VolumeUnit.MetricTeaspoon), MetricTeaspoonsTolerance);
             AssertEx.EqualTolerance(MicrolitersInOneCubicMeter, cubicmeter.As(VolumeUnit.Microliter), MicrolitersTolerance);
             AssertEx.EqualTolerance(MillilitersInOneCubicMeter, cubicmeter.As(VolumeUnit.Milliliter), MillilitersTolerance);
@@ -681,2356 +493,1219 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = Volume.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new Volume(value: 1, unit: Volume.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(Volume.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = Volume.Parse("1 ac-ft", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.AcreFeet, AcreFeetTolerance);
-                Assert.Equal(VolumeUnit.AcreFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 acre-foot", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.AcreFeet, AcreFeetTolerance);
-                Assert.Equal(VolumeUnit.AcreFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 acre-feet", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.AcreFeet, AcreFeetTolerance);
-                Assert.Equal(VolumeUnit.AcreFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 bf", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 board foot", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 board feet", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 pmp", CultureInfo.GetCultureInfo("fr-CA"));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 pied-planche", CultureInfo.GetCultureInfo("fr-CA"));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 pied de planche", CultureInfo.GetCultureInfo("fr-CA"));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 cl", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Centiliters, CentilitersTolerance);
-                Assert.Equal(VolumeUnit.Centiliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 сл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Centiliters, CentilitersTolerance);
-                Assert.Equal(VolumeUnit.Centiliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 cm³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicCentimeters, CubicCentimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 см³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicCentimeters, CubicCentimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 dm³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicDecimeters, CubicDecimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 дм³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicDecimeters, CubicDecimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 ft³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicFeet, CubicFeetTolerance);
-                Assert.Equal(VolumeUnit.CubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 фут³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicFeet, CubicFeetTolerance);
-                Assert.Equal(VolumeUnit.CubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 hm³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicHectometers, CubicHectometersTolerance);
-                Assert.Equal(VolumeUnit.CubicHectometer, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 гм³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicHectometers, CubicHectometersTolerance);
-                Assert.Equal(VolumeUnit.CubicHectometer, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 in³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicInches, CubicInchesTolerance);
-                Assert.Equal(VolumeUnit.CubicInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 дюйм³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicInches, CubicInchesTolerance);
-                Assert.Equal(VolumeUnit.CubicInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 km³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicKilometers, CubicKilometersTolerance);
-                Assert.Equal(VolumeUnit.CubicKilometer, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 км³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicKilometers, CubicKilometersTolerance);
-                Assert.Equal(VolumeUnit.CubicKilometer, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 m³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicMeters, CubicMetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 м³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicMeters, CubicMetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 µm³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicMicrometers, CubicMicrometersTolerance);
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 мкм³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicMicrometers, CubicMicrometersTolerance);
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 mi³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicMiles, CubicMilesTolerance);
-                Assert.Equal(VolumeUnit.CubicMile, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 миля³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicMiles, CubicMilesTolerance);
-                Assert.Equal(VolumeUnit.CubicMile, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 mm³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicMillimeters, CubicMillimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 мм³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicMillimeters, CubicMillimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 yd³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicYards, CubicYardsTolerance);
-                Assert.Equal(VolumeUnit.CubicYard, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 ярд³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CubicYards, CubicYardsTolerance);
-                Assert.Equal(VolumeUnit.CubicYard, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 dal", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Decaliters, DecalitersTolerance);
-                Assert.Equal(VolumeUnit.Decaliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 дал", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Decaliters, DecalitersTolerance);
-                Assert.Equal(VolumeUnit.Decaliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 dagal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecausGallons, DecausGallonsTolerance);
-                Assert.Equal(VolumeUnit.DecausGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 даАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.DecausGallons, DecausGallonsTolerance);
-                Assert.Equal(VolumeUnit.DecausGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 dl", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Deciliters, DecilitersTolerance);
-                Assert.Equal(VolumeUnit.Deciliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 дл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Deciliters, DecilitersTolerance);
-                Assert.Equal(VolumeUnit.Deciliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 dgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DeciusGallons, DeciusGallonsTolerance);
-                Assert.Equal(VolumeUnit.DeciusGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 дАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.DeciusGallons, DeciusGallonsTolerance);
-                Assert.Equal(VolumeUnit.DeciusGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 hft³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.HectocubicFeet, HectocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 гфут³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.HectocubicFeet, HectocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 hm³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.HectocubicMeters, HectocubicMetersTolerance);
-                Assert.Equal(VolumeUnit.HectocubicMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 гм³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.HectocubicMeters, HectocubicMetersTolerance);
-                Assert.Equal(VolumeUnit.HectocubicMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 hl", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Hectoliters, HectolitersTolerance);
-                Assert.Equal(VolumeUnit.Hectoliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 гл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Hectoliters, HectolitersTolerance);
-                Assert.Equal(VolumeUnit.Hectoliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 hgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.HectousGallons, HectousGallonsTolerance);
-                Assert.Equal(VolumeUnit.HectousGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 гАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.HectousGallons, HectousGallonsTolerance);
-                Assert.Equal(VolumeUnit.HectousGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 bl (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialBeerBarrels, ImperialBeerBarrelsTolerance);
-                Assert.Equal(VolumeUnit.ImperialBeerBarrel, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 gal (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialGallons, ImperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.ImperialGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Английский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.ImperialGallons, ImperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.ImperialGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 oz (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialOunces, ImperialOuncesTolerance);
-                Assert.Equal(VolumeUnit.ImperialOunce, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Английская унция", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.ImperialOunces, ImperialOuncesTolerance);
-                Assert.Equal(VolumeUnit.ImperialOunce, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 pt (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 UK pt", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 pt", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 p", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 qt (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.ImperialQuarts, ImperialQuartsTolerance);
-                Assert.Equal(VolumeUnit.ImperialQuart, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 kft³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilocubicFeet, KilocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 кфут³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KilocubicFeet, KilocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 km³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilocubicMeters, KilocubicMetersTolerance);
-                Assert.Equal(VolumeUnit.KilocubicMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 км³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KilocubicMeters, KilocubicMetersTolerance);
-                Assert.Equal(VolumeUnit.KilocubicMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 kgal (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KiloimperialGallons, KiloimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 кАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KiloimperialGallons, KiloimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 kl", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Kiloliters, KilolitersTolerance);
-                Assert.Equal(VolumeUnit.Kiloliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 кл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Kiloliters, KilolitersTolerance);
-                Assert.Equal(VolumeUnit.Kiloliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 kgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilousGallons, KilousGallonsTolerance);
-                Assert.Equal(VolumeUnit.KilousGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 кАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KilousGallons, KilousGallonsTolerance);
-                Assert.Equal(VolumeUnit.KilousGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 l", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Liters, LitersTolerance);
-                Assert.Equal(VolumeUnit.Liter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 л", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Liters, LitersTolerance);
-                Assert.Equal(VolumeUnit.Liter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Mft³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegacubicFeet, MegacubicFeetTolerance);
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Мфут³", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MegacubicFeet, MegacubicFeetTolerance);
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Mgal (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegaimperialGallons, MegaimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 МАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MegaimperialGallons, MegaimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Ml", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Megaliters, MegalitersTolerance);
-                Assert.Equal(VolumeUnit.Megaliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Мл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Megaliters, MegalitersTolerance);
-                Assert.Equal(VolumeUnit.Megaliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Mgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegausGallons, MegausGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegausGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 МАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MegausGallons, MegausGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegausGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 tsp", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 t", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 ts", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 tspn", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 t.", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 ts.", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 tsp.", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 tspn.", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 teaspoon", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 µl", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Microliters, MicrolitersTolerance);
-                Assert.Equal(VolumeUnit.Microliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 мкл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Microliters, MicrolitersTolerance);
-                Assert.Equal(VolumeUnit.Microliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 ml", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Milliliters, MillilitersTolerance);
-                Assert.Equal(VolumeUnit.Milliliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 мл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Milliliters, MillilitersTolerance);
-                Assert.Equal(VolumeUnit.Milliliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 nl", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Nanoliters, NanolitersTolerance);
-                Assert.Equal(VolumeUnit.Nanoliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 нл", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Nanoliters, NanolitersTolerance);
-                Assert.Equal(VolumeUnit.Nanoliter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 bbl", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.OilBarrels, OilBarrelsTolerance);
-                Assert.Equal(VolumeUnit.OilBarrel, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 bl (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsBeerBarrels, UsBeerBarrelsTolerance);
-                Assert.Equal(VolumeUnit.UsBeerBarrel, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 gal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsGallons, UsGallonsTolerance);
-                Assert.Equal(VolumeUnit.UsGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Американский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.UsGallons, UsGallonsTolerance);
-                Assert.Equal(VolumeUnit.UsGallon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 oz (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsOunces, UsOuncesTolerance);
-                Assert.Equal(VolumeUnit.UsOunce, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 Американская унция", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.UsOunces, UsOuncesTolerance);
-                Assert.Equal(VolumeUnit.UsOunce, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 pt (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsPints, UsPintsTolerance);
-                Assert.Equal(VolumeUnit.UsPint, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Volume.Parse("1 qt (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsQuarts, UsQuartsTolerance);
-                Assert.Equal(VolumeUnit.UsQuart, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new Volume(value: 1, unit: Volume.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(Volume.TryParse("1 ac-ft", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.AcreFeet, AcreFeetTolerance);
-                Assert.Equal(VolumeUnit.AcreFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 acre-foot", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.AcreFeet, AcreFeetTolerance);
-                Assert.Equal(VolumeUnit.AcreFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 acre-feet", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.AcreFeet, AcreFeetTolerance);
-                Assert.Equal(VolumeUnit.AcreFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 bf", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 board foot", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 board feet", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 pmp", CultureInfo.GetCultureInfo("fr-CA"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 pied-planche", CultureInfo.GetCultureInfo("fr-CA"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 pied de planche", CultureInfo.GetCultureInfo("fr-CA"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BoardFeet, BoardFeetTolerance);
-                Assert.Equal(VolumeUnit.BoardFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 cl", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Centiliters, CentilitersTolerance);
-                Assert.Equal(VolumeUnit.Centiliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 сл", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Centiliters, CentilitersTolerance);
-                Assert.Equal(VolumeUnit.Centiliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 cm³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicCentimeters, CubicCentimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 см³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicCentimeters, CubicCentimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 dm³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicDecimeters, CubicDecimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 дм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicDecimeters, CubicDecimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 ft³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicFeet, CubicFeetTolerance);
-                Assert.Equal(VolumeUnit.CubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 фут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicFeet, CubicFeetTolerance);
-                Assert.Equal(VolumeUnit.CubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 in³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicInches, CubicInchesTolerance);
-                Assert.Equal(VolumeUnit.CubicInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 дюйм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicInches, CubicInchesTolerance);
-                Assert.Equal(VolumeUnit.CubicInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 m³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMeters, CubicMetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 м³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMeters, CubicMetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 µm³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMicrometers, CubicMicrometersTolerance);
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 мкм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMicrometers, CubicMicrometersTolerance);
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 mi³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMiles, CubicMilesTolerance);
-                Assert.Equal(VolumeUnit.CubicMile, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 миля³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMiles, CubicMilesTolerance);
-                Assert.Equal(VolumeUnit.CubicMile, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 mm³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMillimeters, CubicMillimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 мм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMillimeters, CubicMillimetersTolerance);
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 yd³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicYards, CubicYardsTolerance);
-                Assert.Equal(VolumeUnit.CubicYard, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 ярд³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicYards, CubicYardsTolerance);
-                Assert.Equal(VolumeUnit.CubicYard, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 dal", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Decaliters, DecalitersTolerance);
-                Assert.Equal(VolumeUnit.Decaliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 дал", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Decaliters, DecalitersTolerance);
-                Assert.Equal(VolumeUnit.Decaliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 dagal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecausGallons, DecausGallonsTolerance);
-                Assert.Equal(VolumeUnit.DecausGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 даАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecausGallons, DecausGallonsTolerance);
-                Assert.Equal(VolumeUnit.DecausGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 dl", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Deciliters, DecilitersTolerance);
-                Assert.Equal(VolumeUnit.Deciliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 дл", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Deciliters, DecilitersTolerance);
-                Assert.Equal(VolumeUnit.Deciliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 dgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DeciusGallons, DeciusGallonsTolerance);
-                Assert.Equal(VolumeUnit.DeciusGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 дАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DeciusGallons, DeciusGallonsTolerance);
-                Assert.Equal(VolumeUnit.DeciusGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 hft³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.HectocubicFeet, HectocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 гфут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.HectocubicFeet, HectocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 hl", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Hectoliters, HectolitersTolerance);
-                Assert.Equal(VolumeUnit.Hectoliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 гл", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Hectoliters, HectolitersTolerance);
-                Assert.Equal(VolumeUnit.Hectoliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 hgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.HectousGallons, HectousGallonsTolerance);
-                Assert.Equal(VolumeUnit.HectousGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 гАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.HectousGallons, HectousGallonsTolerance);
-                Assert.Equal(VolumeUnit.HectousGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 bl (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialBeerBarrels, ImperialBeerBarrelsTolerance);
-                Assert.Equal(VolumeUnit.ImperialBeerBarrel, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 gal (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialGallons, ImperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.ImperialGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Английский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialGallons, ImperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.ImperialGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 oz (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialOunces, ImperialOuncesTolerance);
-                Assert.Equal(VolumeUnit.ImperialOunce, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Английская унция", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialOunces, ImperialOuncesTolerance);
-                Assert.Equal(VolumeUnit.ImperialOunce, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 pt (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 UK pt", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 pt", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 p", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialPints, ImperialPintsTolerance);
-                Assert.Equal(VolumeUnit.ImperialPint, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 qt (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.ImperialQuarts, ImperialQuartsTolerance);
-                Assert.Equal(VolumeUnit.ImperialQuart, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 kft³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilocubicFeet, KilocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 кфут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilocubicFeet, KilocubicFeetTolerance);
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 kgal (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KiloimperialGallons, KiloimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 кАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KiloimperialGallons, KiloimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 kl", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Kiloliters, KilolitersTolerance);
-                Assert.Equal(VolumeUnit.Kiloliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 кл", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Kiloliters, KilolitersTolerance);
-                Assert.Equal(VolumeUnit.Kiloliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 kgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilousGallons, KilousGallonsTolerance);
-                Assert.Equal(VolumeUnit.KilousGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 кАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilousGallons, KilousGallonsTolerance);
-                Assert.Equal(VolumeUnit.KilousGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 l", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Liters, LitersTolerance);
-                Assert.Equal(VolumeUnit.Liter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 л", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Liters, LitersTolerance);
-                Assert.Equal(VolumeUnit.Liter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Mft³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegacubicFeet, MegacubicFeetTolerance);
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Мфут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegacubicFeet, MegacubicFeetTolerance);
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Mgal (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegaimperialGallons, MegaimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 МАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegaimperialGallons, MegaimperialGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Mgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegausGallons, MegausGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegausGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 МАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegausGallons, MegausGallonsTolerance);
-                Assert.Equal(VolumeUnit.MegausGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 tsp", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 t", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 ts", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 tspn", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 t.", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 ts.", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 tsp.", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 tspn.", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 teaspoon", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetricTeaspoons, MetricTeaspoonsTolerance);
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 µl", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Microliters, MicrolitersTolerance);
-                Assert.Equal(VolumeUnit.Microliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 мкл", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Microliters, MicrolitersTolerance);
-                Assert.Equal(VolumeUnit.Microliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 nl", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Nanoliters, NanolitersTolerance);
-                Assert.Equal(VolumeUnit.Nanoliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 нл", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Nanoliters, NanolitersTolerance);
-                Assert.Equal(VolumeUnit.Nanoliter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 bbl", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.OilBarrels, OilBarrelsTolerance);
-                Assert.Equal(VolumeUnit.OilBarrel, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 bl (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsBeerBarrels, UsBeerBarrelsTolerance);
-                Assert.Equal(VolumeUnit.UsBeerBarrel, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 gal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsGallons, UsGallonsTolerance);
-                Assert.Equal(VolumeUnit.UsGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Американский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsGallons, UsGallonsTolerance);
-                Assert.Equal(VolumeUnit.UsGallon, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 oz (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsOunces, UsOuncesTolerance);
-                Assert.Equal(VolumeUnit.UsOunce, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 Американская унция", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsOunces, UsOuncesTolerance);
-                Assert.Equal(VolumeUnit.UsOunce, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 pt (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsPints, UsPintsTolerance);
-                Assert.Equal(VolumeUnit.UsPint, parsed.Unit);
-            }
-
-            {
-                Assert.True(Volume.TryParse("1 qt (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsQuarts, UsQuartsTolerance);
-                Assert.Equal(VolumeUnit.UsQuart, parsed.Unit);
-            }
-
+            var quantity = new Volume(value: 1, unit: Volume.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("ac-ft", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.AcreFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Volume(value: 1, unit: Volume.BaseUnit);
+            var expectedUnit = Volume.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("acre-foot", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.AcreFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            Volume convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("acre-feet", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.AcreFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("bf", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("board foot", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("board feet", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("pmp", CultureInfo.GetCultureInfo("fr-CA"));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("pied-planche", CultureInfo.GetCultureInfo("fr-CA"));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("pied de planche", CultureInfo.GetCultureInfo("fr-CA"));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("cl", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Centiliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("сл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Centiliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("cm³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("см³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("dm³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("дм³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("ft³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("фут³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("hm³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicHectometer, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("гм³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicHectometer, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("in³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("дюйм³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("km³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicKilometer, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("км³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicKilometer, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("m³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("м³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("µm³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("мкм³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("mi³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicMile, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("миля³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicMile, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("mm³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("мм³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("yd³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.CubicYard, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("ярд³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.CubicYard, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("dal", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Decaliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("дал", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Decaliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("dagal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.DecausGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("даАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.DecausGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("dl", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Deciliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("дл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Deciliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("dgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.DeciusGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("дАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.DeciusGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("hft³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("гфут³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("hm³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.HectocubicMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("гм³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.HectocubicMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("hl", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Hectoliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("гл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Hectoliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("hgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.HectousGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("гАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.HectousGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("bl (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialBeerBarrel, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("gal (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Английский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.ImperialGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("oz (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialOunce, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Английская унция", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.ImperialOunce, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("pt (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("UK pt", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("pt", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("p", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("qt (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.ImperialQuart, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("kft³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("кфут³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("km³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.KilocubicMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("км³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.KilocubicMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("kgal (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("кАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("kl", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Kiloliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("кл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Kiloliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("kgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.KilousGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("кАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.KilousGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("l", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Liter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("л", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Liter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Mft³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Мфут³", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Mgal (imp.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("МАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Ml", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Megaliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Мл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Megaliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Mgal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MegausGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("МАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.MegausGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("tsp", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("t", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("ts", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("tspn", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("t.", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("ts.", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("tsp.", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("tspn.", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("teaspoon", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("µl", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Microliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("мкл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Microliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("ml", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Milliliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("мл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Milliliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("nl", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.Nanoliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("нл", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.Nanoliter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("bbl", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.OilBarrel, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("bl (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.UsBeerBarrel, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("gal (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.UsGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Американский галлон", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.UsGallon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("oz (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.UsOunce, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("Американская унция", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(VolumeUnit.UsOunce, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("pt (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.UsPint, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Volume.ParseUnit("qt (U.S.)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(VolumeUnit.UsQuart, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(Volume.TryParseUnit("ac-ft", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.AcreFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("acre-foot", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.AcreFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("acre-feet", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.AcreFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("bf", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("board foot", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("board feet", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("pmp", CultureInfo.GetCultureInfo("fr-CA"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("pied-planche", CultureInfo.GetCultureInfo("fr-CA"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("pied de planche", CultureInfo.GetCultureInfo("fr-CA"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.BoardFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("cl", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Centiliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("сл", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Centiliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("cm³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("см³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicCentimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("dm³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("дм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicDecimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("ft³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("фут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("in³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicInch, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("дюйм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicInch, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("m³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("м³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("µm³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("мкм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMicrometer, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("mi³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMile, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("миля³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMile, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("mm³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("мм³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicMillimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("yd³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicYard, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("ярд³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.CubicYard, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("dal", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Decaliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("дал", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Decaliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("dagal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.DecausGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("даАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.DecausGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("dl", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Deciliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("дл", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Deciliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("dgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.DeciusGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("дАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.DeciusGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("hft³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("гфут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.HectocubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("hl", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Hectoliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("гл", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Hectoliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("hgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.HectousGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("гАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.HectousGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("bl (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialBeerBarrel, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("gal (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Английский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("oz (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialOunce, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Английская унция", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialOunce, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("pt (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("UK pt", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("pt", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("p", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialPint, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("qt (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.ImperialQuart, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("kft³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("кфут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.KilocubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("kgal (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("кАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.KiloimperialGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("kl", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Kiloliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("кл", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Kiloliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("kgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.KilousGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("кАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.KilousGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("l", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Liter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("л", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Liter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Mft³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Мфут³", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MegacubicFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Mgal (imp.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("МАнглийский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MegaimperialGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Mgal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MegausGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("МАмериканский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MegausGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("tsp", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("t", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("ts", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("tspn", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("t.", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("ts.", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("tsp.", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("tspn.", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("teaspoon", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.MetricTeaspoon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("µl", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Microliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("мкл", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Microliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("nl", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Nanoliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("нл", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.Nanoliter, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("bbl", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.OilBarrel, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("bl (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.UsBeerBarrel, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("gal (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.UsGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Американский галлон", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.UsGallon, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("oz (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.UsOunce, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("Американская унция", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.UsOunce, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("pt (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.UsPint, parsedUnit);
-            }
-
-            {
-                Assert.True(Volume.TryParseUnit("qt (U.S.)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(VolumeUnit.UsQuart, parsedUnit);
-            }
-
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new Volume(value: 1, unit: Volume.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
+
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new Volume(value: 1, unit: Volume.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 ac-ft", VolumeUnit.AcreFoot, 4.2)]
+        [InlineData("en-US", "4.2 acre-foot", VolumeUnit.AcreFoot, 4.2)]
+        [InlineData("en-US", "4.2 acre-feet", VolumeUnit.AcreFoot, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon (A.U.)", VolumeUnit.AuTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 bf", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("en-US", "4.2 board foot", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("en-US", "4.2 board feet", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("en-US", "4.2 cl", VolumeUnit.Centiliter, 4.2)]
+        [InlineData("en-US", "4.2 cm³", VolumeUnit.CubicCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 dm³", VolumeUnit.CubicDecimeter, 4.2)]
+        [InlineData("en-US", "4.2 ft³", VolumeUnit.CubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 in³", VolumeUnit.CubicInch, 4.2)]
+        [InlineData("en-US", "4.2 m³", VolumeUnit.CubicMeter, 4.2)]
+        [InlineData("en-US", "4.2 µm³", VolumeUnit.CubicMicrometer, 4.2)]
+        [InlineData("en-US", "4.2 mi³", VolumeUnit.CubicMile, 4.2)]
+        [InlineData("en-US", "4.2 mm³", VolumeUnit.CubicMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 yd³", VolumeUnit.CubicYard, 4.2)]
+        [InlineData("en-US", "4.2 dal", VolumeUnit.Decaliter, 4.2)]
+        [InlineData("en-US", "4.2 dagal (U.S.)", VolumeUnit.DecausGallon, 4.2)]
+        [InlineData("en-US", "4.2 dl", VolumeUnit.Deciliter, 4.2)]
+        [InlineData("en-US", "4.2 dgal (U.S.)", VolumeUnit.DeciusGallon, 4.2)]
+        [InlineData("en-US", "4.2 hft³", VolumeUnit.HectocubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 hl", VolumeUnit.Hectoliter, 4.2)]
+        [InlineData("en-US", "4.2 hgal (U.S.)", VolumeUnit.HectousGallon, 4.2)]
+        [InlineData("en-US", "4.2 bl (imp.)", VolumeUnit.ImperialBeerBarrel, 4.2)]
+        [InlineData("en-US", "4.2 gal (imp.)", VolumeUnit.ImperialGallon, 4.2)]
+        [InlineData("en-US", "4.2 oz (imp.)", VolumeUnit.ImperialOunce, 4.2)]
+        [InlineData("en-US", "4.2 pt (imp.)", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 UK pt", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 pt", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 p", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 qt (imp.)", VolumeUnit.ImperialQuart, 4.2)]
+        [InlineData("en-US", "4.2 kft³", VolumeUnit.KilocubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 kgal (imp.)", VolumeUnit.KiloimperialGallon, 4.2)]
+        [InlineData("en-US", "4.2 kl", VolumeUnit.Kiloliter, 4.2)]
+        [InlineData("en-US", "4.2 kgal (U.S.)", VolumeUnit.KilousGallon, 4.2)]
+        [InlineData("en-US", "4.2 l", VolumeUnit.Liter, 4.2)]
+        [InlineData("en-US", "4.2 Mft³", VolumeUnit.MegacubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 Mgal (imp.)", VolumeUnit.MegaimperialGallon, 4.2)]
+        [InlineData("en-US", "4.2 Ml", VolumeUnit.Megaliter, 4.2)]
+        [InlineData("en-US", "4.2 Mgal (U.S.)", VolumeUnit.MegausGallon, 4.2)]
+        [InlineData("en-US", "4.2 metric cup", VolumeUnit.MetricCup, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tbsp", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tbsp.", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tblsp", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tblsp.", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tsp", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 t", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 ts", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 tspn", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 t.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 ts.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 tsp.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 tspn.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 teaspoon", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 µl", VolumeUnit.Microliter, 4.2)]
+        [InlineData("en-US", "4.2 ml", VolumeUnit.Milliliter, 4.2)]
+        [InlineData("en-US", "4.2 nl", VolumeUnit.Nanoliter, 4.2)]
+        [InlineData("en-US", "4.2 bbl", VolumeUnit.OilBarrel, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon (U.K.)", VolumeUnit.UkTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 bl (U.S.)", VolumeUnit.UsBeerBarrel, 4.2)]
+        [InlineData("en-US", "4.2 cup (U.S. customary)", VolumeUnit.UsCustomaryCup, 4.2)]
+        [InlineData("en-US", "4.2 gal (U.S.)", VolumeUnit.UsGallon, 4.2)]
+        [InlineData("en-US", "4.2 cup (U.S.)", VolumeUnit.UsLegalCup, 4.2)]
+        [InlineData("en-US", "4.2 oz (U.S.)", VolumeUnit.UsOunce, 4.2)]
+        [InlineData("en-US", "4.2 pt (U.S.)", VolumeUnit.UsPint, 4.2)]
+        [InlineData("en-US", "4.2 qt (U.S.)", VolumeUnit.UsQuart, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon (U.S.)", VolumeUnit.UsTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 teaspoon (U.S.)", VolumeUnit.UsTeaspoon, 4.2)]
+        [InlineData("fr-CA", "4,2 pmp", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("fr-CA", "4,2 pied-planche", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("fr-CA", "4,2 pied de planche", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 сл", VolumeUnit.Centiliter, 4.2)]
+        [InlineData("ru-RU", "4,2 см³", VolumeUnit.CubicCentimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 дм³", VolumeUnit.CubicDecimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 фут³", VolumeUnit.CubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 дюйм³", VolumeUnit.CubicInch, 4.2)]
+        [InlineData("ru-RU", "4,2 м³", VolumeUnit.CubicMeter, 4.2)]
+        [InlineData("ru-RU", "4,2 мкм³", VolumeUnit.CubicMicrometer, 4.2)]
+        [InlineData("ru-RU", "4,2 миля³", VolumeUnit.CubicMile, 4.2)]
+        [InlineData("ru-RU", "4,2 мм³", VolumeUnit.CubicMillimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 ярд³", VolumeUnit.CubicYard, 4.2)]
+        [InlineData("ru-RU", "4,2 дал", VolumeUnit.Decaliter, 4.2)]
+        [InlineData("ru-RU", "4,2 даАмериканский галлон", VolumeUnit.DecausGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 дл", VolumeUnit.Deciliter, 4.2)]
+        [InlineData("ru-RU", "4,2 дАмериканский галлон", VolumeUnit.DeciusGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 гфут³", VolumeUnit.HectocubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 гл", VolumeUnit.Hectoliter, 4.2)]
+        [InlineData("ru-RU", "4,2 гАмериканский галлон", VolumeUnit.HectousGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Английский галлон", VolumeUnit.ImperialGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Английская унция", VolumeUnit.ImperialOunce, 4.2)]
+        [InlineData("ru-RU", "4,2 кфут³", VolumeUnit.KilocubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 кАнглийский галлон", VolumeUnit.KiloimperialGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 кл", VolumeUnit.Kiloliter, 4.2)]
+        [InlineData("ru-RU", "4,2 кАмериканский галлон", VolumeUnit.KilousGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 л", VolumeUnit.Liter, 4.2)]
+        [InlineData("ru-RU", "4,2 Мфут³", VolumeUnit.MegacubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 МАнглийский галлон", VolumeUnit.MegaimperialGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Мл", VolumeUnit.Megaliter, 4.2)]
+        [InlineData("ru-RU", "4,2 МАмериканский галлон", VolumeUnit.MegausGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 мкл", VolumeUnit.Microliter, 4.2)]
+        [InlineData("ru-RU", "4,2 мл", VolumeUnit.Milliliter, 4.2)]
+        [InlineData("ru-RU", "4,2 нл", VolumeUnit.Nanoliter, 4.2)]
+        [InlineData("ru-RU", "4,2 Американский галлон", VolumeUnit.UsGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Американская унция", VolumeUnit.UsOunce, 4.2)]
+        public void Parse(string culture, string quantityString, VolumeUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Volume.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "1 hm³")] // [CubicHectometer, HectocubicMeter] 
+        [InlineData("en-US", "1 km³")] // [CubicKilometer, KilocubicMeter] 
+        [InlineData("ru-RU", "1 гм³")] // [CubicHectometer, HectocubicMeter] 
+        [InlineData("ru-RU", "1 км³")] // [CubicKilometer, KilocubicMeter] 
+        public void ParseWithAmbiguousAbbreviation(string culture, string quantityString)
+        {
+            Assert.Throws<AmbiguousUnitParseException>(() => Volume.Parse(quantityString, CultureInfo.GetCultureInfo(culture)));
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 ac-ft", VolumeUnit.AcreFoot, 4.2)]
+        [InlineData("en-US", "4.2 acre-foot", VolumeUnit.AcreFoot, 4.2)]
+        [InlineData("en-US", "4.2 acre-feet", VolumeUnit.AcreFoot, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon (A.U.)", VolumeUnit.AuTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 bf", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("en-US", "4.2 board foot", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("en-US", "4.2 board feet", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("en-US", "4.2 cl", VolumeUnit.Centiliter, 4.2)]
+        [InlineData("en-US", "4.2 cm³", VolumeUnit.CubicCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 dm³", VolumeUnit.CubicDecimeter, 4.2)]
+        [InlineData("en-US", "4.2 ft³", VolumeUnit.CubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 in³", VolumeUnit.CubicInch, 4.2)]
+        [InlineData("en-US", "4.2 m³", VolumeUnit.CubicMeter, 4.2)]
+        [InlineData("en-US", "4.2 µm³", VolumeUnit.CubicMicrometer, 4.2)]
+        [InlineData("en-US", "4.2 mi³", VolumeUnit.CubicMile, 4.2)]
+        [InlineData("en-US", "4.2 mm³", VolumeUnit.CubicMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 yd³", VolumeUnit.CubicYard, 4.2)]
+        [InlineData("en-US", "4.2 dal", VolumeUnit.Decaliter, 4.2)]
+        [InlineData("en-US", "4.2 dagal (U.S.)", VolumeUnit.DecausGallon, 4.2)]
+        [InlineData("en-US", "4.2 dl", VolumeUnit.Deciliter, 4.2)]
+        [InlineData("en-US", "4.2 dgal (U.S.)", VolumeUnit.DeciusGallon, 4.2)]
+        [InlineData("en-US", "4.2 hft³", VolumeUnit.HectocubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 hl", VolumeUnit.Hectoliter, 4.2)]
+        [InlineData("en-US", "4.2 hgal (U.S.)", VolumeUnit.HectousGallon, 4.2)]
+        [InlineData("en-US", "4.2 bl (imp.)", VolumeUnit.ImperialBeerBarrel, 4.2)]
+        [InlineData("en-US", "4.2 gal (imp.)", VolumeUnit.ImperialGallon, 4.2)]
+        [InlineData("en-US", "4.2 oz (imp.)", VolumeUnit.ImperialOunce, 4.2)]
+        [InlineData("en-US", "4.2 pt (imp.)", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 UK pt", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 pt", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 p", VolumeUnit.ImperialPint, 4.2)]
+        [InlineData("en-US", "4.2 qt (imp.)", VolumeUnit.ImperialQuart, 4.2)]
+        [InlineData("en-US", "4.2 kft³", VolumeUnit.KilocubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 kgal (imp.)", VolumeUnit.KiloimperialGallon, 4.2)]
+        [InlineData("en-US", "4.2 kl", VolumeUnit.Kiloliter, 4.2)]
+        [InlineData("en-US", "4.2 kgal (U.S.)", VolumeUnit.KilousGallon, 4.2)]
+        [InlineData("en-US", "4.2 l", VolumeUnit.Liter, 4.2)]
+        [InlineData("en-US", "4.2 Mft³", VolumeUnit.MegacubicFoot, 4.2)]
+        [InlineData("en-US", "4.2 Mgal (imp.)", VolumeUnit.MegaimperialGallon, 4.2)]
+        [InlineData("en-US", "4.2 Ml", VolumeUnit.Megaliter, 4.2)]
+        [InlineData("en-US", "4.2 Mgal (U.S.)", VolumeUnit.MegausGallon, 4.2)]
+        [InlineData("en-US", "4.2 metric cup", VolumeUnit.MetricCup, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tbsp", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tbsp.", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tblsp", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tblsp.", VolumeUnit.MetricTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 tsp", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 t", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 ts", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 tspn", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 t.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 ts.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 tsp.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 tspn.", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 teaspoon", VolumeUnit.MetricTeaspoon, 4.2)]
+        [InlineData("en-US", "4.2 µl", VolumeUnit.Microliter, 4.2)]
+        [InlineData("en-US", "4.2 ml", VolumeUnit.Milliliter, 4.2)]
+        [InlineData("en-US", "4.2 nl", VolumeUnit.Nanoliter, 4.2)]
+        [InlineData("en-US", "4.2 bbl", VolumeUnit.OilBarrel, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon (U.K.)", VolumeUnit.UkTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 bl (U.S.)", VolumeUnit.UsBeerBarrel, 4.2)]
+        [InlineData("en-US", "4.2 cup (U.S. customary)", VolumeUnit.UsCustomaryCup, 4.2)]
+        [InlineData("en-US", "4.2 gal (U.S.)", VolumeUnit.UsGallon, 4.2)]
+        [InlineData("en-US", "4.2 cup (U.S.)", VolumeUnit.UsLegalCup, 4.2)]
+        [InlineData("en-US", "4.2 oz (U.S.)", VolumeUnit.UsOunce, 4.2)]
+        [InlineData("en-US", "4.2 pt (U.S.)", VolumeUnit.UsPint, 4.2)]
+        [InlineData("en-US", "4.2 qt (U.S.)", VolumeUnit.UsQuart, 4.2)]
+        [InlineData("en-US", "4.2 tablespoon (U.S.)", VolumeUnit.UsTablespoon, 4.2)]
+        [InlineData("en-US", "4.2 teaspoon (U.S.)", VolumeUnit.UsTeaspoon, 4.2)]
+        [InlineData("fr-CA", "4,2 pmp", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("fr-CA", "4,2 pied-planche", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("fr-CA", "4,2 pied de planche", VolumeUnit.BoardFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 сл", VolumeUnit.Centiliter, 4.2)]
+        [InlineData("ru-RU", "4,2 см³", VolumeUnit.CubicCentimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 дм³", VolumeUnit.CubicDecimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 фут³", VolumeUnit.CubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 дюйм³", VolumeUnit.CubicInch, 4.2)]
+        [InlineData("ru-RU", "4,2 м³", VolumeUnit.CubicMeter, 4.2)]
+        [InlineData("ru-RU", "4,2 мкм³", VolumeUnit.CubicMicrometer, 4.2)]
+        [InlineData("ru-RU", "4,2 миля³", VolumeUnit.CubicMile, 4.2)]
+        [InlineData("ru-RU", "4,2 мм³", VolumeUnit.CubicMillimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 ярд³", VolumeUnit.CubicYard, 4.2)]
+        [InlineData("ru-RU", "4,2 дал", VolumeUnit.Decaliter, 4.2)]
+        [InlineData("ru-RU", "4,2 даАмериканский галлон", VolumeUnit.DecausGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 дл", VolumeUnit.Deciliter, 4.2)]
+        [InlineData("ru-RU", "4,2 дАмериканский галлон", VolumeUnit.DeciusGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 гфут³", VolumeUnit.HectocubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 гл", VolumeUnit.Hectoliter, 4.2)]
+        [InlineData("ru-RU", "4,2 гАмериканский галлон", VolumeUnit.HectousGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Английский галлон", VolumeUnit.ImperialGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Английская унция", VolumeUnit.ImperialOunce, 4.2)]
+        [InlineData("ru-RU", "4,2 кфут³", VolumeUnit.KilocubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 кАнглийский галлон", VolumeUnit.KiloimperialGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 кл", VolumeUnit.Kiloliter, 4.2)]
+        [InlineData("ru-RU", "4,2 кАмериканский галлон", VolumeUnit.KilousGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 л", VolumeUnit.Liter, 4.2)]
+        [InlineData("ru-RU", "4,2 Мфут³", VolumeUnit.MegacubicFoot, 4.2)]
+        [InlineData("ru-RU", "4,2 МАнглийский галлон", VolumeUnit.MegaimperialGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Мл", VolumeUnit.Megaliter, 4.2)]
+        [InlineData("ru-RU", "4,2 МАмериканский галлон", VolumeUnit.MegausGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 мкл", VolumeUnit.Microliter, 4.2)]
+        [InlineData("ru-RU", "4,2 мл", VolumeUnit.Milliliter, 4.2)]
+        [InlineData("ru-RU", "4,2 нл", VolumeUnit.Nanoliter, 4.2)]
+        [InlineData("ru-RU", "4,2 Американский галлон", VolumeUnit.UsGallon, 4.2)]
+        [InlineData("ru-RU", "4,2 Американская унция", VolumeUnit.UsOunce, 4.2)]
+        public void TryParse(string culture, string quantityString, VolumeUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Volume.TryParse(quantityString, out Volume parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "1 hm³")] // [CubicHectometer, HectocubicMeter] 
+        [InlineData("en-US", "1 km³")] // [CubicKilometer, KilocubicMeter] 
+        [InlineData("ru-RU", "1 гм³")] // [CubicHectometer, HectocubicMeter] 
+        [InlineData("ru-RU", "1 км³")] // [CubicKilometer, KilocubicMeter] 
+        public void TryParseWithAmbiguousAbbreviation(string culture, string quantityString)
+        {
+            Assert.False(Volume.TryParse(quantityString, CultureInfo.GetCultureInfo(culture), out _));
+        }
+
+        [Theory]
+        [InlineData("ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("bf", VolumeUnit.BoardFoot)]
+        [InlineData("board foot", VolumeUnit.BoardFoot)]
+        [InlineData("board feet", VolumeUnit.BoardFoot)]
+        [InlineData("cl", VolumeUnit.Centiliter)]
+        [InlineData("cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ft³", VolumeUnit.CubicFoot)]
+        [InlineData("in³", VolumeUnit.CubicInch)]
+        [InlineData("m³", VolumeUnit.CubicMeter)]
+        [InlineData("µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("mi³", VolumeUnit.CubicMile)]
+        [InlineData("mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("yd³", VolumeUnit.CubicYard)]
+        [InlineData("dal", VolumeUnit.Decaliter)]
+        [InlineData("dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("dl", VolumeUnit.Deciliter)]
+        [InlineData("dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("hl", VolumeUnit.Hectoliter)]
+        [InlineData("hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("pt", VolumeUnit.ImperialPint)]
+        [InlineData("p", VolumeUnit.ImperialPint)]
+        [InlineData("qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("kl", VolumeUnit.Kiloliter)]
+        [InlineData("kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("l", VolumeUnit.Liter)]
+        [InlineData("Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("Ml", VolumeUnit.Megaliter)]
+        [InlineData("Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("metric cup", VolumeUnit.MetricCup)]
+        [InlineData("tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("µl", VolumeUnit.Microliter)]
+        [InlineData("ml", VolumeUnit.Milliliter)]
+        [InlineData("nl", VolumeUnit.Nanoliter)]
+        [InlineData("bbl", VolumeUnit.OilBarrel)]
+        [InlineData("tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, VolumeUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            VolumeUnit parsedUnit = Volume.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("bf", VolumeUnit.BoardFoot)]
+        [InlineData("board foot", VolumeUnit.BoardFoot)]
+        [InlineData("board feet", VolumeUnit.BoardFoot)]
+        [InlineData("cl", VolumeUnit.Centiliter)]
+        [InlineData("cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ft³", VolumeUnit.CubicFoot)]
+        [InlineData("in³", VolumeUnit.CubicInch)]
+        [InlineData("m³", VolumeUnit.CubicMeter)]
+        [InlineData("µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("mi³", VolumeUnit.CubicMile)]
+        [InlineData("mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("yd³", VolumeUnit.CubicYard)]
+        [InlineData("dal", VolumeUnit.Decaliter)]
+        [InlineData("dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("dl", VolumeUnit.Deciliter)]
+        [InlineData("dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("hl", VolumeUnit.Hectoliter)]
+        [InlineData("hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("pt", VolumeUnit.ImperialPint)]
+        [InlineData("p", VolumeUnit.ImperialPint)]
+        [InlineData("qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("kl", VolumeUnit.Kiloliter)]
+        [InlineData("kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("l", VolumeUnit.Liter)]
+        [InlineData("Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("Ml", VolumeUnit.Megaliter)]
+        [InlineData("Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("metric cup", VolumeUnit.MetricCup)]
+        [InlineData("tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("µl", VolumeUnit.Microliter)]
+        [InlineData("ml", VolumeUnit.Milliliter)]
+        [InlineData("nl", VolumeUnit.Nanoliter)]
+        [InlineData("bbl", VolumeUnit.OilBarrel)]
+        [InlineData("tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, VolumeUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            VolumeUnit parsedUnit = Volume.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("en-US", "bf", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board foot", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board feet", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "cl", VolumeUnit.Centiliter)]
+        [InlineData("en-US", "cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("en-US", "dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("en-US", "ft³", VolumeUnit.CubicFoot)]
+        [InlineData("en-US", "in³", VolumeUnit.CubicInch)]
+        [InlineData("en-US", "m³", VolumeUnit.CubicMeter)]
+        [InlineData("en-US", "µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("en-US", "mi³", VolumeUnit.CubicMile)]
+        [InlineData("en-US", "mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("en-US", "yd³", VolumeUnit.CubicYard)]
+        [InlineData("en-US", "dal", VolumeUnit.Decaliter)]
+        [InlineData("en-US", "dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("en-US", "dl", VolumeUnit.Deciliter)]
+        [InlineData("en-US", "dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("en-US", "hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("en-US", "hl", VolumeUnit.Hectoliter)]
+        [InlineData("en-US", "hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("en-US", "bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("en-US", "gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("en-US", "oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("en-US", "pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "p", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("en-US", "kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("en-US", "kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("en-US", "kl", VolumeUnit.Kiloliter)]
+        [InlineData("en-US", "kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("en-US", "l", VolumeUnit.Liter)]
+        [InlineData("en-US", "Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("en-US", "Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("en-US", "Ml", VolumeUnit.Megaliter)]
+        [InlineData("en-US", "Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("en-US", "metric cup", VolumeUnit.MetricCup)]
+        [InlineData("en-US", "tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "µl", VolumeUnit.Microliter)]
+        [InlineData("en-US", "ml", VolumeUnit.Milliliter)]
+        [InlineData("en-US", "nl", VolumeUnit.Nanoliter)]
+        [InlineData("en-US", "bbl", VolumeUnit.OilBarrel)]
+        [InlineData("en-US", "tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("en-US", "bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("en-US", "cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("en-US", "gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("en-US", "cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("en-US", "oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("en-US", "pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("en-US", "qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("en-US", "tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("en-US", "teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        [InlineData("fr-CA", "pmp", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied-planche", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied de planche", VolumeUnit.BoardFoot)]
+        [InlineData("ru-RU", "сл", VolumeUnit.Centiliter)]
+        [InlineData("ru-RU", "см³", VolumeUnit.CubicCentimeter)]
+        [InlineData("ru-RU", "дм³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ru-RU", "фут³", VolumeUnit.CubicFoot)]
+        [InlineData("ru-RU", "дюйм³", VolumeUnit.CubicInch)]
+        [InlineData("ru-RU", "м³", VolumeUnit.CubicMeter)]
+        [InlineData("ru-RU", "мкм³", VolumeUnit.CubicMicrometer)]
+        [InlineData("ru-RU", "миля³", VolumeUnit.CubicMile)]
+        [InlineData("ru-RU", "мм³", VolumeUnit.CubicMillimeter)]
+        [InlineData("ru-RU", "ярд³", VolumeUnit.CubicYard)]
+        [InlineData("ru-RU", "дал", VolumeUnit.Decaliter)]
+        [InlineData("ru-RU", "даАмериканский галлон", VolumeUnit.DecausGallon)]
+        [InlineData("ru-RU", "дл", VolumeUnit.Deciliter)]
+        [InlineData("ru-RU", "дАмериканский галлон", VolumeUnit.DeciusGallon)]
+        [InlineData("ru-RU", "гфут³", VolumeUnit.HectocubicFoot)]
+        [InlineData("ru-RU", "гл", VolumeUnit.Hectoliter)]
+        [InlineData("ru-RU", "гАмериканский галлон", VolumeUnit.HectousGallon)]
+        [InlineData("ru-RU", "Английский галлон", VolumeUnit.ImperialGallon)]
+        [InlineData("ru-RU", "Английская унция", VolumeUnit.ImperialOunce)]
+        [InlineData("ru-RU", "кфут³", VolumeUnit.KilocubicFoot)]
+        [InlineData("ru-RU", "кАнглийский галлон", VolumeUnit.KiloimperialGallon)]
+        [InlineData("ru-RU", "кл", VolumeUnit.Kiloliter)]
+        [InlineData("ru-RU", "кАмериканский галлон", VolumeUnit.KilousGallon)]
+        [InlineData("ru-RU", "л", VolumeUnit.Liter)]
+        [InlineData("ru-RU", "Мфут³", VolumeUnit.MegacubicFoot)]
+        [InlineData("ru-RU", "МАнглийский галлон", VolumeUnit.MegaimperialGallon)]
+        [InlineData("ru-RU", "Мл", VolumeUnit.Megaliter)]
+        [InlineData("ru-RU", "МАмериканский галлон", VolumeUnit.MegausGallon)]
+        [InlineData("ru-RU", "мкл", VolumeUnit.Microliter)]
+        [InlineData("ru-RU", "мл", VolumeUnit.Milliliter)]
+        [InlineData("ru-RU", "нл", VolumeUnit.Nanoliter)]
+        [InlineData("ru-RU", "Американский галлон", VolumeUnit.UsGallon)]
+        [InlineData("ru-RU", "Американская унция", VolumeUnit.UsOunce)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, VolumeUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            VolumeUnit parsedUnit = Volume.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("en-US", "bf", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board foot", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board feet", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "cl", VolumeUnit.Centiliter)]
+        [InlineData("en-US", "cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("en-US", "dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("en-US", "ft³", VolumeUnit.CubicFoot)]
+        [InlineData("en-US", "in³", VolumeUnit.CubicInch)]
+        [InlineData("en-US", "m³", VolumeUnit.CubicMeter)]
+        [InlineData("en-US", "µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("en-US", "mi³", VolumeUnit.CubicMile)]
+        [InlineData("en-US", "mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("en-US", "yd³", VolumeUnit.CubicYard)]
+        [InlineData("en-US", "dal", VolumeUnit.Decaliter)]
+        [InlineData("en-US", "dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("en-US", "dl", VolumeUnit.Deciliter)]
+        [InlineData("en-US", "dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("en-US", "hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("en-US", "hl", VolumeUnit.Hectoliter)]
+        [InlineData("en-US", "hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("en-US", "bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("en-US", "gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("en-US", "oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("en-US", "pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "p", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("en-US", "kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("en-US", "kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("en-US", "kl", VolumeUnit.Kiloliter)]
+        [InlineData("en-US", "kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("en-US", "l", VolumeUnit.Liter)]
+        [InlineData("en-US", "Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("en-US", "Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("en-US", "Ml", VolumeUnit.Megaliter)]
+        [InlineData("en-US", "Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("en-US", "metric cup", VolumeUnit.MetricCup)]
+        [InlineData("en-US", "tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "µl", VolumeUnit.Microliter)]
+        [InlineData("en-US", "ml", VolumeUnit.Milliliter)]
+        [InlineData("en-US", "nl", VolumeUnit.Nanoliter)]
+        [InlineData("en-US", "bbl", VolumeUnit.OilBarrel)]
+        [InlineData("en-US", "tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("en-US", "bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("en-US", "cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("en-US", "gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("en-US", "cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("en-US", "oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("en-US", "pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("en-US", "qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("en-US", "tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("en-US", "teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        [InlineData("fr-CA", "pmp", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied-planche", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied de planche", VolumeUnit.BoardFoot)]
+        [InlineData("ru-RU", "сл", VolumeUnit.Centiliter)]
+        [InlineData("ru-RU", "см³", VolumeUnit.CubicCentimeter)]
+        [InlineData("ru-RU", "дм³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ru-RU", "фут³", VolumeUnit.CubicFoot)]
+        [InlineData("ru-RU", "дюйм³", VolumeUnit.CubicInch)]
+        [InlineData("ru-RU", "м³", VolumeUnit.CubicMeter)]
+        [InlineData("ru-RU", "мкм³", VolumeUnit.CubicMicrometer)]
+        [InlineData("ru-RU", "миля³", VolumeUnit.CubicMile)]
+        [InlineData("ru-RU", "мм³", VolumeUnit.CubicMillimeter)]
+        [InlineData("ru-RU", "ярд³", VolumeUnit.CubicYard)]
+        [InlineData("ru-RU", "дал", VolumeUnit.Decaliter)]
+        [InlineData("ru-RU", "даАмериканский галлон", VolumeUnit.DecausGallon)]
+        [InlineData("ru-RU", "дл", VolumeUnit.Deciliter)]
+        [InlineData("ru-RU", "дАмериканский галлон", VolumeUnit.DeciusGallon)]
+        [InlineData("ru-RU", "гфут³", VolumeUnit.HectocubicFoot)]
+        [InlineData("ru-RU", "гл", VolumeUnit.Hectoliter)]
+        [InlineData("ru-RU", "гАмериканский галлон", VolumeUnit.HectousGallon)]
+        [InlineData("ru-RU", "Английский галлон", VolumeUnit.ImperialGallon)]
+        [InlineData("ru-RU", "Английская унция", VolumeUnit.ImperialOunce)]
+        [InlineData("ru-RU", "кфут³", VolumeUnit.KilocubicFoot)]
+        [InlineData("ru-RU", "кАнглийский галлон", VolumeUnit.KiloimperialGallon)]
+        [InlineData("ru-RU", "кл", VolumeUnit.Kiloliter)]
+        [InlineData("ru-RU", "кАмериканский галлон", VolumeUnit.KilousGallon)]
+        [InlineData("ru-RU", "л", VolumeUnit.Liter)]
+        [InlineData("ru-RU", "Мфут³", VolumeUnit.MegacubicFoot)]
+        [InlineData("ru-RU", "МАнглийский галлон", VolumeUnit.MegaimperialGallon)]
+        [InlineData("ru-RU", "Мл", VolumeUnit.Megaliter)]
+        [InlineData("ru-RU", "МАмериканский галлон", VolumeUnit.MegausGallon)]
+        [InlineData("ru-RU", "мкл", VolumeUnit.Microliter)]
+        [InlineData("ru-RU", "мл", VolumeUnit.Milliliter)]
+        [InlineData("ru-RU", "нл", VolumeUnit.Nanoliter)]
+        [InlineData("ru-RU", "Американский галлон", VolumeUnit.UsGallon)]
+        [InlineData("ru-RU", "Американская унция", VolumeUnit.UsOunce)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, VolumeUnit expectedUnit)
+        {
+            VolumeUnit parsedUnit = Volume.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "hm³")] // [CubicHectometer, HectocubicMeter]
+        [InlineData("en-US", "km³")] // [CubicKilometer, KilocubicMeter]
+        [InlineData("ru-RU", "гм³")] // [CubicHectometer, HectocubicMeter]
+        [InlineData("ru-RU", "км³")] // [CubicKilometer, KilocubicMeter]
+        public void ParseUnitWithAmbiguousAbbreviation(string culture, string abbreviation)
+        {
+            Assert.Throws<AmbiguousUnitParseException>(() => Volume.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture)));
+        }
+
+        [Theory]
+        [InlineData("ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("bf", VolumeUnit.BoardFoot)]
+        [InlineData("board foot", VolumeUnit.BoardFoot)]
+        [InlineData("board feet", VolumeUnit.BoardFoot)]
+        [InlineData("cl", VolumeUnit.Centiliter)]
+        [InlineData("cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ft³", VolumeUnit.CubicFoot)]
+        [InlineData("in³", VolumeUnit.CubicInch)]
+        [InlineData("m³", VolumeUnit.CubicMeter)]
+        [InlineData("µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("mi³", VolumeUnit.CubicMile)]
+        [InlineData("mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("yd³", VolumeUnit.CubicYard)]
+        [InlineData("dal", VolumeUnit.Decaliter)]
+        [InlineData("dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("dl", VolumeUnit.Deciliter)]
+        [InlineData("dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("hl", VolumeUnit.Hectoliter)]
+        [InlineData("hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("pt", VolumeUnit.ImperialPint)]
+        [InlineData("p", VolumeUnit.ImperialPint)]
+        [InlineData("qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("kl", VolumeUnit.Kiloliter)]
+        [InlineData("kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("l", VolumeUnit.Liter)]
+        [InlineData("Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("Ml", VolumeUnit.Megaliter)]
+        [InlineData("Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("metric cup", VolumeUnit.MetricCup)]
+        [InlineData("tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("µl", VolumeUnit.Microliter)]
+        [InlineData("ml", VolumeUnit.Milliliter)]
+        [InlineData("nl", VolumeUnit.Nanoliter)]
+        [InlineData("bbl", VolumeUnit.OilBarrel)]
+        [InlineData("tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, VolumeUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Volume.TryParseUnit(abbreviation, out VolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("bf", VolumeUnit.BoardFoot)]
+        [InlineData("board foot", VolumeUnit.BoardFoot)]
+        [InlineData("board feet", VolumeUnit.BoardFoot)]
+        [InlineData("cl", VolumeUnit.Centiliter)]
+        [InlineData("cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ft³", VolumeUnit.CubicFoot)]
+        [InlineData("in³", VolumeUnit.CubicInch)]
+        [InlineData("m³", VolumeUnit.CubicMeter)]
+        [InlineData("µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("mi³", VolumeUnit.CubicMile)]
+        [InlineData("mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("yd³", VolumeUnit.CubicYard)]
+        [InlineData("dal", VolumeUnit.Decaliter)]
+        [InlineData("dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("dl", VolumeUnit.Deciliter)]
+        [InlineData("dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("hl", VolumeUnit.Hectoliter)]
+        [InlineData("hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("pt", VolumeUnit.ImperialPint)]
+        [InlineData("p", VolumeUnit.ImperialPint)]
+        [InlineData("qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("kl", VolumeUnit.Kiloliter)]
+        [InlineData("kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("l", VolumeUnit.Liter)]
+        [InlineData("Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("Ml", VolumeUnit.Megaliter)]
+        [InlineData("Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("metric cup", VolumeUnit.MetricCup)]
+        [InlineData("tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("µl", VolumeUnit.Microliter)]
+        [InlineData("ml", VolumeUnit.Milliliter)]
+        [InlineData("nl", VolumeUnit.Nanoliter)]
+        [InlineData("bbl", VolumeUnit.OilBarrel)]
+        [InlineData("tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, VolumeUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Volume.TryParseUnit(abbreviation, out VolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("en-US", "bf", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board foot", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board feet", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "cl", VolumeUnit.Centiliter)]
+        [InlineData("en-US", "cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("en-US", "dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("en-US", "ft³", VolumeUnit.CubicFoot)]
+        [InlineData("en-US", "in³", VolumeUnit.CubicInch)]
+        [InlineData("en-US", "m³", VolumeUnit.CubicMeter)]
+        [InlineData("en-US", "µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("en-US", "mi³", VolumeUnit.CubicMile)]
+        [InlineData("en-US", "mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("en-US", "yd³", VolumeUnit.CubicYard)]
+        [InlineData("en-US", "dal", VolumeUnit.Decaliter)]
+        [InlineData("en-US", "dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("en-US", "dl", VolumeUnit.Deciliter)]
+        [InlineData("en-US", "dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("en-US", "hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("en-US", "hl", VolumeUnit.Hectoliter)]
+        [InlineData("en-US", "hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("en-US", "bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("en-US", "gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("en-US", "oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("en-US", "pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "p", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("en-US", "kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("en-US", "kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("en-US", "kl", VolumeUnit.Kiloliter)]
+        [InlineData("en-US", "kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("en-US", "l", VolumeUnit.Liter)]
+        [InlineData("en-US", "Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("en-US", "Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("en-US", "Ml", VolumeUnit.Megaliter)]
+        [InlineData("en-US", "Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("en-US", "metric cup", VolumeUnit.MetricCup)]
+        [InlineData("en-US", "tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "µl", VolumeUnit.Microliter)]
+        [InlineData("en-US", "ml", VolumeUnit.Milliliter)]
+        [InlineData("en-US", "nl", VolumeUnit.Nanoliter)]
+        [InlineData("en-US", "bbl", VolumeUnit.OilBarrel)]
+        [InlineData("en-US", "tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("en-US", "bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("en-US", "cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("en-US", "gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("en-US", "cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("en-US", "oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("en-US", "pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("en-US", "qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("en-US", "tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("en-US", "teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        [InlineData("fr-CA", "pmp", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied-planche", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied de planche", VolumeUnit.BoardFoot)]
+        [InlineData("ru-RU", "сл", VolumeUnit.Centiliter)]
+        [InlineData("ru-RU", "см³", VolumeUnit.CubicCentimeter)]
+        [InlineData("ru-RU", "дм³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ru-RU", "фут³", VolumeUnit.CubicFoot)]
+        [InlineData("ru-RU", "дюйм³", VolumeUnit.CubicInch)]
+        [InlineData("ru-RU", "м³", VolumeUnit.CubicMeter)]
+        [InlineData("ru-RU", "мкм³", VolumeUnit.CubicMicrometer)]
+        [InlineData("ru-RU", "миля³", VolumeUnit.CubicMile)]
+        [InlineData("ru-RU", "мм³", VolumeUnit.CubicMillimeter)]
+        [InlineData("ru-RU", "ярд³", VolumeUnit.CubicYard)]
+        [InlineData("ru-RU", "дал", VolumeUnit.Decaliter)]
+        [InlineData("ru-RU", "даАмериканский галлон", VolumeUnit.DecausGallon)]
+        [InlineData("ru-RU", "дл", VolumeUnit.Deciliter)]
+        [InlineData("ru-RU", "дАмериканский галлон", VolumeUnit.DeciusGallon)]
+        [InlineData("ru-RU", "гфут³", VolumeUnit.HectocubicFoot)]
+        [InlineData("ru-RU", "гл", VolumeUnit.Hectoliter)]
+        [InlineData("ru-RU", "гАмериканский галлон", VolumeUnit.HectousGallon)]
+        [InlineData("ru-RU", "Английский галлон", VolumeUnit.ImperialGallon)]
+        [InlineData("ru-RU", "Английская унция", VolumeUnit.ImperialOunce)]
+        [InlineData("ru-RU", "кфут³", VolumeUnit.KilocubicFoot)]
+        [InlineData("ru-RU", "кАнглийский галлон", VolumeUnit.KiloimperialGallon)]
+        [InlineData("ru-RU", "кл", VolumeUnit.Kiloliter)]
+        [InlineData("ru-RU", "кАмериканский галлон", VolumeUnit.KilousGallon)]
+        [InlineData("ru-RU", "л", VolumeUnit.Liter)]
+        [InlineData("ru-RU", "Мфут³", VolumeUnit.MegacubicFoot)]
+        [InlineData("ru-RU", "МАнглийский галлон", VolumeUnit.MegaimperialGallon)]
+        [InlineData("ru-RU", "Мл", VolumeUnit.Megaliter)]
+        [InlineData("ru-RU", "МАмериканский галлон", VolumeUnit.MegausGallon)]
+        [InlineData("ru-RU", "мкл", VolumeUnit.Microliter)]
+        [InlineData("ru-RU", "мл", VolumeUnit.Milliliter)]
+        [InlineData("ru-RU", "нл", VolumeUnit.Nanoliter)]
+        [InlineData("ru-RU", "Американский галлон", VolumeUnit.UsGallon)]
+        [InlineData("ru-RU", "Американская унция", VolumeUnit.UsOunce)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, VolumeUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Volume.TryParseUnit(abbreviation, out VolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ac-ft", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-foot", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "acre-feet", VolumeUnit.AcreFoot)]
+        [InlineData("en-US", "tablespoon (A.U.)", VolumeUnit.AuTablespoon)]
+        [InlineData("en-US", "bf", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board foot", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "board feet", VolumeUnit.BoardFoot)]
+        [InlineData("en-US", "cl", VolumeUnit.Centiliter)]
+        [InlineData("en-US", "cm³", VolumeUnit.CubicCentimeter)]
+        [InlineData("en-US", "dm³", VolumeUnit.CubicDecimeter)]
+        [InlineData("en-US", "ft³", VolumeUnit.CubicFoot)]
+        [InlineData("en-US", "in³", VolumeUnit.CubicInch)]
+        [InlineData("en-US", "m³", VolumeUnit.CubicMeter)]
+        [InlineData("en-US", "µm³", VolumeUnit.CubicMicrometer)]
+        [InlineData("en-US", "mi³", VolumeUnit.CubicMile)]
+        [InlineData("en-US", "mm³", VolumeUnit.CubicMillimeter)]
+        [InlineData("en-US", "yd³", VolumeUnit.CubicYard)]
+        [InlineData("en-US", "dal", VolumeUnit.Decaliter)]
+        [InlineData("en-US", "dagal (U.S.)", VolumeUnit.DecausGallon)]
+        [InlineData("en-US", "dl", VolumeUnit.Deciliter)]
+        [InlineData("en-US", "dgal (U.S.)", VolumeUnit.DeciusGallon)]
+        [InlineData("en-US", "hft³", VolumeUnit.HectocubicFoot)]
+        [InlineData("en-US", "hl", VolumeUnit.Hectoliter)]
+        [InlineData("en-US", "hgal (U.S.)", VolumeUnit.HectousGallon)]
+        [InlineData("en-US", "bl (imp.)", VolumeUnit.ImperialBeerBarrel)]
+        [InlineData("en-US", "gal (imp.)", VolumeUnit.ImperialGallon)]
+        [InlineData("en-US", "oz (imp.)", VolumeUnit.ImperialOunce)]
+        [InlineData("en-US", "pt (imp.)", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "UK pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "pt", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "p", VolumeUnit.ImperialPint)]
+        [InlineData("en-US", "qt (imp.)", VolumeUnit.ImperialQuart)]
+        [InlineData("en-US", "kft³", VolumeUnit.KilocubicFoot)]
+        [InlineData("en-US", "kgal (imp.)", VolumeUnit.KiloimperialGallon)]
+        [InlineData("en-US", "kl", VolumeUnit.Kiloliter)]
+        [InlineData("en-US", "kgal (U.S.)", VolumeUnit.KilousGallon)]
+        [InlineData("en-US", "l", VolumeUnit.Liter)]
+        [InlineData("en-US", "Mft³", VolumeUnit.MegacubicFoot)]
+        [InlineData("en-US", "Mgal (imp.)", VolumeUnit.MegaimperialGallon)]
+        [InlineData("en-US", "Ml", VolumeUnit.Megaliter)]
+        [InlineData("en-US", "Mgal (U.S.)", VolumeUnit.MegausGallon)]
+        [InlineData("en-US", "metric cup", VolumeUnit.MetricCup)]
+        [InlineData("en-US", "tablespoon", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tbsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tblsp.", VolumeUnit.MetricTablespoon)]
+        [InlineData("en-US", "tsp", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "t.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "ts.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tsp.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "tspn.", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "teaspoon", VolumeUnit.MetricTeaspoon)]
+        [InlineData("en-US", "µl", VolumeUnit.Microliter)]
+        [InlineData("en-US", "ml", VolumeUnit.Milliliter)]
+        [InlineData("en-US", "nl", VolumeUnit.Nanoliter)]
+        [InlineData("en-US", "bbl", VolumeUnit.OilBarrel)]
+        [InlineData("en-US", "tablespoon (U.K.)", VolumeUnit.UkTablespoon)]
+        [InlineData("en-US", "bl (U.S.)", VolumeUnit.UsBeerBarrel)]
+        [InlineData("en-US", "cup (U.S. customary)", VolumeUnit.UsCustomaryCup)]
+        [InlineData("en-US", "gal (U.S.)", VolumeUnit.UsGallon)]
+        [InlineData("en-US", "cup (U.S.)", VolumeUnit.UsLegalCup)]
+        [InlineData("en-US", "oz (U.S.)", VolumeUnit.UsOunce)]
+        [InlineData("en-US", "pt (U.S.)", VolumeUnit.UsPint)]
+        [InlineData("en-US", "qt (U.S.)", VolumeUnit.UsQuart)]
+        [InlineData("en-US", "tablespoon (U.S.)", VolumeUnit.UsTablespoon)]
+        [InlineData("en-US", "teaspoon (U.S.)", VolumeUnit.UsTeaspoon)]
+        [InlineData("fr-CA", "pmp", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied-planche", VolumeUnit.BoardFoot)]
+        [InlineData("fr-CA", "pied de planche", VolumeUnit.BoardFoot)]
+        [InlineData("ru-RU", "сл", VolumeUnit.Centiliter)]
+        [InlineData("ru-RU", "см³", VolumeUnit.CubicCentimeter)]
+        [InlineData("ru-RU", "дм³", VolumeUnit.CubicDecimeter)]
+        [InlineData("ru-RU", "фут³", VolumeUnit.CubicFoot)]
+        [InlineData("ru-RU", "дюйм³", VolumeUnit.CubicInch)]
+        [InlineData("ru-RU", "м³", VolumeUnit.CubicMeter)]
+        [InlineData("ru-RU", "мкм³", VolumeUnit.CubicMicrometer)]
+        [InlineData("ru-RU", "миля³", VolumeUnit.CubicMile)]
+        [InlineData("ru-RU", "мм³", VolumeUnit.CubicMillimeter)]
+        [InlineData("ru-RU", "ярд³", VolumeUnit.CubicYard)]
+        [InlineData("ru-RU", "дал", VolumeUnit.Decaliter)]
+        [InlineData("ru-RU", "даАмериканский галлон", VolumeUnit.DecausGallon)]
+        [InlineData("ru-RU", "дл", VolumeUnit.Deciliter)]
+        [InlineData("ru-RU", "дАмериканский галлон", VolumeUnit.DeciusGallon)]
+        [InlineData("ru-RU", "гфут³", VolumeUnit.HectocubicFoot)]
+        [InlineData("ru-RU", "гл", VolumeUnit.Hectoliter)]
+        [InlineData("ru-RU", "гАмериканский галлон", VolumeUnit.HectousGallon)]
+        [InlineData("ru-RU", "Английский галлон", VolumeUnit.ImperialGallon)]
+        [InlineData("ru-RU", "Английская унция", VolumeUnit.ImperialOunce)]
+        [InlineData("ru-RU", "кфут³", VolumeUnit.KilocubicFoot)]
+        [InlineData("ru-RU", "кАнглийский галлон", VolumeUnit.KiloimperialGallon)]
+        [InlineData("ru-RU", "кл", VolumeUnit.Kiloliter)]
+        [InlineData("ru-RU", "кАмериканский галлон", VolumeUnit.KilousGallon)]
+        [InlineData("ru-RU", "л", VolumeUnit.Liter)]
+        [InlineData("ru-RU", "Мфут³", VolumeUnit.MegacubicFoot)]
+        [InlineData("ru-RU", "МАнглийский галлон", VolumeUnit.MegaimperialGallon)]
+        [InlineData("ru-RU", "Мл", VolumeUnit.Megaliter)]
+        [InlineData("ru-RU", "МАмериканский галлон", VolumeUnit.MegausGallon)]
+        [InlineData("ru-RU", "мкл", VolumeUnit.Microliter)]
+        [InlineData("ru-RU", "мл", VolumeUnit.Milliliter)]
+        [InlineData("ru-RU", "нл", VolumeUnit.Nanoliter)]
+        [InlineData("ru-RU", "Американский галлон", VolumeUnit.UsGallon)]
+        [InlineData("ru-RU", "Американская унция", VolumeUnit.UsOunce)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, VolumeUnit expectedUnit)
+        {
+            Assert.True(Volume.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out VolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "hm³")] // [CubicHectometer, HectocubicMeter]
+        [InlineData("en-US", "km³")] // [CubicKilometer, KilocubicMeter]
+        [InlineData("ru-RU", "гм³")] // [CubicHectometer, HectocubicMeter]
+        [InlineData("ru-RU", "км³")] // [CubicKilometer, KilocubicMeter]
+        public void TryParseUnitWithAmbiguousAbbreviation(string culture, string abbreviation)
+        {
+            Assert.False(Volume.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out _));
+        }
+
+        [Theory]
+        [InlineData("en-US", VolumeUnit.AcreFoot, "ac-ft")]
+        [InlineData("en-US", VolumeUnit.AuTablespoon, "tablespoon (A.U.)")]
+        [InlineData("en-US", VolumeUnit.BoardFoot, "bf")]
+        [InlineData("en-US", VolumeUnit.Centiliter, "cl")]
+        [InlineData("en-US", VolumeUnit.CubicCentimeter, "cm³")]
+        [InlineData("en-US", VolumeUnit.CubicDecimeter, "dm³")]
+        [InlineData("en-US", VolumeUnit.CubicFoot, "ft³")]
+        [InlineData("en-US", VolumeUnit.CubicHectometer, "hm³")]
+        [InlineData("en-US", VolumeUnit.CubicInch, "in³")]
+        [InlineData("en-US", VolumeUnit.CubicKilometer, "km³")]
+        [InlineData("en-US", VolumeUnit.CubicMeter, "m³")]
+        [InlineData("en-US", VolumeUnit.CubicMicrometer, "µm³")]
+        [InlineData("en-US", VolumeUnit.CubicMile, "mi³")]
+        [InlineData("en-US", VolumeUnit.CubicMillimeter, "mm³")]
+        [InlineData("en-US", VolumeUnit.CubicYard, "yd³")]
+        [InlineData("en-US", VolumeUnit.Decaliter, "dal")]
+        [InlineData("en-US", VolumeUnit.DecausGallon, "dagal (U.S.)")]
+        [InlineData("en-US", VolumeUnit.Deciliter, "dl")]
+        [InlineData("en-US", VolumeUnit.DeciusGallon, "dgal (U.S.)")]
+        [InlineData("en-US", VolumeUnit.HectocubicFoot, "hft³")]
+        [InlineData("en-US", VolumeUnit.HectocubicMeter, "hm³")]
+        [InlineData("en-US", VolumeUnit.Hectoliter, "hl")]
+        [InlineData("en-US", VolumeUnit.HectousGallon, "hgal (U.S.)")]
+        [InlineData("en-US", VolumeUnit.ImperialBeerBarrel, "bl (imp.)")]
+        [InlineData("en-US", VolumeUnit.ImperialGallon, "gal (imp.)")]
+        [InlineData("en-US", VolumeUnit.ImperialOunce, "oz (imp.)")]
+        [InlineData("en-US", VolumeUnit.ImperialPint, "pt (imp.)")]
+        [InlineData("en-US", VolumeUnit.ImperialQuart, "qt (imp.)")]
+        [InlineData("en-US", VolumeUnit.KilocubicFoot, "kft³")]
+        [InlineData("en-US", VolumeUnit.KilocubicMeter, "km³")]
+        [InlineData("en-US", VolumeUnit.KiloimperialGallon, "kgal (imp.)")]
+        [InlineData("en-US", VolumeUnit.Kiloliter, "kl")]
+        [InlineData("en-US", VolumeUnit.KilousGallon, "kgal (U.S.)")]
+        [InlineData("en-US", VolumeUnit.Liter, "l")]
+        [InlineData("en-US", VolumeUnit.MegacubicFoot, "Mft³")]
+        [InlineData("en-US", VolumeUnit.MegaimperialGallon, "Mgal (imp.)")]
+        [InlineData("en-US", VolumeUnit.Megaliter, "Ml")]
+        [InlineData("en-US", VolumeUnit.MegausGallon, "Mgal (U.S.)")]
+        [InlineData("en-US", VolumeUnit.MetricCup, "metric cup")]
+        [InlineData("en-US", VolumeUnit.MetricTablespoon, "tablespoon")]
+        [InlineData("en-US", VolumeUnit.MetricTeaspoon, "tsp")]
+        [InlineData("en-US", VolumeUnit.Microliter, "µl")]
+        [InlineData("en-US", VolumeUnit.Milliliter, "ml")]
+        [InlineData("en-US", VolumeUnit.Nanoliter, "nl")]
+        [InlineData("en-US", VolumeUnit.OilBarrel, "bbl")]
+        [InlineData("en-US", VolumeUnit.UkTablespoon, "tablespoon (U.K.)")]
+        [InlineData("en-US", VolumeUnit.UsBeerBarrel, "bl (U.S.)")]
+        [InlineData("en-US", VolumeUnit.UsCustomaryCup, "cup (U.S. customary)")]
+        [InlineData("en-US", VolumeUnit.UsGallon, "gal (U.S.)")]
+        [InlineData("en-US", VolumeUnit.UsLegalCup, "cup (U.S.)")]
+        [InlineData("en-US", VolumeUnit.UsOunce, "oz (U.S.)")]
+        [InlineData("en-US", VolumeUnit.UsPint, "pt (U.S.)")]
+        [InlineData("en-US", VolumeUnit.UsQuart, "qt (U.S.)")]
+        [InlineData("en-US", VolumeUnit.UsTablespoon, "tablespoon (U.S.)")]
+        [InlineData("en-US", VolumeUnit.UsTeaspoon, "teaspoon (U.S.)")]
+        [InlineData("fr-CA", VolumeUnit.BoardFoot, "pmp")]
+        [InlineData("ru-RU", VolumeUnit.Centiliter, "сл")]
+        [InlineData("ru-RU", VolumeUnit.CubicCentimeter, "см³")]
+        [InlineData("ru-RU", VolumeUnit.CubicDecimeter, "дм³")]
+        [InlineData("ru-RU", VolumeUnit.CubicFoot, "фут³")]
+        [InlineData("ru-RU", VolumeUnit.CubicHectometer, "гм³")]
+        [InlineData("ru-RU", VolumeUnit.CubicInch, "дюйм³")]
+        [InlineData("ru-RU", VolumeUnit.CubicKilometer, "км³")]
+        [InlineData("ru-RU", VolumeUnit.CubicMeter, "м³")]
+        [InlineData("ru-RU", VolumeUnit.CubicMicrometer, "мкм³")]
+        [InlineData("ru-RU", VolumeUnit.CubicMile, "миля³")]
+        [InlineData("ru-RU", VolumeUnit.CubicMillimeter, "мм³")]
+        [InlineData("ru-RU", VolumeUnit.CubicYard, "ярд³")]
+        [InlineData("ru-RU", VolumeUnit.Decaliter, "дал")]
+        [InlineData("ru-RU", VolumeUnit.DecausGallon, "даАмериканский галлон")]
+        [InlineData("ru-RU", VolumeUnit.Deciliter, "дл")]
+        [InlineData("ru-RU", VolumeUnit.DeciusGallon, "дАмериканский галлон")]
+        [InlineData("ru-RU", VolumeUnit.HectocubicFoot, "гфут³")]
+        [InlineData("ru-RU", VolumeUnit.HectocubicMeter, "гм³")]
+        [InlineData("ru-RU", VolumeUnit.Hectoliter, "гл")]
+        [InlineData("ru-RU", VolumeUnit.HectousGallon, "гАмериканский галлон")]
+        [InlineData("ru-RU", VolumeUnit.ImperialGallon, "Английский галлон")]
+        [InlineData("ru-RU", VolumeUnit.ImperialOunce, "Английская унция")]
+        [InlineData("ru-RU", VolumeUnit.KilocubicFoot, "кфут³")]
+        [InlineData("ru-RU", VolumeUnit.KilocubicMeter, "км³")]
+        [InlineData("ru-RU", VolumeUnit.KiloimperialGallon, "кАнглийский галлон")]
+        [InlineData("ru-RU", VolumeUnit.Kiloliter, "кл")]
+        [InlineData("ru-RU", VolumeUnit.KilousGallon, "кАмериканский галлон")]
+        [InlineData("ru-RU", VolumeUnit.Liter, "л")]
+        [InlineData("ru-RU", VolumeUnit.MegacubicFoot, "Мфут³")]
+        [InlineData("ru-RU", VolumeUnit.MegaimperialGallon, "МАнглийский галлон")]
+        [InlineData("ru-RU", VolumeUnit.Megaliter, "Мл")]
+        [InlineData("ru-RU", VolumeUnit.MegausGallon, "МАмериканский галлон")]
+        [InlineData("ru-RU", VolumeUnit.Microliter, "мкл")]
+        [InlineData("ru-RU", VolumeUnit.Milliliter, "мл")]
+        [InlineData("ru-RU", VolumeUnit.Nanoliter, "нл")]
+        [InlineData("ru-RU", VolumeUnit.UsGallon, "Американский галлон")]
+        [InlineData("ru-RU", VolumeUnit.UsOunce, "Американская унция")]
+        public void GetAbbreviationForCulture(string culture, VolumeUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Volume.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(Volume.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = Volume.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -3058,12 +1733,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(VolumeUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Volume.Units.First(u => u != Volume.BaseUnit);
-
-            var quantity = Volume.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Volume.Units.Where(u => u != Volume.BaseUnit), fromUnit =>
+            {
+                var quantity = Volume.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -3073,6 +1748,25 @@ namespace UnitsNet.Tests
             var quantity = default(Volume);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(VolumeUnit unit)
+        {
+            var quantity = Volume.From(3, Volume.BaseUnit);
+            Volume expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<VolumeUnit> quantityToConvert = quantity;
+                IQuantity<VolumeUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -3118,6 +1812,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(1, Volume.FromMegaliters(cubicmeter.Megaliters).CubicMeters, MegalitersTolerance);
             AssertEx.EqualTolerance(1, Volume.FromMegausGallons(cubicmeter.MegausGallons).CubicMeters, MegausGallonsTolerance);
             AssertEx.EqualTolerance(1, Volume.FromMetricCups(cubicmeter.MetricCups).CubicMeters, MetricCupsTolerance);
+            AssertEx.EqualTolerance(1, Volume.FromMetricTablespoons(cubicmeter.MetricTablespoons).CubicMeters, MetricTablespoonsTolerance);
             AssertEx.EqualTolerance(1, Volume.FromMetricTeaspoons(cubicmeter.MetricTeaspoons).CubicMeters, MetricTeaspoonsTolerance);
             AssertEx.EqualTolerance(1, Volume.FromMicroliters(cubicmeter.Microliters).CubicMeters, MicrolitersTolerance);
             AssertEx.EqualTolerance(1, Volume.FromMilliliters(cubicmeter.Milliliters).CubicMeters, MillilitersTolerance);
@@ -3230,21 +1925,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Volume.FromCubicMeters(1);
-            Assert.True(v.Equals(Volume.FromCubicMeters(1), CubicMetersTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Volume.Zero, CubicMetersTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Volume.FromCubicMeters(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Volume.FromCubicMeters(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Volume cubicmeter = Volume.FromCubicMeters(1);
@@ -3258,13 +1938,39 @@ namespace UnitsNet.Tests
             Assert.False(cubicmeter.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Volume.FromCubicMeters(firstValue);
+            var otherQuantity = Volume.FromCubicMeters(secondValue);
+            Volume maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Volume.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Volume.FromCubicMeters(1);
+            var negativeTolerance = Volume.FromCubicMeters(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(VolumeUnit)).Cast<VolumeUnit>();
+            var units = Enum.GetValues<VolumeUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -3277,68 +1983,62 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 ac-ft", new Volume(1, VolumeUnit.AcreFoot).ToString());
-                Assert.Equal("1", new Volume(1, VolumeUnit.AuTablespoon).ToString());
-                Assert.Equal("1 bf", new Volume(1, VolumeUnit.BoardFoot).ToString());
-                Assert.Equal("1 cl", new Volume(1, VolumeUnit.Centiliter).ToString());
-                Assert.Equal("1 cm³", new Volume(1, VolumeUnit.CubicCentimeter).ToString());
-                Assert.Equal("1 dm³", new Volume(1, VolumeUnit.CubicDecimeter).ToString());
-                Assert.Equal("1 ft³", new Volume(1, VolumeUnit.CubicFoot).ToString());
-                Assert.Equal("1 hm³", new Volume(1, VolumeUnit.CubicHectometer).ToString());
-                Assert.Equal("1 in³", new Volume(1, VolumeUnit.CubicInch).ToString());
-                Assert.Equal("1 km³", new Volume(1, VolumeUnit.CubicKilometer).ToString());
-                Assert.Equal("1 m³", new Volume(1, VolumeUnit.CubicMeter).ToString());
-                Assert.Equal("1 µm³", new Volume(1, VolumeUnit.CubicMicrometer).ToString());
-                Assert.Equal("1 mi³", new Volume(1, VolumeUnit.CubicMile).ToString());
-                Assert.Equal("1 mm³", new Volume(1, VolumeUnit.CubicMillimeter).ToString());
-                Assert.Equal("1 yd³", new Volume(1, VolumeUnit.CubicYard).ToString());
-                Assert.Equal("1 dal", new Volume(1, VolumeUnit.Decaliter).ToString());
-                Assert.Equal("1 dagal (U.S.)", new Volume(1, VolumeUnit.DecausGallon).ToString());
-                Assert.Equal("1 dl", new Volume(1, VolumeUnit.Deciliter).ToString());
-                Assert.Equal("1 dgal (U.S.)", new Volume(1, VolumeUnit.DeciusGallon).ToString());
-                Assert.Equal("1 hft³", new Volume(1, VolumeUnit.HectocubicFoot).ToString());
-                Assert.Equal("1 hm³", new Volume(1, VolumeUnit.HectocubicMeter).ToString());
-                Assert.Equal("1 hl", new Volume(1, VolumeUnit.Hectoliter).ToString());
-                Assert.Equal("1 hgal (U.S.)", new Volume(1, VolumeUnit.HectousGallon).ToString());
-                Assert.Equal("1 bl (imp.)", new Volume(1, VolumeUnit.ImperialBeerBarrel).ToString());
-                Assert.Equal("1 gal (imp.)", new Volume(1, VolumeUnit.ImperialGallon).ToString());
-                Assert.Equal("1 oz (imp.)", new Volume(1, VolumeUnit.ImperialOunce).ToString());
-                Assert.Equal("1 pt (imp.)", new Volume(1, VolumeUnit.ImperialPint).ToString());
-                Assert.Equal("1 qt (imp.)", new Volume(1, VolumeUnit.ImperialQuart).ToString());
-                Assert.Equal("1 kft³", new Volume(1, VolumeUnit.KilocubicFoot).ToString());
-                Assert.Equal("1 km³", new Volume(1, VolumeUnit.KilocubicMeter).ToString());
-                Assert.Equal("1 kgal (imp.)", new Volume(1, VolumeUnit.KiloimperialGallon).ToString());
-                Assert.Equal("1 kl", new Volume(1, VolumeUnit.Kiloliter).ToString());
-                Assert.Equal("1 kgal (U.S.)", new Volume(1, VolumeUnit.KilousGallon).ToString());
-                Assert.Equal("1 l", new Volume(1, VolumeUnit.Liter).ToString());
-                Assert.Equal("1 Mft³", new Volume(1, VolumeUnit.MegacubicFoot).ToString());
-                Assert.Equal("1 Mgal (imp.)", new Volume(1, VolumeUnit.MegaimperialGallon).ToString());
-                Assert.Equal("1 Ml", new Volume(1, VolumeUnit.Megaliter).ToString());
-                Assert.Equal("1 Mgal (U.S.)", new Volume(1, VolumeUnit.MegausGallon).ToString());
-                Assert.Equal("1", new Volume(1, VolumeUnit.MetricCup).ToString());
-                Assert.Equal("1 tsp", new Volume(1, VolumeUnit.MetricTeaspoon).ToString());
-                Assert.Equal("1 µl", new Volume(1, VolumeUnit.Microliter).ToString());
-                Assert.Equal("1 ml", new Volume(1, VolumeUnit.Milliliter).ToString());
-                Assert.Equal("1 nl", new Volume(1, VolumeUnit.Nanoliter).ToString());
-                Assert.Equal("1 bbl", new Volume(1, VolumeUnit.OilBarrel).ToString());
-                Assert.Equal("1", new Volume(1, VolumeUnit.UkTablespoon).ToString());
-                Assert.Equal("1 bl (U.S.)", new Volume(1, VolumeUnit.UsBeerBarrel).ToString());
-                Assert.Equal("1", new Volume(1, VolumeUnit.UsCustomaryCup).ToString());
-                Assert.Equal("1 gal (U.S.)", new Volume(1, VolumeUnit.UsGallon).ToString());
-                Assert.Equal("1", new Volume(1, VolumeUnit.UsLegalCup).ToString());
-                Assert.Equal("1 oz (U.S.)", new Volume(1, VolumeUnit.UsOunce).ToString());
-                Assert.Equal("1 pt (U.S.)", new Volume(1, VolumeUnit.UsPint).ToString());
-                Assert.Equal("1 qt (U.S.)", new Volume(1, VolumeUnit.UsQuart).ToString());
-                Assert.Equal("1", new Volume(1, VolumeUnit.UsTablespoon).ToString());
-                Assert.Equal("1", new Volume(1, VolumeUnit.UsTeaspoon).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 ac-ft", new Volume(1, VolumeUnit.AcreFoot).ToString());
+            Assert.Equal("1 tablespoon (A.U.)", new Volume(1, VolumeUnit.AuTablespoon).ToString());
+            Assert.Equal("1 bf", new Volume(1, VolumeUnit.BoardFoot).ToString());
+            Assert.Equal("1 cl", new Volume(1, VolumeUnit.Centiliter).ToString());
+            Assert.Equal("1 cm³", new Volume(1, VolumeUnit.CubicCentimeter).ToString());
+            Assert.Equal("1 dm³", new Volume(1, VolumeUnit.CubicDecimeter).ToString());
+            Assert.Equal("1 ft³", new Volume(1, VolumeUnit.CubicFoot).ToString());
+            Assert.Equal("1 hm³", new Volume(1, VolumeUnit.CubicHectometer).ToString());
+            Assert.Equal("1 in³", new Volume(1, VolumeUnit.CubicInch).ToString());
+            Assert.Equal("1 km³", new Volume(1, VolumeUnit.CubicKilometer).ToString());
+            Assert.Equal("1 m³", new Volume(1, VolumeUnit.CubicMeter).ToString());
+            Assert.Equal("1 µm³", new Volume(1, VolumeUnit.CubicMicrometer).ToString());
+            Assert.Equal("1 mi³", new Volume(1, VolumeUnit.CubicMile).ToString());
+            Assert.Equal("1 mm³", new Volume(1, VolumeUnit.CubicMillimeter).ToString());
+            Assert.Equal("1 yd³", new Volume(1, VolumeUnit.CubicYard).ToString());
+            Assert.Equal("1 dal", new Volume(1, VolumeUnit.Decaliter).ToString());
+            Assert.Equal("1 dagal (U.S.)", new Volume(1, VolumeUnit.DecausGallon).ToString());
+            Assert.Equal("1 dl", new Volume(1, VolumeUnit.Deciliter).ToString());
+            Assert.Equal("1 dgal (U.S.)", new Volume(1, VolumeUnit.DeciusGallon).ToString());
+            Assert.Equal("1 hft³", new Volume(1, VolumeUnit.HectocubicFoot).ToString());
+            Assert.Equal("1 hm³", new Volume(1, VolumeUnit.HectocubicMeter).ToString());
+            Assert.Equal("1 hl", new Volume(1, VolumeUnit.Hectoliter).ToString());
+            Assert.Equal("1 hgal (U.S.)", new Volume(1, VolumeUnit.HectousGallon).ToString());
+            Assert.Equal("1 bl (imp.)", new Volume(1, VolumeUnit.ImperialBeerBarrel).ToString());
+            Assert.Equal("1 gal (imp.)", new Volume(1, VolumeUnit.ImperialGallon).ToString());
+            Assert.Equal("1 oz (imp.)", new Volume(1, VolumeUnit.ImperialOunce).ToString());
+            Assert.Equal("1 pt (imp.)", new Volume(1, VolumeUnit.ImperialPint).ToString());
+            Assert.Equal("1 qt (imp.)", new Volume(1, VolumeUnit.ImperialQuart).ToString());
+            Assert.Equal("1 kft³", new Volume(1, VolumeUnit.KilocubicFoot).ToString());
+            Assert.Equal("1 km³", new Volume(1, VolumeUnit.KilocubicMeter).ToString());
+            Assert.Equal("1 kgal (imp.)", new Volume(1, VolumeUnit.KiloimperialGallon).ToString());
+            Assert.Equal("1 kl", new Volume(1, VolumeUnit.Kiloliter).ToString());
+            Assert.Equal("1 kgal (U.S.)", new Volume(1, VolumeUnit.KilousGallon).ToString());
+            Assert.Equal("1 l", new Volume(1, VolumeUnit.Liter).ToString());
+            Assert.Equal("1 Mft³", new Volume(1, VolumeUnit.MegacubicFoot).ToString());
+            Assert.Equal("1 Mgal (imp.)", new Volume(1, VolumeUnit.MegaimperialGallon).ToString());
+            Assert.Equal("1 Ml", new Volume(1, VolumeUnit.Megaliter).ToString());
+            Assert.Equal("1 Mgal (U.S.)", new Volume(1, VolumeUnit.MegausGallon).ToString());
+            Assert.Equal("1 metric cup", new Volume(1, VolumeUnit.MetricCup).ToString());
+            Assert.Equal("1 tablespoon", new Volume(1, VolumeUnit.MetricTablespoon).ToString());
+            Assert.Equal("1 tsp", new Volume(1, VolumeUnit.MetricTeaspoon).ToString());
+            Assert.Equal("1 µl", new Volume(1, VolumeUnit.Microliter).ToString());
+            Assert.Equal("1 ml", new Volume(1, VolumeUnit.Milliliter).ToString());
+            Assert.Equal("1 nl", new Volume(1, VolumeUnit.Nanoliter).ToString());
+            Assert.Equal("1 bbl", new Volume(1, VolumeUnit.OilBarrel).ToString());
+            Assert.Equal("1 tablespoon (U.K.)", new Volume(1, VolumeUnit.UkTablespoon).ToString());
+            Assert.Equal("1 bl (U.S.)", new Volume(1, VolumeUnit.UsBeerBarrel).ToString());
+            Assert.Equal("1 cup (U.S. customary)", new Volume(1, VolumeUnit.UsCustomaryCup).ToString());
+            Assert.Equal("1 gal (U.S.)", new Volume(1, VolumeUnit.UsGallon).ToString());
+            Assert.Equal("1 cup (U.S.)", new Volume(1, VolumeUnit.UsLegalCup).ToString());
+            Assert.Equal("1 oz (U.S.)", new Volume(1, VolumeUnit.UsOunce).ToString());
+            Assert.Equal("1 pt (U.S.)", new Volume(1, VolumeUnit.UsPint).ToString());
+            Assert.Equal("1 qt (U.S.)", new Volume(1, VolumeUnit.UsQuart).ToString());
+            Assert.Equal("1 tablespoon (U.S.)", new Volume(1, VolumeUnit.UsTablespoon).ToString());
+            Assert.Equal("1 teaspoon (U.S.)", new Volume(1, VolumeUnit.UsTeaspoon).ToString());
         }
 
         [Fact]
@@ -3348,7 +2048,7 @@ namespace UnitsNet.Tests
             var swedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
             Assert.Equal("1 ac-ft", new Volume(1, VolumeUnit.AcreFoot).ToString(swedishCulture));
-            Assert.Equal("1", new Volume(1, VolumeUnit.AuTablespoon).ToString(swedishCulture));
+            Assert.Equal("1 tablespoon (A.U.)", new Volume(1, VolumeUnit.AuTablespoon).ToString(swedishCulture));
             Assert.Equal("1 bf", new Volume(1, VolumeUnit.BoardFoot).ToString(swedishCulture));
             Assert.Equal("1 cl", new Volume(1, VolumeUnit.Centiliter).ToString(swedishCulture));
             Assert.Equal("1 cm³", new Volume(1, VolumeUnit.CubicCentimeter).ToString(swedishCulture));
@@ -3385,40 +2085,33 @@ namespace UnitsNet.Tests
             Assert.Equal("1 Mgal (imp.)", new Volume(1, VolumeUnit.MegaimperialGallon).ToString(swedishCulture));
             Assert.Equal("1 Ml", new Volume(1, VolumeUnit.Megaliter).ToString(swedishCulture));
             Assert.Equal("1 Mgal (U.S.)", new Volume(1, VolumeUnit.MegausGallon).ToString(swedishCulture));
-            Assert.Equal("1", new Volume(1, VolumeUnit.MetricCup).ToString(swedishCulture));
+            Assert.Equal("1 metric cup", new Volume(1, VolumeUnit.MetricCup).ToString(swedishCulture));
+            Assert.Equal("1 tablespoon", new Volume(1, VolumeUnit.MetricTablespoon).ToString(swedishCulture));
             Assert.Equal("1 tsp", new Volume(1, VolumeUnit.MetricTeaspoon).ToString(swedishCulture));
             Assert.Equal("1 µl", new Volume(1, VolumeUnit.Microliter).ToString(swedishCulture));
             Assert.Equal("1 ml", new Volume(1, VolumeUnit.Milliliter).ToString(swedishCulture));
             Assert.Equal("1 nl", new Volume(1, VolumeUnit.Nanoliter).ToString(swedishCulture));
             Assert.Equal("1 bbl", new Volume(1, VolumeUnit.OilBarrel).ToString(swedishCulture));
-            Assert.Equal("1", new Volume(1, VolumeUnit.UkTablespoon).ToString(swedishCulture));
+            Assert.Equal("1 tablespoon (U.K.)", new Volume(1, VolumeUnit.UkTablespoon).ToString(swedishCulture));
             Assert.Equal("1 bl (U.S.)", new Volume(1, VolumeUnit.UsBeerBarrel).ToString(swedishCulture));
-            Assert.Equal("1", new Volume(1, VolumeUnit.UsCustomaryCup).ToString(swedishCulture));
+            Assert.Equal("1 cup (U.S. customary)", new Volume(1, VolumeUnit.UsCustomaryCup).ToString(swedishCulture));
             Assert.Equal("1 gal (U.S.)", new Volume(1, VolumeUnit.UsGallon).ToString(swedishCulture));
-            Assert.Equal("1", new Volume(1, VolumeUnit.UsLegalCup).ToString(swedishCulture));
+            Assert.Equal("1 cup (U.S.)", new Volume(1, VolumeUnit.UsLegalCup).ToString(swedishCulture));
             Assert.Equal("1 oz (U.S.)", new Volume(1, VolumeUnit.UsOunce).ToString(swedishCulture));
             Assert.Equal("1 pt (U.S.)", new Volume(1, VolumeUnit.UsPint).ToString(swedishCulture));
             Assert.Equal("1 qt (U.S.)", new Volume(1, VolumeUnit.UsQuart).ToString(swedishCulture));
-            Assert.Equal("1", new Volume(1, VolumeUnit.UsTablespoon).ToString(swedishCulture));
-            Assert.Equal("1", new Volume(1, VolumeUnit.UsTeaspoon).ToString(swedishCulture));
+            Assert.Equal("1 tablespoon (U.S.)", new Volume(1, VolumeUnit.UsTablespoon).ToString(swedishCulture));
+            Assert.Equal("1 teaspoon (U.S.)", new Volume(1, VolumeUnit.UsTeaspoon).ToString(swedishCulture));
         }
 
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s1"));
-                Assert.Equal("0.12 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s2"));
-                Assert.Equal("0.123 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s3"));
-                Assert.Equal("0.1235 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s1"));
+            Assert.Equal("0.12 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s2"));
+            Assert.Equal("0.123 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s3"));
+            Assert.Equal("0.1235 m³", new Volume(0.123456, VolumeUnit.CubicMeter).ToString("s4"));
         }
 
         [Fact]
@@ -3441,7 +2134,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -3454,150 +2147,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Volume)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(VolumeUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal(Volume.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal(Volume.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Volume.FromCubicMeters(1.0);
-            Assert.Equal(new {Volume.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -36,76 +35,147 @@ namespace UnitsNet
     ///     The joule, symbol J, is a derived unit of energy, work, or amount of heat in the International System of Units. It is equal to the energy transferred (or work done) when applying a force of one newton through a distance of one metre (1 newton metre or N·m), or in passing an electric current of one ampere through a resistance of one ohm for one second. Many other units of energy are included. Please do not confuse this definition of the calorie with the one colloquially used by the food industry, the large calorie, which is equivalent to 1 kcal. Thermochemical definition of the calorie is used. For BTU, the IT definition is used.
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct Energy :
-        IArithmeticQuantity<Energy, EnergyUnit, double>,
+        IArithmeticQuantity<Energy, EnergyUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<Energy, Energy, double>,
+        IDivisionOperators<Energy, MolarEnergy, AmountOfSubstance>,
+        IDivisionOperators<Energy, Power, Duration>,
+        IDivisionOperators<Energy, ElectricPotential, ElectricCharge>,
+        IDivisionOperators<Energy, ElectricCharge, ElectricPotential>,
+        IDivisionOperators<Energy, Volume, EnergyDensity>,
+        IDivisionOperators<Energy, TemperatureDelta, Entropy>,
+        IDivisionOperators<Energy, SpecificEnergy, Mass>,
+        IDivisionOperators<Energy, AmountOfSubstance, MolarEnergy>,
+        IMultiplyOperators<Energy, Frequency, Power>,
+        IDivisionOperators<Energy, Duration, Power>,
+        IDivisionOperators<Energy, Mass, SpecificEnergy>,
+        IDivisionOperators<Energy, Entropy, TemperatureDelta>,
+        IDivisionOperators<Energy, EnergyDensity, Volume>,
+        IComparisonOperators<Energy, Energy, bool>,
+        IParsable<Energy>,
+#endif
         IComparable,
         IComparable<Energy>,
-        IConvertible,
         IEquatable<Energy>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly EnergyUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="Energy"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class EnergyInfo: QuantityInfo<Energy, EnergyUnit>
+        {
+            /// <inheritdoc />
+            public EnergyInfo(string name, EnergyUnit baseUnit, IEnumerable<IUnitDefinition<EnergyUnit>> unitMappings, Energy zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<Energy, EnergyUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public EnergyInfo(string name, EnergyUnit baseUnit, IEnumerable<IUnitDefinition<EnergyUnit>> unitMappings, Energy zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, Energy.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.Energy", typeof(Energy).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="EnergyInfo"/> class with the default settings for the Energy quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="EnergyInfo"/> class with the default settings.</returns>
+            public static EnergyInfo CreateDefault()
+            {
+                return new EnergyInfo(nameof(Energy), DefaultBaseUnit, GetDefaultMappings(), new Energy(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="EnergyInfo"/> class with the default settings for the Energy quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="EnergyInfo"/> class with the default settings.
+            /// </returns>
+            public static EnergyInfo CreateDefault(Func<IEnumerable<UnitDefinition<EnergyUnit>>, IEnumerable<IUnitDefinition<EnergyUnit>>> customizeUnits)
+            {
+                return new EnergyInfo(nameof(Energy), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new Energy(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="Energy"/> is [T^-2][L^2][M].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(2, 1, -2, 0, 0, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of Energy is Joule. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static EnergyUnit DefaultBaseUnit { get; } = EnergyUnit.Joule;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="EnergyUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{EnergyUnit}"/> representing the default unit mappings for Energy.</returns>
+            public static IEnumerable<UnitDefinition<EnergyUnit>> GetDefaultMappings()
+            {
+                yield return new (EnergyUnit.BritishThermalUnit, "BritishThermalUnit", "BritishThermalUnits", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Calorie, "Calorie", "Calories", BaseUnits.Undefined);
+                yield return new (EnergyUnit.DecathermEc, "DecathermEc", "DecathermsEc", BaseUnits.Undefined);
+                yield return new (EnergyUnit.DecathermImperial, "DecathermImperial", "DecathermsImperial", BaseUnits.Undefined);
+                yield return new (EnergyUnit.DecathermUs, "DecathermUs", "DecathermsUs", BaseUnits.Undefined);
+                yield return new (EnergyUnit.ElectronVolt, "ElectronVolt", "ElectronVolts", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Erg, "Erg", "Ergs", BaseUnits.Undefined);
+                yield return new (EnergyUnit.FootPound, "FootPound", "FootPounds", BaseUnits.Undefined);
+                yield return new (EnergyUnit.GigabritishThermalUnit, "GigabritishThermalUnit", "GigabritishThermalUnits", BaseUnits.Undefined);
+                yield return new (EnergyUnit.GigaelectronVolt, "GigaelectronVolt", "GigaelectronVolts", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Gigajoule, "Gigajoule", "Gigajoules", BaseUnits.Undefined);
+                yield return new (EnergyUnit.GigawattDay, "GigawattDay", "GigawattDays", BaseUnits.Undefined);
+                yield return new (EnergyUnit.GigawattHour, "GigawattHour", "GigawattHours", BaseUnits.Undefined);
+                yield return new (EnergyUnit.HorsepowerHour, "HorsepowerHour", "HorsepowerHours", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Joule, "Joule", "Joules", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second));
+                yield return new (EnergyUnit.KilobritishThermalUnit, "KilobritishThermalUnit", "KilobritishThermalUnits", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Kilocalorie, "Kilocalorie", "Kilocalories", BaseUnits.Undefined);
+                yield return new (EnergyUnit.KiloelectronVolt, "KiloelectronVolt", "KiloelectronVolts", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Kilojoule, "Kilojoule", "Kilojoules", BaseUnits.Undefined);
+                yield return new (EnergyUnit.KilowattDay, "KilowattDay", "KilowattDays", BaseUnits.Undefined);
+                yield return new (EnergyUnit.KilowattHour, "KilowattHour", "KilowattHours", BaseUnits.Undefined);
+                yield return new (EnergyUnit.MegabritishThermalUnit, "MegabritishThermalUnit", "MegabritishThermalUnits", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Megacalorie, "Megacalorie", "Megacalories", BaseUnits.Undefined);
+                yield return new (EnergyUnit.MegaelectronVolt, "MegaelectronVolt", "MegaelectronVolts", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Megajoule, "Megajoule", "Megajoules", new BaseUnits(length: LengthUnit.Kilometer, mass: MassUnit.Kilogram, time: DurationUnit.Second));
+                yield return new (EnergyUnit.MegawattDay, "MegawattDay", "MegawattDays", BaseUnits.Undefined);
+                yield return new (EnergyUnit.MegawattHour, "MegawattHour", "MegawattHours", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Microjoule, "Microjoule", "Microjoules", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Milligram, time: DurationUnit.Second));
+                yield return new (EnergyUnit.Millijoule, "Millijoule", "Millijoules", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Gram, time: DurationUnit.Second));
+                yield return new (EnergyUnit.Nanojoule, "Nanojoule", "Nanojoules", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Microgram, time: DurationUnit.Second));
+                yield return new (EnergyUnit.Petajoule, "Petajoule", "Petajoules", BaseUnits.Undefined);
+                yield return new (EnergyUnit.TeraelectronVolt, "TeraelectronVolt", "TeraelectronVolts", BaseUnits.Undefined);
+                yield return new (EnergyUnit.Terajoule, "Terajoule", "Terajoules", new BaseUnits(length: LengthUnit.Megameter, mass: MassUnit.Kilogram, time: DurationUnit.Second));
+                yield return new (EnergyUnit.TerawattDay, "TerawattDay", "TerawattDays", BaseUnits.Undefined);
+                yield return new (EnergyUnit.TerawattHour, "TerawattHour", "TerawattHours", BaseUnits.Undefined);
+                yield return new (EnergyUnit.ThermEc, "ThermEc", "ThermsEc", BaseUnits.Undefined);
+                yield return new (EnergyUnit.ThermImperial, "ThermImperial", "ThermsImperial", BaseUnits.Undefined);
+                yield return new (EnergyUnit.ThermUs, "ThermUs", "ThermsUs", BaseUnits.Undefined);
+                yield return new (EnergyUnit.WattDay, "WattDay", "WattDays", BaseUnits.Undefined);
+                yield return new (EnergyUnit.WattHour, "WattHour", "WattHours", BaseUnits.Undefined);
+            }
+        }
 
         static Energy()
         {
-            BaseDimensions = new BaseDimensions(2, 1, -2, 0, 0, 0, 0);
-            BaseUnit = EnergyUnit.Joule;
-            Units = Enum.GetValues(typeof(EnergyUnit)).Cast<EnergyUnit>().ToArray();
-            Zero = new Energy(0, BaseUnit);
-            Info = new QuantityInfo<EnergyUnit>("Energy",
-                new UnitInfo<EnergyUnit>[]
-                {
-                    new UnitInfo<EnergyUnit>(EnergyUnit.BritishThermalUnit, "BritishThermalUnits", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Calorie, "Calories", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.DecathermEc, "DecathermsEc", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.DecathermImperial, "DecathermsImperial", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.DecathermUs, "DecathermsUs", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.ElectronVolt, "ElectronVolts", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Erg, "Ergs", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.FootPound, "FootPounds", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.GigabritishThermalUnit, "GigabritishThermalUnits", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.GigaelectronVolt, "GigaelectronVolts", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Gigajoule, "Gigajoules", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.GigawattDay, "GigawattDays", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.GigawattHour, "GigawattHours", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.HorsepowerHour, "HorsepowerHours", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Joule, "Joules", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second), "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.KilobritishThermalUnit, "KilobritishThermalUnits", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Kilocalorie, "Kilocalories", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.KiloelectronVolt, "KiloelectronVolts", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Kilojoule, "Kilojoules", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.KilowattDay, "KilowattDays", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.KilowattHour, "KilowattHours", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.MegabritishThermalUnit, "MegabritishThermalUnits", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Megacalorie, "Megacalories", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.MegaelectronVolt, "MegaelectronVolts", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Megajoule, "Megajoules", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.MegawattDay, "MegawattDays", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.MegawattHour, "MegawattHours", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Millijoule, "Millijoules", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Petajoule, "Petajoules", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.TeraelectronVolt, "TeraelectronVolts", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.Terajoule, "Terajoules", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.TerawattDay, "TerawattDays", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.TerawattHour, "TerawattHours", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.ThermEc, "ThermsEc", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.ThermImperial, "ThermsImperial", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.ThermUs, "ThermsUs", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.WattDay, "WattDays", BaseUnits.Undefined, "Energy"),
-                    new UnitInfo<EnergyUnit>(EnergyUnit.WattHour, "WattHours", BaseUnits.Undefined, "Energy"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = EnergyInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -115,10 +185,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Energy(double value, EnergyUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -132,13 +201,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public Energy(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -149,30 +213,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<EnergyUnit> Info { get; }
+        public static QuantityInfo<Energy, EnergyUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of Energy, which is Joule. All conversions go via this value.
         /// </summary>
-        public static EnergyUnit BaseUnit { get; }
+        public static EnergyUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the Energy quantity.
         /// </summary>
-        public static EnergyUnit[] Units { get; }
+        public static IReadOnlyCollection<EnergyUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit Joule.
         /// </summary>
-        public static Energy Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static Energy AdditiveIdentity => Zero;
+        public static Energy Zero => Info.Zero;
 
         #endregion
 
@@ -184,23 +245,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public EnergyUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<EnergyUnit> QuantityInfo => Info;
+        public QuantityInfo<Energy, EnergyUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<Energy> IQuantityOfType<Energy>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<EnergyUnit> IQuantity<EnergyUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => Energy.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -342,9 +411,19 @@ namespace UnitsNet
         public double MegawattHours => As(EnergyUnit.MegawattHour);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="EnergyUnit.Microjoule"/>
+        /// </summary>
+        public double Microjoules => As(EnergyUnit.Microjoule);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="EnergyUnit.Millijoule"/>
         /// </summary>
         public double Millijoules => As(EnergyUnit.Millijoule);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="EnergyUnit.Nanojoule"/>
+        /// </summary>
+        public double Nanojoules => As(EnergyUnit.Nanojoule);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="EnergyUnit.Petajoule"/>
@@ -433,7 +512,9 @@ namespace UnitsNet
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Megajoule, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.MegawattDay, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.MegawattHour, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
+            unitConverter.SetConversionFunction<Energy>(EnergyUnit.Microjoule, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Millijoule, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
+            unitConverter.SetConversionFunction<Energy>(EnergyUnit.Nanojoule, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Petajoule, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.TeraelectronVolt, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Terajoule, EnergyUnit.Joule, quantity => quantity.ToUnit(EnergyUnit.Joule));
@@ -475,7 +556,9 @@ namespace UnitsNet
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.Megajoule, quantity => quantity.ToUnit(EnergyUnit.Megajoule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.MegawattDay, quantity => quantity.ToUnit(EnergyUnit.MegawattDay));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.MegawattHour, quantity => quantity.ToUnit(EnergyUnit.MegawattHour));
+            unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.Microjoule, quantity => quantity.ToUnit(EnergyUnit.Microjoule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.Millijoule, quantity => quantity.ToUnit(EnergyUnit.Millijoule));
+            unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.Nanojoule, quantity => quantity.ToUnit(EnergyUnit.Nanojoule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.Petajoule, quantity => quantity.ToUnit(EnergyUnit.Petajoule));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.TeraelectronVolt, quantity => quantity.ToUnit(EnergyUnit.TeraelectronVolt));
             unitConverter.SetConversionFunction<Energy>(EnergyUnit.Joule, EnergyUnit.Terajoule, quantity => quantity.ToUnit(EnergyUnit.Terajoule));
@@ -506,7 +589,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(EnergyUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -516,380 +599,320 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.BritishThermalUnit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromBritishThermalUnits(QuantityValue britishthermalunits)
+        public static Energy FromBritishThermalUnits(double value)
         {
-            double value = (double) britishthermalunits;
             return new Energy(value, EnergyUnit.BritishThermalUnit);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Calorie"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromCalories(QuantityValue calories)
+        public static Energy FromCalories(double value)
         {
-            double value = (double) calories;
             return new Energy(value, EnergyUnit.Calorie);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.DecathermEc"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromDecathermsEc(QuantityValue decathermsec)
+        public static Energy FromDecathermsEc(double value)
         {
-            double value = (double) decathermsec;
             return new Energy(value, EnergyUnit.DecathermEc);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.DecathermImperial"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromDecathermsImperial(QuantityValue decathermsimperial)
+        public static Energy FromDecathermsImperial(double value)
         {
-            double value = (double) decathermsimperial;
             return new Energy(value, EnergyUnit.DecathermImperial);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.DecathermUs"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromDecathermsUs(QuantityValue decathermsus)
+        public static Energy FromDecathermsUs(double value)
         {
-            double value = (double) decathermsus;
             return new Energy(value, EnergyUnit.DecathermUs);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.ElectronVolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromElectronVolts(QuantityValue electronvolts)
+        public static Energy FromElectronVolts(double value)
         {
-            double value = (double) electronvolts;
             return new Energy(value, EnergyUnit.ElectronVolt);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Erg"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromErgs(QuantityValue ergs)
+        public static Energy FromErgs(double value)
         {
-            double value = (double) ergs;
             return new Energy(value, EnergyUnit.Erg);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.FootPound"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromFootPounds(QuantityValue footpounds)
+        public static Energy FromFootPounds(double value)
         {
-            double value = (double) footpounds;
             return new Energy(value, EnergyUnit.FootPound);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.GigabritishThermalUnit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromGigabritishThermalUnits(QuantityValue gigabritishthermalunits)
+        public static Energy FromGigabritishThermalUnits(double value)
         {
-            double value = (double) gigabritishthermalunits;
             return new Energy(value, EnergyUnit.GigabritishThermalUnit);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.GigaelectronVolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromGigaelectronVolts(QuantityValue gigaelectronvolts)
+        public static Energy FromGigaelectronVolts(double value)
         {
-            double value = (double) gigaelectronvolts;
             return new Energy(value, EnergyUnit.GigaelectronVolt);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Gigajoule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromGigajoules(QuantityValue gigajoules)
+        public static Energy FromGigajoules(double value)
         {
-            double value = (double) gigajoules;
             return new Energy(value, EnergyUnit.Gigajoule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.GigawattDay"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromGigawattDays(QuantityValue gigawattdays)
+        public static Energy FromGigawattDays(double value)
         {
-            double value = (double) gigawattdays;
             return new Energy(value, EnergyUnit.GigawattDay);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.GigawattHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromGigawattHours(QuantityValue gigawatthours)
+        public static Energy FromGigawattHours(double value)
         {
-            double value = (double) gigawatthours;
             return new Energy(value, EnergyUnit.GigawattHour);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.HorsepowerHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromHorsepowerHours(QuantityValue horsepowerhours)
+        public static Energy FromHorsepowerHours(double value)
         {
-            double value = (double) horsepowerhours;
             return new Energy(value, EnergyUnit.HorsepowerHour);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Joule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromJoules(QuantityValue joules)
+        public static Energy FromJoules(double value)
         {
-            double value = (double) joules;
             return new Energy(value, EnergyUnit.Joule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.KilobritishThermalUnit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromKilobritishThermalUnits(QuantityValue kilobritishthermalunits)
+        public static Energy FromKilobritishThermalUnits(double value)
         {
-            double value = (double) kilobritishthermalunits;
             return new Energy(value, EnergyUnit.KilobritishThermalUnit);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Kilocalorie"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromKilocalories(QuantityValue kilocalories)
+        public static Energy FromKilocalories(double value)
         {
-            double value = (double) kilocalories;
             return new Energy(value, EnergyUnit.Kilocalorie);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.KiloelectronVolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromKiloelectronVolts(QuantityValue kiloelectronvolts)
+        public static Energy FromKiloelectronVolts(double value)
         {
-            double value = (double) kiloelectronvolts;
             return new Energy(value, EnergyUnit.KiloelectronVolt);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Kilojoule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromKilojoules(QuantityValue kilojoules)
+        public static Energy FromKilojoules(double value)
         {
-            double value = (double) kilojoules;
             return new Energy(value, EnergyUnit.Kilojoule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.KilowattDay"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromKilowattDays(QuantityValue kilowattdays)
+        public static Energy FromKilowattDays(double value)
         {
-            double value = (double) kilowattdays;
             return new Energy(value, EnergyUnit.KilowattDay);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.KilowattHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromKilowattHours(QuantityValue kilowatthours)
+        public static Energy FromKilowattHours(double value)
         {
-            double value = (double) kilowatthours;
             return new Energy(value, EnergyUnit.KilowattHour);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.MegabritishThermalUnit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromMegabritishThermalUnits(QuantityValue megabritishthermalunits)
+        public static Energy FromMegabritishThermalUnits(double value)
         {
-            double value = (double) megabritishthermalunits;
             return new Energy(value, EnergyUnit.MegabritishThermalUnit);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Megacalorie"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromMegacalories(QuantityValue megacalories)
+        public static Energy FromMegacalories(double value)
         {
-            double value = (double) megacalories;
             return new Energy(value, EnergyUnit.Megacalorie);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.MegaelectronVolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromMegaelectronVolts(QuantityValue megaelectronvolts)
+        public static Energy FromMegaelectronVolts(double value)
         {
-            double value = (double) megaelectronvolts;
             return new Energy(value, EnergyUnit.MegaelectronVolt);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Megajoule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromMegajoules(QuantityValue megajoules)
+        public static Energy FromMegajoules(double value)
         {
-            double value = (double) megajoules;
             return new Energy(value, EnergyUnit.Megajoule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.MegawattDay"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromMegawattDays(QuantityValue megawattdays)
+        public static Energy FromMegawattDays(double value)
         {
-            double value = (double) megawattdays;
             return new Energy(value, EnergyUnit.MegawattDay);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.MegawattHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromMegawattHours(QuantityValue megawatthours)
+        public static Energy FromMegawattHours(double value)
         {
-            double value = (double) megawatthours;
             return new Energy(value, EnergyUnit.MegawattHour);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Microjoule"/>.
+        /// </summary>
+        public static Energy FromMicrojoules(double value)
+        {
+            return new Energy(value, EnergyUnit.Microjoule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Millijoule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromMillijoules(QuantityValue millijoules)
+        public static Energy FromMillijoules(double value)
         {
-            double value = (double) millijoules;
             return new Energy(value, EnergyUnit.Millijoule);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Nanojoule"/>.
+        /// </summary>
+        public static Energy FromNanojoules(double value)
+        {
+            return new Energy(value, EnergyUnit.Nanojoule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Petajoule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromPetajoules(QuantityValue petajoules)
+        public static Energy FromPetajoules(double value)
         {
-            double value = (double) petajoules;
             return new Energy(value, EnergyUnit.Petajoule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.TeraelectronVolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromTeraelectronVolts(QuantityValue teraelectronvolts)
+        public static Energy FromTeraelectronVolts(double value)
         {
-            double value = (double) teraelectronvolts;
             return new Energy(value, EnergyUnit.TeraelectronVolt);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.Terajoule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromTerajoules(QuantityValue terajoules)
+        public static Energy FromTerajoules(double value)
         {
-            double value = (double) terajoules;
             return new Energy(value, EnergyUnit.Terajoule);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.TerawattDay"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromTerawattDays(QuantityValue terawattdays)
+        public static Energy FromTerawattDays(double value)
         {
-            double value = (double) terawattdays;
             return new Energy(value, EnergyUnit.TerawattDay);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.TerawattHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromTerawattHours(QuantityValue terawatthours)
+        public static Energy FromTerawattHours(double value)
         {
-            double value = (double) terawatthours;
             return new Energy(value, EnergyUnit.TerawattHour);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.ThermEc"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromThermsEc(QuantityValue thermsec)
+        public static Energy FromThermsEc(double value)
         {
-            double value = (double) thermsec;
             return new Energy(value, EnergyUnit.ThermEc);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.ThermImperial"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromThermsImperial(QuantityValue thermsimperial)
+        public static Energy FromThermsImperial(double value)
         {
-            double value = (double) thermsimperial;
             return new Energy(value, EnergyUnit.ThermImperial);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.ThermUs"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromThermsUs(QuantityValue thermsus)
+        public static Energy FromThermsUs(double value)
         {
-            double value = (double) thermsus;
             return new Energy(value, EnergyUnit.ThermUs);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.WattDay"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromWattDays(QuantityValue wattdays)
+        public static Energy FromWattDays(double value)
         {
-            double value = (double) wattdays;
             return new Energy(value, EnergyUnit.WattDay);
         }
 
         /// <summary>
         ///     Creates a <see cref="Energy"/> from <see cref="EnergyUnit.WattHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static Energy FromWattHours(QuantityValue watthours)
+        public static Energy FromWattHours(double value)
         {
-            double value = (double) watthours;
             return new Energy(value, EnergyUnit.WattHour);
         }
 
@@ -899,9 +922,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>Energy unit value.</returns>
-        public static Energy From(QuantityValue value, EnergyUnit fromUnit)
+        public static Energy From(double value, EnergyUnit fromUnit)
         {
-            return new Energy((double)value, fromUnit);
+            return new Energy(value, fromUnit);
         }
 
         #endregion
@@ -960,7 +983,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static Energy Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<Energy, EnergyUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<Energy, EnergyUnit>(
                 str,
                 provider,
                 From);
@@ -974,7 +997,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out Energy result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out Energy result)
         {
             return TryParse(str, null, out result);
         }
@@ -989,9 +1012,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out Energy result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out Energy result)
         {
-            return QuantityParser.Default.TryParse<Energy, EnergyUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<Energy, EnergyUnit>(
                 str,
                 provider,
                 From,
@@ -1024,11 +1047,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static EnergyUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<EnergyUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.EnergyUnit)"/>
-        public static bool TryParseUnit(string str, out EnergyUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out EnergyUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -1043,9 +1066,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out EnergyUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out EnergyUnit unit)
         {
-            return UnitParser.Default.TryParse<EnergyUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -1092,6 +1115,88 @@ namespace UnitsNet
         public static double operator /(Energy left, Energy right)
         {
             return left.Joules / right.Joules;
+        }
+
+        #endregion
+
+        #region Relational Operators
+
+        /// <summary>Get <see cref="AmountOfSubstance"/> from <see cref="Energy"/> / <see cref="MolarEnergy"/>.</summary>
+        public static AmountOfSubstance operator /(Energy energy, MolarEnergy molarEnergy)
+        {
+            return AmountOfSubstance.FromMoles(energy.Joules / molarEnergy.JoulesPerMole);
+        }
+
+        /// <summary>Get <see cref="Duration"/> from <see cref="Energy"/> / <see cref="Power"/>.</summary>
+        public static Duration operator /(Energy energy, Power power)
+        {
+            return Duration.FromSeconds(energy.Joules / power.Watts);
+        }
+
+        /// <summary>Get <see cref="ElectricCharge"/> from <see cref="Energy"/> / <see cref="ElectricPotential"/>.</summary>
+        public static ElectricCharge operator /(Energy energy, ElectricPotential electricPotential)
+        {
+            return ElectricCharge.FromCoulombs(energy.Joules / electricPotential.Volts);
+        }
+
+        /// <summary>Get <see cref="ElectricPotential"/> from <see cref="Energy"/> / <see cref="ElectricCharge"/>.</summary>
+        public static ElectricPotential operator /(Energy energy, ElectricCharge electricCharge)
+        {
+            return ElectricPotential.FromVolts(energy.Joules / electricCharge.Coulombs);
+        }
+
+        /// <summary>Get <see cref="EnergyDensity"/> from <see cref="Energy"/> / <see cref="Volume"/>.</summary>
+        public static EnergyDensity operator /(Energy energy, Volume volume)
+        {
+            return EnergyDensity.FromJoulesPerCubicMeter(energy.Joules / volume.CubicMeters);
+        }
+
+        /// <summary>Get <see cref="Entropy"/> from <see cref="Energy"/> / <see cref="TemperatureDelta"/>.</summary>
+        public static Entropy operator /(Energy energy, TemperatureDelta temperatureDelta)
+        {
+            return Entropy.FromJoulesPerKelvin(energy.Joules / temperatureDelta.Kelvins);
+        }
+
+        /// <summary>Get <see cref="Mass"/> from <see cref="Energy"/> / <see cref="SpecificEnergy"/>.</summary>
+        public static Mass operator /(Energy energy, SpecificEnergy specificEnergy)
+        {
+            return Mass.FromKilograms(energy.Joules / specificEnergy.JoulesPerKilogram);
+        }
+
+        /// <summary>Get <see cref="MolarEnergy"/> from <see cref="Energy"/> / <see cref="AmountOfSubstance"/>.</summary>
+        public static MolarEnergy operator /(Energy energy, AmountOfSubstance amountOfSubstance)
+        {
+            return MolarEnergy.FromJoulesPerMole(energy.Joules / amountOfSubstance.Moles);
+        }
+
+        /// <summary>Get <see cref="Power"/> from <see cref="Energy"/> * <see cref="Frequency"/>.</summary>
+        public static Power operator *(Energy energy, Frequency frequency)
+        {
+            return Power.FromWatts(energy.Joules * frequency.PerSecond);
+        }
+
+        /// <summary>Get <see cref="Power"/> from <see cref="Energy"/> / <see cref="Duration"/>.</summary>
+        public static Power operator /(Energy energy, Duration duration)
+        {
+            return Power.FromWatts(energy.Joules / duration.Seconds);
+        }
+
+        /// <summary>Get <see cref="SpecificEnergy"/> from <see cref="Energy"/> / <see cref="Mass"/>.</summary>
+        public static SpecificEnergy operator /(Energy energy, Mass mass)
+        {
+            return SpecificEnergy.FromJoulesPerKilogram(energy.Joules / mass.Kilograms);
+        }
+
+        /// <summary>Get <see cref="TemperatureDelta"/> from <see cref="Energy"/> / <see cref="Entropy"/>.</summary>
+        public static TemperatureDelta operator /(Energy energy, Entropy entropy)
+        {
+            return TemperatureDelta.FromKelvins(energy.Joules / entropy.JoulesPerKelvin);
+        }
+
+        /// <summary>Get <see cref="Volume"/> from <see cref="Energy"/> / <see cref="EnergyDensity"/>.</summary>
+        public static Volume operator /(Energy energy, EnergyDensity energyDensity)
+        {
+            return Volume.FromCubicMeters(energy.Joules / energyDensity.JoulesPerCubicMeter);
         }
 
         #endregion
@@ -1161,6 +1266,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current Energy.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="Energy"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -1197,88 +1311,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another Energy within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(Energy other, Energy tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(Energy other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is Energy otherTyped
-                   && (tolerance is Energy toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'Energy'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(Energy other, Energy tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current Energy.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -1295,37 +1327,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is EnergyUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(EnergyUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is EnergyUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(EnergyUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<EnergyUnit>());
         }
 
         /// <summary>
@@ -1365,7 +1370,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -1391,30 +1396,32 @@ namespace UnitsNet
                 (EnergyUnit.DecathermEc, EnergyUnit.Joule) => new Energy((_value * 1.05505585262e8) * 1e1d, EnergyUnit.Joule),
                 (EnergyUnit.DecathermImperial, EnergyUnit.Joule) => new Energy((_value * 1.05505585257348e8) * 1e1d, EnergyUnit.Joule),
                 (EnergyUnit.DecathermUs, EnergyUnit.Joule) => new Energy((_value * 1.054804e8) * 1e1d, EnergyUnit.Joule),
-                (EnergyUnit.ElectronVolt, EnergyUnit.Joule) => new Energy(_value * 1.602176565e-19, EnergyUnit.Joule),
+                (EnergyUnit.ElectronVolt, EnergyUnit.Joule) => new Energy(_value * 1.602176634e-19, EnergyUnit.Joule),
                 (EnergyUnit.Erg, EnergyUnit.Joule) => new Energy(_value * 1e-7, EnergyUnit.Joule),
-                (EnergyUnit.FootPound, EnergyUnit.Joule) => new Energy(_value * 1.355817948, EnergyUnit.Joule),
+                (EnergyUnit.FootPound, EnergyUnit.Joule) => new Energy(_value * 1.3558179483314004, EnergyUnit.Joule),
                 (EnergyUnit.GigabritishThermalUnit, EnergyUnit.Joule) => new Energy((_value * 1055.05585262) * 1e9d, EnergyUnit.Joule),
-                (EnergyUnit.GigaelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176565e-19) * 1e9d, EnergyUnit.Joule),
+                (EnergyUnit.GigaelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176634e-19) * 1e9d, EnergyUnit.Joule),
                 (EnergyUnit.Gigajoule, EnergyUnit.Joule) => new Energy((_value) * 1e9d, EnergyUnit.Joule),
                 (EnergyUnit.GigawattDay, EnergyUnit.Joule) => new Energy((_value * 24 * 3600d) * 1e9d, EnergyUnit.Joule),
                 (EnergyUnit.GigawattHour, EnergyUnit.Joule) => new Energy((_value * 3600d) * 1e9d, EnergyUnit.Joule),
-                (EnergyUnit.HorsepowerHour, EnergyUnit.Joule) => new Energy(_value * 2.6845195377e6, EnergyUnit.Joule),
+                (EnergyUnit.HorsepowerHour, EnergyUnit.Joule) => new Energy(_value * 76.0402249 * 9.80665 * 3600, EnergyUnit.Joule),
                 (EnergyUnit.KilobritishThermalUnit, EnergyUnit.Joule) => new Energy((_value * 1055.05585262) * 1e3d, EnergyUnit.Joule),
                 (EnergyUnit.Kilocalorie, EnergyUnit.Joule) => new Energy((_value * 4.184) * 1e3d, EnergyUnit.Joule),
-                (EnergyUnit.KiloelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176565e-19) * 1e3d, EnergyUnit.Joule),
+                (EnergyUnit.KiloelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176634e-19) * 1e3d, EnergyUnit.Joule),
                 (EnergyUnit.Kilojoule, EnergyUnit.Joule) => new Energy((_value) * 1e3d, EnergyUnit.Joule),
                 (EnergyUnit.KilowattDay, EnergyUnit.Joule) => new Energy((_value * 24 * 3600d) * 1e3d, EnergyUnit.Joule),
                 (EnergyUnit.KilowattHour, EnergyUnit.Joule) => new Energy((_value * 3600d) * 1e3d, EnergyUnit.Joule),
                 (EnergyUnit.MegabritishThermalUnit, EnergyUnit.Joule) => new Energy((_value * 1055.05585262) * 1e6d, EnergyUnit.Joule),
                 (EnergyUnit.Megacalorie, EnergyUnit.Joule) => new Energy((_value * 4.184) * 1e6d, EnergyUnit.Joule),
-                (EnergyUnit.MegaelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176565e-19) * 1e6d, EnergyUnit.Joule),
+                (EnergyUnit.MegaelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176634e-19) * 1e6d, EnergyUnit.Joule),
                 (EnergyUnit.Megajoule, EnergyUnit.Joule) => new Energy((_value) * 1e6d, EnergyUnit.Joule),
                 (EnergyUnit.MegawattDay, EnergyUnit.Joule) => new Energy((_value * 24 * 3600d) * 1e6d, EnergyUnit.Joule),
                 (EnergyUnit.MegawattHour, EnergyUnit.Joule) => new Energy((_value * 3600d) * 1e6d, EnergyUnit.Joule),
+                (EnergyUnit.Microjoule, EnergyUnit.Joule) => new Energy((_value) * 1e-6d, EnergyUnit.Joule),
                 (EnergyUnit.Millijoule, EnergyUnit.Joule) => new Energy((_value) * 1e-3d, EnergyUnit.Joule),
+                (EnergyUnit.Nanojoule, EnergyUnit.Joule) => new Energy((_value) * 1e-9d, EnergyUnit.Joule),
                 (EnergyUnit.Petajoule, EnergyUnit.Joule) => new Energy((_value) * 1e15d, EnergyUnit.Joule),
-                (EnergyUnit.TeraelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176565e-19) * 1e12d, EnergyUnit.Joule),
+                (EnergyUnit.TeraelectronVolt, EnergyUnit.Joule) => new Energy((_value * 1.602176634e-19) * 1e12d, EnergyUnit.Joule),
                 (EnergyUnit.Terajoule, EnergyUnit.Joule) => new Energy((_value) * 1e12d, EnergyUnit.Joule),
                 (EnergyUnit.TerawattDay, EnergyUnit.Joule) => new Energy((_value * 24 * 3600d) * 1e12d, EnergyUnit.Joule),
                 (EnergyUnit.TerawattHour, EnergyUnit.Joule) => new Energy((_value * 3600d) * 1e12d, EnergyUnit.Joule),
@@ -1430,30 +1437,32 @@ namespace UnitsNet
                 (EnergyUnit.Joule, EnergyUnit.DecathermEc) => new Energy((_value / 1.05505585262e8) / 1e1d, EnergyUnit.DecathermEc),
                 (EnergyUnit.Joule, EnergyUnit.DecathermImperial) => new Energy((_value / 1.05505585257348e8) / 1e1d, EnergyUnit.DecathermImperial),
                 (EnergyUnit.Joule, EnergyUnit.DecathermUs) => new Energy((_value / 1.054804e8) / 1e1d, EnergyUnit.DecathermUs),
-                (EnergyUnit.Joule, EnergyUnit.ElectronVolt) => new Energy(_value / 1.602176565e-19, EnergyUnit.ElectronVolt),
+                (EnergyUnit.Joule, EnergyUnit.ElectronVolt) => new Energy(_value / 1.602176634e-19, EnergyUnit.ElectronVolt),
                 (EnergyUnit.Joule, EnergyUnit.Erg) => new Energy(_value / 1e-7, EnergyUnit.Erg),
-                (EnergyUnit.Joule, EnergyUnit.FootPound) => new Energy(_value / 1.355817948, EnergyUnit.FootPound),
+                (EnergyUnit.Joule, EnergyUnit.FootPound) => new Energy(_value / 1.3558179483314004, EnergyUnit.FootPound),
                 (EnergyUnit.Joule, EnergyUnit.GigabritishThermalUnit) => new Energy((_value / 1055.05585262) / 1e9d, EnergyUnit.GigabritishThermalUnit),
-                (EnergyUnit.Joule, EnergyUnit.GigaelectronVolt) => new Energy((_value / 1.602176565e-19) / 1e9d, EnergyUnit.GigaelectronVolt),
+                (EnergyUnit.Joule, EnergyUnit.GigaelectronVolt) => new Energy((_value / 1.602176634e-19) / 1e9d, EnergyUnit.GigaelectronVolt),
                 (EnergyUnit.Joule, EnergyUnit.Gigajoule) => new Energy((_value) / 1e9d, EnergyUnit.Gigajoule),
                 (EnergyUnit.Joule, EnergyUnit.GigawattDay) => new Energy((_value / (24 * 3600d)) / 1e9d, EnergyUnit.GigawattDay),
                 (EnergyUnit.Joule, EnergyUnit.GigawattHour) => new Energy((_value / 3600d) / 1e9d, EnergyUnit.GigawattHour),
-                (EnergyUnit.Joule, EnergyUnit.HorsepowerHour) => new Energy(_value / 2.6845195377e6, EnergyUnit.HorsepowerHour),
+                (EnergyUnit.Joule, EnergyUnit.HorsepowerHour) => new Energy(_value / (76.0402249 * 9.80665 * 3600), EnergyUnit.HorsepowerHour),
                 (EnergyUnit.Joule, EnergyUnit.KilobritishThermalUnit) => new Energy((_value / 1055.05585262) / 1e3d, EnergyUnit.KilobritishThermalUnit),
                 (EnergyUnit.Joule, EnergyUnit.Kilocalorie) => new Energy((_value / 4.184) / 1e3d, EnergyUnit.Kilocalorie),
-                (EnergyUnit.Joule, EnergyUnit.KiloelectronVolt) => new Energy((_value / 1.602176565e-19) / 1e3d, EnergyUnit.KiloelectronVolt),
+                (EnergyUnit.Joule, EnergyUnit.KiloelectronVolt) => new Energy((_value / 1.602176634e-19) / 1e3d, EnergyUnit.KiloelectronVolt),
                 (EnergyUnit.Joule, EnergyUnit.Kilojoule) => new Energy((_value) / 1e3d, EnergyUnit.Kilojoule),
                 (EnergyUnit.Joule, EnergyUnit.KilowattDay) => new Energy((_value / (24 * 3600d)) / 1e3d, EnergyUnit.KilowattDay),
                 (EnergyUnit.Joule, EnergyUnit.KilowattHour) => new Energy((_value / 3600d) / 1e3d, EnergyUnit.KilowattHour),
                 (EnergyUnit.Joule, EnergyUnit.MegabritishThermalUnit) => new Energy((_value / 1055.05585262) / 1e6d, EnergyUnit.MegabritishThermalUnit),
                 (EnergyUnit.Joule, EnergyUnit.Megacalorie) => new Energy((_value / 4.184) / 1e6d, EnergyUnit.Megacalorie),
-                (EnergyUnit.Joule, EnergyUnit.MegaelectronVolt) => new Energy((_value / 1.602176565e-19) / 1e6d, EnergyUnit.MegaelectronVolt),
+                (EnergyUnit.Joule, EnergyUnit.MegaelectronVolt) => new Energy((_value / 1.602176634e-19) / 1e6d, EnergyUnit.MegaelectronVolt),
                 (EnergyUnit.Joule, EnergyUnit.Megajoule) => new Energy((_value) / 1e6d, EnergyUnit.Megajoule),
                 (EnergyUnit.Joule, EnergyUnit.MegawattDay) => new Energy((_value / (24 * 3600d)) / 1e6d, EnergyUnit.MegawattDay),
                 (EnergyUnit.Joule, EnergyUnit.MegawattHour) => new Energy((_value / 3600d) / 1e6d, EnergyUnit.MegawattHour),
+                (EnergyUnit.Joule, EnergyUnit.Microjoule) => new Energy((_value) / 1e-6d, EnergyUnit.Microjoule),
                 (EnergyUnit.Joule, EnergyUnit.Millijoule) => new Energy((_value) / 1e-3d, EnergyUnit.Millijoule),
+                (EnergyUnit.Joule, EnergyUnit.Nanojoule) => new Energy((_value) / 1e-9d, EnergyUnit.Nanojoule),
                 (EnergyUnit.Joule, EnergyUnit.Petajoule) => new Energy((_value) / 1e15d, EnergyUnit.Petajoule),
-                (EnergyUnit.Joule, EnergyUnit.TeraelectronVolt) => new Energy((_value / 1.602176565e-19) / 1e12d, EnergyUnit.TeraelectronVolt),
+                (EnergyUnit.Joule, EnergyUnit.TeraelectronVolt) => new Energy((_value / 1.602176634e-19) / 1e12d, EnergyUnit.TeraelectronVolt),
                 (EnergyUnit.Joule, EnergyUnit.Terajoule) => new Energy((_value) / 1e12d, EnergyUnit.Terajoule),
                 (EnergyUnit.Joule, EnergyUnit.TerawattDay) => new Energy((_value / (24 * 3600d)) / 1e12d, EnergyUnit.TerawattDay),
                 (EnergyUnit.Joule, EnergyUnit.TerawattHour) => new Energy((_value / 3600d) / 1e12d, EnergyUnit.TerawattHour),
@@ -1476,6 +1485,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not EnergyUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(EnergyUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -1485,41 +1504,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public Energy ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<EnergyUnit> IQuantity<EnergyUnit>.ToUnit(EnergyUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<EnergyUnit> IQuantity<EnergyUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not EnergyUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(EnergyUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -1531,140 +1519,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<EnergyUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Energy)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Energy)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(Energy)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(Energy))
-                return this;
-            else if (conversionType == typeof(EnergyUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return Energy.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return Energy.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(Energy)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

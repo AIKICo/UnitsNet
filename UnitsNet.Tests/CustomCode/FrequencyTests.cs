@@ -7,8 +7,6 @@ namespace UnitsNet.Tests
 {
     public class FrequencyTests : FrequencyTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
-        
         protected override double MicrohertzInOneHertz => 1e6;
         
         protected override double MillihertzInOneHertz => 1e3;
@@ -32,7 +30,5 @@ namespace UnitsNet.Tests
         protected override double RadiansPerSecondInOneHertz => 2 * Math.PI;
 
         protected override double BeatsPerMinuteInOneHertz => 60;
-
-        protected override double BUnitsInOneHertz => 0.001;
     }
 }

@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -163,16 +165,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Torque(double.PositiveInfinity, TorqueUnit.NewtonMeter));
-            Assert.Throws<ArgumentException>(() => new Torque(double.NegativeInfinity, TorqueUnit.NewtonMeter));
+            var exception1 = Record.Exception(() => new Torque(double.PositiveInfinity, TorqueUnit.NewtonMeter));
+            var exception2 = Record.Exception(() => new Torque(double.NegativeInfinity, TorqueUnit.NewtonMeter));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Torque(double.NaN, TorqueUnit.NewtonMeter));
+            var exception = Record.Exception(() => new Torque(double.NaN, TorqueUnit.NewtonMeter));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -182,32 +189,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new Torque(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Torque) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new Torque(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new Torque(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void Torque_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            TorqueUnit[] unitsOrderedByName = EnumHelper.GetValues<TorqueUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Torque(1, TorqueUnit.NewtonMeter);
 
-            QuantityInfo<TorqueUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Torque, TorqueUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Torque.Zero, quantityInfo.Zero);
             Assert.Equal("Torque", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<TorqueUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Torque.Zero, quantityInfo.Zero);
+            Assert.Equal(Torque.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Torque.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<TorqueUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -244,119 +255,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Torque.From(1, TorqueUnit.GramForceCentimeter);
-            AssertEx.EqualTolerance(1, quantity00.GramForceCentimeters, GramForceCentimetersTolerance);
-            Assert.Equal(TorqueUnit.GramForceCentimeter, quantity00.Unit);
-
-            var quantity01 = Torque.From(1, TorqueUnit.GramForceMeter);
-            AssertEx.EqualTolerance(1, quantity01.GramForceMeters, GramForceMetersTolerance);
-            Assert.Equal(TorqueUnit.GramForceMeter, quantity01.Unit);
-
-            var quantity02 = Torque.From(1, TorqueUnit.GramForceMillimeter);
-            AssertEx.EqualTolerance(1, quantity02.GramForceMillimeters, GramForceMillimetersTolerance);
-            Assert.Equal(TorqueUnit.GramForceMillimeter, quantity02.Unit);
-
-            var quantity03 = Torque.From(1, TorqueUnit.KilogramForceCentimeter);
-            AssertEx.EqualTolerance(1, quantity03.KilogramForceCentimeters, KilogramForceCentimetersTolerance);
-            Assert.Equal(TorqueUnit.KilogramForceCentimeter, quantity03.Unit);
-
-            var quantity04 = Torque.From(1, TorqueUnit.KilogramForceMeter);
-            AssertEx.EqualTolerance(1, quantity04.KilogramForceMeters, KilogramForceMetersTolerance);
-            Assert.Equal(TorqueUnit.KilogramForceMeter, quantity04.Unit);
-
-            var quantity05 = Torque.From(1, TorqueUnit.KilogramForceMillimeter);
-            AssertEx.EqualTolerance(1, quantity05.KilogramForceMillimeters, KilogramForceMillimetersTolerance);
-            Assert.Equal(TorqueUnit.KilogramForceMillimeter, quantity05.Unit);
-
-            var quantity06 = Torque.From(1, TorqueUnit.KilonewtonCentimeter);
-            AssertEx.EqualTolerance(1, quantity06.KilonewtonCentimeters, KilonewtonCentimetersTolerance);
-            Assert.Equal(TorqueUnit.KilonewtonCentimeter, quantity06.Unit);
-
-            var quantity07 = Torque.From(1, TorqueUnit.KilonewtonMeter);
-            AssertEx.EqualTolerance(1, quantity07.KilonewtonMeters, KilonewtonMetersTolerance);
-            Assert.Equal(TorqueUnit.KilonewtonMeter, quantity07.Unit);
-
-            var quantity08 = Torque.From(1, TorqueUnit.KilonewtonMillimeter);
-            AssertEx.EqualTolerance(1, quantity08.KilonewtonMillimeters, KilonewtonMillimetersTolerance);
-            Assert.Equal(TorqueUnit.KilonewtonMillimeter, quantity08.Unit);
-
-            var quantity09 = Torque.From(1, TorqueUnit.KilopoundForceFoot);
-            AssertEx.EqualTolerance(1, quantity09.KilopoundForceFeet, KilopoundForceFeetTolerance);
-            Assert.Equal(TorqueUnit.KilopoundForceFoot, quantity09.Unit);
-
-            var quantity10 = Torque.From(1, TorqueUnit.KilopoundForceInch);
-            AssertEx.EqualTolerance(1, quantity10.KilopoundForceInches, KilopoundForceInchesTolerance);
-            Assert.Equal(TorqueUnit.KilopoundForceInch, quantity10.Unit);
-
-            var quantity11 = Torque.From(1, TorqueUnit.MeganewtonCentimeter);
-            AssertEx.EqualTolerance(1, quantity11.MeganewtonCentimeters, MeganewtonCentimetersTolerance);
-            Assert.Equal(TorqueUnit.MeganewtonCentimeter, quantity11.Unit);
-
-            var quantity12 = Torque.From(1, TorqueUnit.MeganewtonMeter);
-            AssertEx.EqualTolerance(1, quantity12.MeganewtonMeters, MeganewtonMetersTolerance);
-            Assert.Equal(TorqueUnit.MeganewtonMeter, quantity12.Unit);
-
-            var quantity13 = Torque.From(1, TorqueUnit.MeganewtonMillimeter);
-            AssertEx.EqualTolerance(1, quantity13.MeganewtonMillimeters, MeganewtonMillimetersTolerance);
-            Assert.Equal(TorqueUnit.MeganewtonMillimeter, quantity13.Unit);
-
-            var quantity14 = Torque.From(1, TorqueUnit.MegapoundForceFoot);
-            AssertEx.EqualTolerance(1, quantity14.MegapoundForceFeet, MegapoundForceFeetTolerance);
-            Assert.Equal(TorqueUnit.MegapoundForceFoot, quantity14.Unit);
-
-            var quantity15 = Torque.From(1, TorqueUnit.MegapoundForceInch);
-            AssertEx.EqualTolerance(1, quantity15.MegapoundForceInches, MegapoundForceInchesTolerance);
-            Assert.Equal(TorqueUnit.MegapoundForceInch, quantity15.Unit);
-
-            var quantity16 = Torque.From(1, TorqueUnit.NewtonCentimeter);
-            AssertEx.EqualTolerance(1, quantity16.NewtonCentimeters, NewtonCentimetersTolerance);
-            Assert.Equal(TorqueUnit.NewtonCentimeter, quantity16.Unit);
-
-            var quantity17 = Torque.From(1, TorqueUnit.NewtonMeter);
-            AssertEx.EqualTolerance(1, quantity17.NewtonMeters, NewtonMetersTolerance);
-            Assert.Equal(TorqueUnit.NewtonMeter, quantity17.Unit);
-
-            var quantity18 = Torque.From(1, TorqueUnit.NewtonMillimeter);
-            AssertEx.EqualTolerance(1, quantity18.NewtonMillimeters, NewtonMillimetersTolerance);
-            Assert.Equal(TorqueUnit.NewtonMillimeter, quantity18.Unit);
-
-            var quantity19 = Torque.From(1, TorqueUnit.PoundalFoot);
-            AssertEx.EqualTolerance(1, quantity19.PoundalFeet, PoundalFeetTolerance);
-            Assert.Equal(TorqueUnit.PoundalFoot, quantity19.Unit);
-
-            var quantity20 = Torque.From(1, TorqueUnit.PoundForceFoot);
-            AssertEx.EqualTolerance(1, quantity20.PoundForceFeet, PoundForceFeetTolerance);
-            Assert.Equal(TorqueUnit.PoundForceFoot, quantity20.Unit);
-
-            var quantity21 = Torque.From(1, TorqueUnit.PoundForceInch);
-            AssertEx.EqualTolerance(1, quantity21.PoundForceInches, PoundForceInchesTolerance);
-            Assert.Equal(TorqueUnit.PoundForceInch, quantity21.Unit);
-
-            var quantity22 = Torque.From(1, TorqueUnit.TonneForceCentimeter);
-            AssertEx.EqualTolerance(1, quantity22.TonneForceCentimeters, TonneForceCentimetersTolerance);
-            Assert.Equal(TorqueUnit.TonneForceCentimeter, quantity22.Unit);
-
-            var quantity23 = Torque.From(1, TorqueUnit.TonneForceMeter);
-            AssertEx.EqualTolerance(1, quantity23.TonneForceMeters, TonneForceMetersTolerance);
-            Assert.Equal(TorqueUnit.TonneForceMeter, quantity23.Unit);
-
-            var quantity24 = Torque.From(1, TorqueUnit.TonneForceMillimeter);
-            AssertEx.EqualTolerance(1, quantity24.TonneForceMillimeters, TonneForceMillimetersTolerance);
-            Assert.Equal(TorqueUnit.TonneForceMillimeter, quantity24.Unit);
-
+            Assert.All(EnumHelper.GetValues<TorqueUnit>(), unit =>
+            {
+                var quantity = Torque.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromNewtonMeters_WithInfinityValue_ThrowsArgumentException()
+        public void FromNewtonMeters_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Torque.FromNewtonMeters(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Torque.FromNewtonMeters(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Torque.FromNewtonMeters(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Torque.FromNewtonMeters(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromNewtonMeters_WithNanValue_ThrowsArgumentException()
+        public void FromNewtonMeters_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Torque.FromNewtonMeters(double.NaN));
+            var exception = Record.Exception(() => Torque.FromNewtonMeters(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -391,712 +313,466 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = Torque.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new Torque(value: 1, unit: Torque.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(Torque.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = Torque.Parse("1 gf·cm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramForceCentimeters, GramForceCentimetersTolerance);
-                Assert.Equal(TorqueUnit.GramForceCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 gf·m", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramForceMeters, GramForceMetersTolerance);
-                Assert.Equal(TorqueUnit.GramForceMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 gf·mm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramForceMillimeters, GramForceMillimetersTolerance);
-                Assert.Equal(TorqueUnit.GramForceMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kgf·cm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramForceCentimeters, KilogramForceCentimetersTolerance);
-                Assert.Equal(TorqueUnit.KilogramForceCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kgf·m", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramForceMeters, KilogramForceMetersTolerance);
-                Assert.Equal(TorqueUnit.KilogramForceMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kgf·mm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramForceMillimeters, KilogramForceMillimetersTolerance);
-                Assert.Equal(TorqueUnit.KilogramForceMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kN·cm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonCentimeters, KilonewtonCentimetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kN·m", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMeters, KilonewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 кН·м", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMeters, KilonewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kN·mm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimeters, KilonewtonMillimetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kipf·ft", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeet, KilopoundForceFeetTolerance);
-                Assert.Equal(TorqueUnit.KilopoundForceFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 kipf·in", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceInches, KilopoundForceInchesTolerance);
-                Assert.Equal(TorqueUnit.KilopoundForceInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 MN·cm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonCentimeters, MeganewtonCentimetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 MN·m", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMeters, MeganewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 МН·м", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMeters, MeganewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 MN·mm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimeters, MeganewtonMillimetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 Mlbf·ft", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegapoundForceFeet, MegapoundForceFeetTolerance);
-                Assert.Equal(TorqueUnit.MegapoundForceFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 Mlbf·in", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegapoundForceInches, MegapoundForceInchesTolerance);
-                Assert.Equal(TorqueUnit.MegapoundForceInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 N·cm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonCentimeters, NewtonCentimetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 N·m", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMeters, NewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 Н·м", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMeters, NewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 N·mm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimeters, NewtonMillimetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 pdl·ft", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundalFeet, PoundalFeetTolerance);
-                Assert.Equal(TorqueUnit.PoundalFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 lbf·ft", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundForceFeet, PoundForceFeetTolerance);
-                Assert.Equal(TorqueUnit.PoundForceFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 lbf·in", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundForceInches, PoundForceInchesTolerance);
-                Assert.Equal(TorqueUnit.PoundForceInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 tf·cm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.TonneForceCentimeters, TonneForceCentimetersTolerance);
-                Assert.Equal(TorqueUnit.TonneForceCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 tf·m", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.TonneForceMeters, TonneForceMetersTolerance);
-                Assert.Equal(TorqueUnit.TonneForceMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Torque.Parse("1 tf·mm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.TonneForceMillimeters, TonneForceMillimetersTolerance);
-                Assert.Equal(TorqueUnit.TonneForceMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new Torque(value: 1, unit: Torque.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(Torque.TryParse("1 gf·cm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramForceCentimeters, GramForceCentimetersTolerance);
-                Assert.Equal(TorqueUnit.GramForceCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 gf·m", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramForceMeters, GramForceMetersTolerance);
-                Assert.Equal(TorqueUnit.GramForceMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 gf·mm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramForceMillimeters, GramForceMillimetersTolerance);
-                Assert.Equal(TorqueUnit.GramForceMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kgf·cm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramForceCentimeters, KilogramForceCentimetersTolerance);
-                Assert.Equal(TorqueUnit.KilogramForceCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kgf·m", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramForceMeters, KilogramForceMetersTolerance);
-                Assert.Equal(TorqueUnit.KilogramForceMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kgf·mm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramForceMillimeters, KilogramForceMillimetersTolerance);
-                Assert.Equal(TorqueUnit.KilogramForceMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kN·cm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonCentimeters, KilonewtonCentimetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kN·m", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMeters, KilonewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 кН·м", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMeters, KilonewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kN·mm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilonewtonMillimeters, KilonewtonMillimetersTolerance);
-                Assert.Equal(TorqueUnit.KilonewtonMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kipf·ft", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceFeet, KilopoundForceFeetTolerance);
-                Assert.Equal(TorqueUnit.KilopoundForceFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 kipf·in", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilopoundForceInches, KilopoundForceInchesTolerance);
-                Assert.Equal(TorqueUnit.KilopoundForceInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 MN·cm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonCentimeters, MeganewtonCentimetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 MN·m", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMeters, MeganewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 МН·м", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMeters, MeganewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 MN·mm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MeganewtonMillimeters, MeganewtonMillimetersTolerance);
-                Assert.Equal(TorqueUnit.MeganewtonMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 Mlbf·ft", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegapoundForceFeet, MegapoundForceFeetTolerance);
-                Assert.Equal(TorqueUnit.MegapoundForceFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 Mlbf·in", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegapoundForceInches, MegapoundForceInchesTolerance);
-                Assert.Equal(TorqueUnit.MegapoundForceInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 N·cm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonCentimeters, NewtonCentimetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 N·m", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMeters, NewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 Н·м", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMeters, NewtonMetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 N·mm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NewtonMillimeters, NewtonMillimetersTolerance);
-                Assert.Equal(TorqueUnit.NewtonMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 pdl·ft", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundalFeet, PoundalFeetTolerance);
-                Assert.Equal(TorqueUnit.PoundalFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 lbf·ft", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundForceFeet, PoundForceFeetTolerance);
-                Assert.Equal(TorqueUnit.PoundForceFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 lbf·in", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundForceInches, PoundForceInchesTolerance);
-                Assert.Equal(TorqueUnit.PoundForceInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 tf·cm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.TonneForceCentimeters, TonneForceCentimetersTolerance);
-                Assert.Equal(TorqueUnit.TonneForceCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 tf·m", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.TonneForceMeters, TonneForceMetersTolerance);
-                Assert.Equal(TorqueUnit.TonneForceMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(Torque.TryParse("1 tf·mm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.TonneForceMillimeters, TonneForceMillimetersTolerance);
-                Assert.Equal(TorqueUnit.TonneForceMillimeter, parsed.Unit);
-            }
-
+            var quantity = new Torque(value: 1, unit: Torque.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("gf·cm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.GramForceCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Torque(value: 1, unit: Torque.BaseUnit);
+            var expectedUnit = Torque.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("gf·m", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.GramForceMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            Torque convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("gf·mm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.GramForceMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kgf·cm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilogramForceCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kgf·m", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilogramForceMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kgf·mm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilogramForceMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kN·cm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilonewtonCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kN·m", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("кН·м", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kN·mm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilonewtonMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kipf·ft", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilopoundForceFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("kipf·in", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.KilopoundForceInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("MN·cm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.MeganewtonCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("MN·m", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("МН·м", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("MN·mm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.MeganewtonMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("Mlbf·ft", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.MegapoundForceFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("Mlbf·in", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.MegapoundForceInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("N·cm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.NewtonCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("N·m", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.NewtonMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("Н·м", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(TorqueUnit.NewtonMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("N·mm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.NewtonMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("pdl·ft", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.PoundalFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("lbf·ft", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.PoundForceFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("lbf·in", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.PoundForceInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("tf·cm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.TonneForceCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("tf·m", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.TonneForceMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Torque.ParseUnit("tf·mm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TorqueUnit.TonneForceMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(Torque.TryParseUnit("gf·cm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.GramForceCentimeter, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new Torque(value: 1, unit: Torque.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("gf·m", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.GramForceMeter, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new Torque(value: 1, unit: Torque.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("gf·mm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.GramForceMillimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 gf·cm", TorqueUnit.GramForceCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 gf·m", TorqueUnit.GramForceMeter, 4.2)]
+        [InlineData("en-US", "4.2 gf·mm", TorqueUnit.GramForceMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kgf·cm", TorqueUnit.KilogramForceCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kgf·m", TorqueUnit.KilogramForceMeter, 4.2)]
+        [InlineData("en-US", "4.2 kgf·mm", TorqueUnit.KilogramForceMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kN·cm", TorqueUnit.KilonewtonCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kN·m", TorqueUnit.KilonewtonMeter, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm", TorqueUnit.KilonewtonMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft", TorqueUnit.KilopoundForceFoot, 4.2)]
+        [InlineData("en-US", "4.2 kipf·in", TorqueUnit.KilopoundForceInch, 4.2)]
+        [InlineData("en-US", "4.2 MN·cm", TorqueUnit.MeganewtonCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 MN·m", TorqueUnit.MeganewtonMeter, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm", TorqueUnit.MeganewtonMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 Mlbf·ft", TorqueUnit.MegapoundForceFoot, 4.2)]
+        [InlineData("en-US", "4.2 Mlbf·in", TorqueUnit.MegapoundForceInch, 4.2)]
+        [InlineData("en-US", "4.2 N·cm", TorqueUnit.NewtonCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 N·m", TorqueUnit.NewtonMeter, 4.2)]
+        [InlineData("en-US", "4.2 N·mm", TorqueUnit.NewtonMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 pdl·ft", TorqueUnit.PoundalFoot, 4.2)]
+        [InlineData("en-US", "4.2 lbf·ft", TorqueUnit.PoundForceFoot, 4.2)]
+        [InlineData("en-US", "4.2 lbf·in", TorqueUnit.PoundForceInch, 4.2)]
+        [InlineData("en-US", "4.2 tf·cm", TorqueUnit.TonneForceCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 tf·m", TorqueUnit.TonneForceMeter, 4.2)]
+        [InlineData("en-US", "4.2 tf·mm", TorqueUnit.TonneForceMillimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 кН·м", TorqueUnit.KilonewtonMeter, 4.2)]
+        [InlineData("ru-RU", "4,2 МН·м", TorqueUnit.MeganewtonMeter, 4.2)]
+        [InlineData("ru-RU", "4,2 Н·м", TorqueUnit.NewtonMeter, 4.2)]
+        public void Parse(string culture, string quantityString, TorqueUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Torque.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kgf·cm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilogramForceCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 gf·cm", TorqueUnit.GramForceCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 gf·m", TorqueUnit.GramForceMeter, 4.2)]
+        [InlineData("en-US", "4.2 gf·mm", TorqueUnit.GramForceMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kgf·cm", TorqueUnit.KilogramForceCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kgf·m", TorqueUnit.KilogramForceMeter, 4.2)]
+        [InlineData("en-US", "4.2 kgf·mm", TorqueUnit.KilogramForceMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kN·cm", TorqueUnit.KilonewtonCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kN·m", TorqueUnit.KilonewtonMeter, 4.2)]
+        [InlineData("en-US", "4.2 kN·mm", TorqueUnit.KilonewtonMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kipf·ft", TorqueUnit.KilopoundForceFoot, 4.2)]
+        [InlineData("en-US", "4.2 kipf·in", TorqueUnit.KilopoundForceInch, 4.2)]
+        [InlineData("en-US", "4.2 MN·cm", TorqueUnit.MeganewtonCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 MN·m", TorqueUnit.MeganewtonMeter, 4.2)]
+        [InlineData("en-US", "4.2 MN·mm", TorqueUnit.MeganewtonMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 Mlbf·ft", TorqueUnit.MegapoundForceFoot, 4.2)]
+        [InlineData("en-US", "4.2 Mlbf·in", TorqueUnit.MegapoundForceInch, 4.2)]
+        [InlineData("en-US", "4.2 N·cm", TorqueUnit.NewtonCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 N·m", TorqueUnit.NewtonMeter, 4.2)]
+        [InlineData("en-US", "4.2 N·mm", TorqueUnit.NewtonMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 pdl·ft", TorqueUnit.PoundalFoot, 4.2)]
+        [InlineData("en-US", "4.2 lbf·ft", TorqueUnit.PoundForceFoot, 4.2)]
+        [InlineData("en-US", "4.2 lbf·in", TorqueUnit.PoundForceInch, 4.2)]
+        [InlineData("en-US", "4.2 tf·cm", TorqueUnit.TonneForceCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 tf·m", TorqueUnit.TonneForceMeter, 4.2)]
+        [InlineData("en-US", "4.2 tf·mm", TorqueUnit.TonneForceMillimeter, 4.2)]
+        [InlineData("ru-RU", "4,2 кН·м", TorqueUnit.KilonewtonMeter, 4.2)]
+        [InlineData("ru-RU", "4,2 МН·м", TorqueUnit.MeganewtonMeter, 4.2)]
+        [InlineData("ru-RU", "4,2 Н·м", TorqueUnit.NewtonMeter, 4.2)]
+        public void TryParse(string culture, string quantityString, TorqueUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Torque.TryParse(quantityString, out Torque parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kgf·m", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilogramForceMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("tf·mm", TorqueUnit.TonneForceMillimeter)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, TorqueUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            TorqueUnit parsedUnit = Torque.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kgf·mm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilogramForceMillimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("tf·mm", TorqueUnit.TonneForceMillimeter)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, TorqueUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            TorqueUnit parsedUnit = Torque.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kN·cm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilonewtonCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("en-US", "gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("en-US", "gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("en-US", "kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("en-US", "kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("en-US", "kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("en-US", "kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("en-US", "kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("en-US", "kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("en-US", "kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("en-US", "kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("en-US", "MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("en-US", "MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("en-US", "MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("en-US", "Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("en-US", "Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("en-US", "N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("en-US", "N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("en-US", "N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("en-US", "pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("en-US", "lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("en-US", "lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("en-US", "tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("en-US", "tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("en-US", "tf·mm", TorqueUnit.TonneForceMillimeter)]
+        [InlineData("ru-RU", "кН·м", TorqueUnit.KilonewtonMeter)]
+        [InlineData("ru-RU", "МН·м", TorqueUnit.MeganewtonMeter)]
+        [InlineData("ru-RU", "Н·м", TorqueUnit.NewtonMeter)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, TorqueUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            TorqueUnit parsedUnit = Torque.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kN·m", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("en-US", "gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("en-US", "gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("en-US", "kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("en-US", "kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("en-US", "kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("en-US", "kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("en-US", "kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("en-US", "kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("en-US", "kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("en-US", "kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("en-US", "MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("en-US", "MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("en-US", "MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("en-US", "Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("en-US", "Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("en-US", "N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("en-US", "N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("en-US", "N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("en-US", "pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("en-US", "lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("en-US", "lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("en-US", "tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("en-US", "tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("en-US", "tf·mm", TorqueUnit.TonneForceMillimeter)]
+        [InlineData("ru-RU", "кН·м", TorqueUnit.KilonewtonMeter)]
+        [InlineData("ru-RU", "МН·м", TorqueUnit.MeganewtonMeter)]
+        [InlineData("ru-RU", "Н·м", TorqueUnit.NewtonMeter)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, TorqueUnit expectedUnit)
+        {
+            TorqueUnit parsedUnit = Torque.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("кН·м", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilonewtonMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("tf·mm", TorqueUnit.TonneForceMillimeter)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, TorqueUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Torque.TryParseUnit(abbreviation, out TorqueUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kN·mm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilonewtonMillimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("tf·mm", TorqueUnit.TonneForceMillimeter)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, TorqueUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Torque.TryParseUnit(abbreviation, out TorqueUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kipf·ft", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilopoundForceFoot, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("en-US", "gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("en-US", "gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("en-US", "kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("en-US", "kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("en-US", "kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("en-US", "kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("en-US", "kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("en-US", "kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("en-US", "kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("en-US", "kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("en-US", "MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("en-US", "MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("en-US", "MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("en-US", "Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("en-US", "Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("en-US", "N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("en-US", "N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("en-US", "N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("en-US", "pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("en-US", "lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("en-US", "lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("en-US", "tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("en-US", "tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("en-US", "tf·mm", TorqueUnit.TonneForceMillimeter)]
+        [InlineData("ru-RU", "кН·м", TorqueUnit.KilonewtonMeter)]
+        [InlineData("ru-RU", "МН·м", TorqueUnit.MeganewtonMeter)]
+        [InlineData("ru-RU", "Н·м", TorqueUnit.NewtonMeter)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, TorqueUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Torque.TryParseUnit(abbreviation, out TorqueUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("kipf·in", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.KilopoundForceInch, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "gf·cm", TorqueUnit.GramForceCentimeter)]
+        [InlineData("en-US", "gf·m", TorqueUnit.GramForceMeter)]
+        [InlineData("en-US", "gf·mm", TorqueUnit.GramForceMillimeter)]
+        [InlineData("en-US", "kgf·cm", TorqueUnit.KilogramForceCentimeter)]
+        [InlineData("en-US", "kgf·m", TorqueUnit.KilogramForceMeter)]
+        [InlineData("en-US", "kgf·mm", TorqueUnit.KilogramForceMillimeter)]
+        [InlineData("en-US", "kN·cm", TorqueUnit.KilonewtonCentimeter)]
+        [InlineData("en-US", "kN·m", TorqueUnit.KilonewtonMeter)]
+        [InlineData("en-US", "kN·mm", TorqueUnit.KilonewtonMillimeter)]
+        [InlineData("en-US", "kipf·ft", TorqueUnit.KilopoundForceFoot)]
+        [InlineData("en-US", "kipf·in", TorqueUnit.KilopoundForceInch)]
+        [InlineData("en-US", "MN·cm", TorqueUnit.MeganewtonCentimeter)]
+        [InlineData("en-US", "MN·m", TorqueUnit.MeganewtonMeter)]
+        [InlineData("en-US", "MN·mm", TorqueUnit.MeganewtonMillimeter)]
+        [InlineData("en-US", "Mlbf·ft", TorqueUnit.MegapoundForceFoot)]
+        [InlineData("en-US", "Mlbf·in", TorqueUnit.MegapoundForceInch)]
+        [InlineData("en-US", "N·cm", TorqueUnit.NewtonCentimeter)]
+        [InlineData("en-US", "N·m", TorqueUnit.NewtonMeter)]
+        [InlineData("en-US", "N·mm", TorqueUnit.NewtonMillimeter)]
+        [InlineData("en-US", "pdl·ft", TorqueUnit.PoundalFoot)]
+        [InlineData("en-US", "lbf·ft", TorqueUnit.PoundForceFoot)]
+        [InlineData("en-US", "lbf·in", TorqueUnit.PoundForceInch)]
+        [InlineData("en-US", "tf·cm", TorqueUnit.TonneForceCentimeter)]
+        [InlineData("en-US", "tf·m", TorqueUnit.TonneForceMeter)]
+        [InlineData("en-US", "tf·mm", TorqueUnit.TonneForceMillimeter)]
+        [InlineData("ru-RU", "кН·м", TorqueUnit.KilonewtonMeter)]
+        [InlineData("ru-RU", "МН·м", TorqueUnit.MeganewtonMeter)]
+        [InlineData("ru-RU", "Н·м", TorqueUnit.NewtonMeter)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, TorqueUnit expectedUnit)
+        {
+            Assert.True(Torque.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out TorqueUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Torque.TryParseUnit("MN·cm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.MeganewtonCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", TorqueUnit.GramForceCentimeter, "gf·cm")]
+        [InlineData("en-US", TorqueUnit.GramForceMeter, "gf·m")]
+        [InlineData("en-US", TorqueUnit.GramForceMillimeter, "gf·mm")]
+        [InlineData("en-US", TorqueUnit.KilogramForceCentimeter, "kgf·cm")]
+        [InlineData("en-US", TorqueUnit.KilogramForceMeter, "kgf·m")]
+        [InlineData("en-US", TorqueUnit.KilogramForceMillimeter, "kgf·mm")]
+        [InlineData("en-US", TorqueUnit.KilonewtonCentimeter, "kN·cm")]
+        [InlineData("en-US", TorqueUnit.KilonewtonMeter, "kN·m")]
+        [InlineData("en-US", TorqueUnit.KilonewtonMillimeter, "kN·mm")]
+        [InlineData("en-US", TorqueUnit.KilopoundForceFoot, "kipf·ft")]
+        [InlineData("en-US", TorqueUnit.KilopoundForceInch, "kipf·in")]
+        [InlineData("en-US", TorqueUnit.MeganewtonCentimeter, "MN·cm")]
+        [InlineData("en-US", TorqueUnit.MeganewtonMeter, "MN·m")]
+        [InlineData("en-US", TorqueUnit.MeganewtonMillimeter, "MN·mm")]
+        [InlineData("en-US", TorqueUnit.MegapoundForceFoot, "Mlbf·ft")]
+        [InlineData("en-US", TorqueUnit.MegapoundForceInch, "Mlbf·in")]
+        [InlineData("en-US", TorqueUnit.NewtonCentimeter, "N·cm")]
+        [InlineData("en-US", TorqueUnit.NewtonMeter, "N·m")]
+        [InlineData("en-US", TorqueUnit.NewtonMillimeter, "N·mm")]
+        [InlineData("en-US", TorqueUnit.PoundalFoot, "pdl·ft")]
+        [InlineData("en-US", TorqueUnit.PoundForceFoot, "lbf·ft")]
+        [InlineData("en-US", TorqueUnit.PoundForceInch, "lbf·in")]
+        [InlineData("en-US", TorqueUnit.TonneForceCentimeter, "tf·cm")]
+        [InlineData("en-US", TorqueUnit.TonneForceMeter, "tf·m")]
+        [InlineData("en-US", TorqueUnit.TonneForceMillimeter, "tf·mm")]
+        [InlineData("ru-RU", TorqueUnit.KilonewtonMeter, "кН·м")]
+        [InlineData("ru-RU", TorqueUnit.MeganewtonMeter, "МН·м")]
+        [InlineData("ru-RU", TorqueUnit.NewtonMeter, "Н·м")]
+        public void GetAbbreviationForCulture(string culture, TorqueUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Torque.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
 
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(Torque.Units, unit =>
             {
-                Assert.True(Torque.TryParseUnit("MN·m", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsedUnit);
-            }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-            {
-                Assert.True(Torque.TryParseUnit("МН·м", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.MeganewtonMeter, parsedUnit);
-            }
+                var defaultAbbreviation = Torque.GetAbbreviation(unit);
 
-            {
-                Assert.True(Torque.TryParseUnit("MN·mm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.MeganewtonMillimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("Mlbf·ft", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.MegapoundForceFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("Mlbf·in", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.MegapoundForceInch, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("N·cm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.NewtonCentimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("N·m", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.NewtonMeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("Н·м", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.NewtonMeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("N·mm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.NewtonMillimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("pdl·ft", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.PoundalFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("lbf·ft", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.PoundForceFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("lbf·in", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.PoundForceInch, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("tf·cm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.TonneForceCentimeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("tf·m", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.TonneForceMeter, parsedUnit);
-            }
-
-            {
-                Assert.True(Torque.TryParseUnit("tf·mm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TorqueUnit.TonneForceMillimeter, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -1124,12 +800,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(TorqueUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Torque.Units.First(u => u != Torque.BaseUnit);
-
-            var quantity = Torque.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Torque.Units.Where(u => u != Torque.BaseUnit), fromUnit =>
+            {
+                var quantity = Torque.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -1139,6 +815,25 @@ namespace UnitsNet.Tests
             var quantity = default(Torque);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(TorqueUnit unit)
+        {
+            var quantity = Torque.From(3, Torque.BaseUnit);
+            Torque expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<TorqueUnit> quantityToConvert = quantity;
+                IQuantity<TorqueUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -1267,21 +962,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Torque.FromNewtonMeters(1);
-            Assert.True(v.Equals(Torque.FromNewtonMeters(1), NewtonMetersTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Torque.Zero, NewtonMetersTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Torque.FromNewtonMeters(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Torque.FromNewtonMeters(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Torque newtonmeter = Torque.FromNewtonMeters(1);
@@ -1295,13 +975,39 @@ namespace UnitsNet.Tests
             Assert.False(newtonmeter.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Torque.FromNewtonMeters(firstValue);
+            var otherQuantity = Torque.FromNewtonMeters(secondValue);
+            Torque maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Torque.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Torque.FromNewtonMeters(1);
+            var negativeTolerance = Torque.FromNewtonMeters(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(TorqueUnit)).Cast<TorqueUnit>();
+            var units = Enum.GetValues<TorqueUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -1314,39 +1020,32 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 gf·cm", new Torque(1, TorqueUnit.GramForceCentimeter).ToString());
-                Assert.Equal("1 gf·m", new Torque(1, TorqueUnit.GramForceMeter).ToString());
-                Assert.Equal("1 gf·mm", new Torque(1, TorqueUnit.GramForceMillimeter).ToString());
-                Assert.Equal("1 kgf·cm", new Torque(1, TorqueUnit.KilogramForceCentimeter).ToString());
-                Assert.Equal("1 kgf·m", new Torque(1, TorqueUnit.KilogramForceMeter).ToString());
-                Assert.Equal("1 kgf·mm", new Torque(1, TorqueUnit.KilogramForceMillimeter).ToString());
-                Assert.Equal("1 kN·cm", new Torque(1, TorqueUnit.KilonewtonCentimeter).ToString());
-                Assert.Equal("1 kN·m", new Torque(1, TorqueUnit.KilonewtonMeter).ToString());
-                Assert.Equal("1 kN·mm", new Torque(1, TorqueUnit.KilonewtonMillimeter).ToString());
-                Assert.Equal("1 kipf·ft", new Torque(1, TorqueUnit.KilopoundForceFoot).ToString());
-                Assert.Equal("1 kipf·in", new Torque(1, TorqueUnit.KilopoundForceInch).ToString());
-                Assert.Equal("1 MN·cm", new Torque(1, TorqueUnit.MeganewtonCentimeter).ToString());
-                Assert.Equal("1 MN·m", new Torque(1, TorqueUnit.MeganewtonMeter).ToString());
-                Assert.Equal("1 MN·mm", new Torque(1, TorqueUnit.MeganewtonMillimeter).ToString());
-                Assert.Equal("1 Mlbf·ft", new Torque(1, TorqueUnit.MegapoundForceFoot).ToString());
-                Assert.Equal("1 Mlbf·in", new Torque(1, TorqueUnit.MegapoundForceInch).ToString());
-                Assert.Equal("1 N·cm", new Torque(1, TorqueUnit.NewtonCentimeter).ToString());
-                Assert.Equal("1 N·m", new Torque(1, TorqueUnit.NewtonMeter).ToString());
-                Assert.Equal("1 N·mm", new Torque(1, TorqueUnit.NewtonMillimeter).ToString());
-                Assert.Equal("1 pdl·ft", new Torque(1, TorqueUnit.PoundalFoot).ToString());
-                Assert.Equal("1 lbf·ft", new Torque(1, TorqueUnit.PoundForceFoot).ToString());
-                Assert.Equal("1 lbf·in", new Torque(1, TorqueUnit.PoundForceInch).ToString());
-                Assert.Equal("1 tf·cm", new Torque(1, TorqueUnit.TonneForceCentimeter).ToString());
-                Assert.Equal("1 tf·m", new Torque(1, TorqueUnit.TonneForceMeter).ToString());
-                Assert.Equal("1 tf·mm", new Torque(1, TorqueUnit.TonneForceMillimeter).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 gf·cm", new Torque(1, TorqueUnit.GramForceCentimeter).ToString());
+            Assert.Equal("1 gf·m", new Torque(1, TorqueUnit.GramForceMeter).ToString());
+            Assert.Equal("1 gf·mm", new Torque(1, TorqueUnit.GramForceMillimeter).ToString());
+            Assert.Equal("1 kgf·cm", new Torque(1, TorqueUnit.KilogramForceCentimeter).ToString());
+            Assert.Equal("1 kgf·m", new Torque(1, TorqueUnit.KilogramForceMeter).ToString());
+            Assert.Equal("1 kgf·mm", new Torque(1, TorqueUnit.KilogramForceMillimeter).ToString());
+            Assert.Equal("1 kN·cm", new Torque(1, TorqueUnit.KilonewtonCentimeter).ToString());
+            Assert.Equal("1 kN·m", new Torque(1, TorqueUnit.KilonewtonMeter).ToString());
+            Assert.Equal("1 kN·mm", new Torque(1, TorqueUnit.KilonewtonMillimeter).ToString());
+            Assert.Equal("1 kipf·ft", new Torque(1, TorqueUnit.KilopoundForceFoot).ToString());
+            Assert.Equal("1 kipf·in", new Torque(1, TorqueUnit.KilopoundForceInch).ToString());
+            Assert.Equal("1 MN·cm", new Torque(1, TorqueUnit.MeganewtonCentimeter).ToString());
+            Assert.Equal("1 MN·m", new Torque(1, TorqueUnit.MeganewtonMeter).ToString());
+            Assert.Equal("1 MN·mm", new Torque(1, TorqueUnit.MeganewtonMillimeter).ToString());
+            Assert.Equal("1 Mlbf·ft", new Torque(1, TorqueUnit.MegapoundForceFoot).ToString());
+            Assert.Equal("1 Mlbf·in", new Torque(1, TorqueUnit.MegapoundForceInch).ToString());
+            Assert.Equal("1 N·cm", new Torque(1, TorqueUnit.NewtonCentimeter).ToString());
+            Assert.Equal("1 N·m", new Torque(1, TorqueUnit.NewtonMeter).ToString());
+            Assert.Equal("1 N·mm", new Torque(1, TorqueUnit.NewtonMillimeter).ToString());
+            Assert.Equal("1 pdl·ft", new Torque(1, TorqueUnit.PoundalFoot).ToString());
+            Assert.Equal("1 lbf·ft", new Torque(1, TorqueUnit.PoundForceFoot).ToString());
+            Assert.Equal("1 lbf·in", new Torque(1, TorqueUnit.PoundForceInch).ToString());
+            Assert.Equal("1 tf·cm", new Torque(1, TorqueUnit.TonneForceCentimeter).ToString());
+            Assert.Equal("1 tf·m", new Torque(1, TorqueUnit.TonneForceMeter).ToString());
+            Assert.Equal("1 tf·mm", new Torque(1, TorqueUnit.TonneForceMillimeter).ToString());
         }
 
         [Fact]
@@ -1385,19 +1084,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s1"));
-                Assert.Equal("0.12 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s2"));
-                Assert.Equal("0.123 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s3"));
-                Assert.Equal("0.1235 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s1"));
+            Assert.Equal("0.12 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s2"));
+            Assert.Equal("0.123 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s3"));
+            Assert.Equal("0.1235 N·m", new Torque(0.123456, TorqueUnit.NewtonMeter).ToString("s4"));
         }
 
         [Fact]
@@ -1420,7 +1111,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -1433,150 +1124,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Torque)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(TorqueUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal(Torque.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal(Torque.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Torque.FromNewtonMeters(1.0);
-            Assert.Equal(new {Torque.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

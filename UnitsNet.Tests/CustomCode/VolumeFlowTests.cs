@@ -27,8 +27,6 @@ namespace UnitsNet.Tests.CustomCode
 {
     public class VolumeFlowTests : VolumeFlowTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
-
         protected override double AcreFeetPerDayInOneCubicMeterPerSecond => 70.0457;
 
         protected override double AcreFeetPerHourInOneCubicMeterPerSecond => 2.91857;
@@ -164,6 +162,22 @@ namespace UnitsNet.Tests.CustomCode
         protected override double UsGallonsPerMinuteInOneCubicMeterPerSecond => 1.5850323141489e4;
 
         protected override double UsGallonsPerSecondInOneCubicMeterPerSecond => 2.64172052358148E2;
+
+        protected override double DecalitersPerDayInOneCubicMeterPerSecond => 8.64E6;
+
+        protected override double DecalitersPerHourInOneCubicMeterPerSecond => 360_000;
+
+        protected override double DecalitersPerMinuteInOneCubicMeterPerSecond => 6_000;
+
+        protected override double DecalitersPerSecondInOneCubicMeterPerSecond => 100;
+
+        protected override double HectolitersPerDayInOneCubicMeterPerSecond => 864_000;
+
+        protected override double HectolitersPerHourInOneCubicMeterPerSecond => 36_000;
+
+        protected override double HectolitersPerMinuteInOneCubicMeterPerSecond => 600;
+
+        protected override double HectolitersPerSecondInOneCubicMeterPerSecond => 10;
 
         [Theory]
         [InlineData(20, 2, 40)]

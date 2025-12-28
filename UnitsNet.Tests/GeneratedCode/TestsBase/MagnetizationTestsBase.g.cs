@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -67,16 +69,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Magnetization(double.PositiveInfinity, MagnetizationUnit.AmperePerMeter));
-            Assert.Throws<ArgumentException>(() => new Magnetization(double.NegativeInfinity, MagnetizationUnit.AmperePerMeter));
+            var exception1 = Record.Exception(() => new Magnetization(double.PositiveInfinity, MagnetizationUnit.AmperePerMeter));
+            var exception2 = Record.Exception(() => new Magnetization(double.NegativeInfinity, MagnetizationUnit.AmperePerMeter));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Magnetization(double.NaN, MagnetizationUnit.AmperePerMeter));
+            var exception = Record.Exception(() => new Magnetization(double.NaN, MagnetizationUnit.AmperePerMeter));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -86,32 +93,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new Magnetization(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Magnetization) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new Magnetization(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new Magnetization(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void Magnetization_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            MagnetizationUnit[] unitsOrderedByName = EnumHelper.GetValues<MagnetizationUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Magnetization(1, MagnetizationUnit.AmperePerMeter);
 
-            QuantityInfo<MagnetizationUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Magnetization, MagnetizationUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Magnetization.Zero, quantityInfo.Zero);
             Assert.Equal("Magnetization", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<MagnetizationUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Magnetization.Zero, quantityInfo.Zero);
+            Assert.Equal(Magnetization.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Magnetization.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<MagnetizationUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -124,23 +135,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Magnetization.From(1, MagnetizationUnit.AmperePerMeter);
-            AssertEx.EqualTolerance(1, quantity00.AmperesPerMeter, AmperesPerMeterTolerance);
-            Assert.Equal(MagnetizationUnit.AmperePerMeter, quantity00.Unit);
-
+            Assert.All(EnumHelper.GetValues<MagnetizationUnit>(), unit =>
+            {
+                var quantity = Magnetization.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromAmperesPerMeter_WithInfinityValue_ThrowsArgumentException()
+        public void FromAmperesPerMeter_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Magnetization.FromAmperesPerMeter(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Magnetization.FromAmperesPerMeter(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Magnetization.FromAmperesPerMeter(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Magnetization.FromAmperesPerMeter(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromAmperesPerMeter_WithNanValue_ThrowsArgumentException()
+        public void FromAmperesPerMeter_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Magnetization.FromAmperesPerMeter(double.NaN));
+            var exception = Record.Exception(() => Magnetization.FromAmperesPerMeter(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -151,64 +169,181 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = Magnetization.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new Magnetization(value: 1, unit: Magnetization.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(Magnetization.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = Magnetization.Parse("1 A/m", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.AmperesPerMeter, AmperesPerMeterTolerance);
-                Assert.Equal(MagnetizationUnit.AmperePerMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new Magnetization(value: 1, unit: Magnetization.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(Magnetization.TryParse("1 A/m", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.AmperesPerMeter, AmperesPerMeterTolerance);
-                Assert.Equal(MagnetizationUnit.AmperePerMeter, parsed.Unit);
-            }
-
+            var quantity = new Magnetization(value: 1, unit: Magnetization.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = Magnetization.ParseUnit("A/m", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MagnetizationUnit.AmperePerMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Magnetization(value: 1, unit: Magnetization.BaseUnit);
+            var expectedUnit = Magnetization.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
+            Magnetization convertedQuantity = quantity.ToUnit(UnitSystem.SI);
+
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(Magnetization.TryParseUnit("A/m", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MagnetizationUnit.AmperePerMeter, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new Magnetization(value: 1, unit: Magnetization.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new Magnetization(value: 1, unit: Magnetization.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 A/m", MagnetizationUnit.AmperePerMeter, 4.2)]
+        public void Parse(string culture, string quantityString, MagnetizationUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Magnetization.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 A/m", MagnetizationUnit.AmperePerMeter, 4.2)]
+        public void TryParse(string culture, string quantityString, MagnetizationUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Magnetization.TryParse(quantityString, out Magnetization parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("A/m", MagnetizationUnit.AmperePerMeter)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            MagnetizationUnit parsedUnit = Magnetization.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("A/m", MagnetizationUnit.AmperePerMeter)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            MagnetizationUnit parsedUnit = Magnetization.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "A/m", MagnetizationUnit.AmperePerMeter)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            MagnetizationUnit parsedUnit = Magnetization.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "A/m", MagnetizationUnit.AmperePerMeter)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            MagnetizationUnit parsedUnit = Magnetization.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("A/m", MagnetizationUnit.AmperePerMeter)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Magnetization.TryParseUnit(abbreviation, out MagnetizationUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("A/m", MagnetizationUnit.AmperePerMeter)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Magnetization.TryParseUnit(abbreviation, out MagnetizationUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "A/m", MagnetizationUnit.AmperePerMeter)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Magnetization.TryParseUnit(abbreviation, out MagnetizationUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "A/m", MagnetizationUnit.AmperePerMeter)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, MagnetizationUnit expectedUnit)
+        {
+            Assert.True(Magnetization.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out MagnetizationUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", MagnetizationUnit.AmperePerMeter, "A/m")]
+        public void GetAbbreviationForCulture(string culture, MagnetizationUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Magnetization.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(Magnetization.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = Magnetization.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -232,16 +367,16 @@ namespace UnitsNet.Tests
             Assert.Equal(quantity, toUnitWithSameUnit);
         }
 
-        [Theory(Skip = "Multiple units required")]
+        [Theory]
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(MagnetizationUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Magnetization.Units.First(u => u != Magnetization.BaseUnit);
-
-            var quantity = Magnetization.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Magnetization.Units.Where(u => u != Magnetization.BaseUnit), fromUnit =>
+            {
+                var quantity = Magnetization.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -251,6 +386,25 @@ namespace UnitsNet.Tests
             var quantity = default(Magnetization);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(MagnetizationUnit unit)
+        {
+            var quantity = Magnetization.From(3, Magnetization.BaseUnit);
+            Magnetization expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<MagnetizationUnit> quantityToConvert = quantity;
+                IQuantity<MagnetizationUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -354,21 +508,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Magnetization.FromAmperesPerMeter(1);
-            Assert.True(v.Equals(Magnetization.FromAmperesPerMeter(1), AmperesPerMeterTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Magnetization.Zero, AmperesPerMeterTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Magnetization.FromAmperesPerMeter(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Magnetization.FromAmperesPerMeter(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Magnetization amperepermeter = Magnetization.FromAmperesPerMeter(1);
@@ -382,13 +521,39 @@ namespace UnitsNet.Tests
             Assert.False(amperepermeter.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Magnetization.FromAmperesPerMeter(firstValue);
+            var otherQuantity = Magnetization.FromAmperesPerMeter(secondValue);
+            Magnetization maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Magnetization.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Magnetization.FromAmperesPerMeter(1);
+            var negativeTolerance = Magnetization.FromAmperesPerMeter(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(MagnetizationUnit)).Cast<MagnetizationUnit>();
+            var units = Enum.GetValues<MagnetizationUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -401,15 +566,8 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 A/m", new Magnetization(1, MagnetizationUnit.AmperePerMeter).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 A/m", new Magnetization(1, MagnetizationUnit.AmperePerMeter).ToString());
         }
 
         [Fact]
@@ -424,19 +582,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s1"));
-                Assert.Equal("0.12 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s2"));
-                Assert.Equal("0.123 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s3"));
-                Assert.Equal("0.1235 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s1"));
+            Assert.Equal("0.12 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s2"));
+            Assert.Equal("0.123 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s3"));
+            Assert.Equal("0.1235 A/m", new Magnetization(0.123456, MagnetizationUnit.AmperePerMeter).ToString("s4"));
         }
 
         [Fact]
@@ -459,7 +609,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -472,150 +622,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Magnetization)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(MagnetizationUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal(Magnetization.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal(Magnetization.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Magnetization.FromAmperesPerMeter(1.0);
-            Assert.Equal(new {Magnetization.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

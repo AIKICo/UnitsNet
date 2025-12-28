@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Magnetization(double value, MagnetizationUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Magnetization, which is Second. All conversions go via this value.
         /// </summary>
         public static MagnetizationUnit BaseUnit { get; } = MagnetizationUnit.AmperePerMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Magnetization.
         /// </summary>
         public static Magnetization MaxValue { get; } = new Magnetization(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Magnetization.
         /// </summary>
         public static Magnetization MinValue { get; } = new Magnetization(double.MinValue, BaseUnit);
 
@@ -94,7 +93,6 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Magnetization"/> from <see cref="MagnetizationUnit.AmperePerMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Magnetization FromAmperesPerMeter(double amperespermeter) => new Magnetization(amperespermeter, MagnetizationUnit.AmperePerMeter);
 
         /// <summary>
@@ -119,9 +117,9 @@ namespace UnitsNet
                 public double As(MagnetizationUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Magnetization to another Magnetization with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Magnetization with the specified unit.</returns>
                 public Magnetization ToUnit(MagnetizationUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -138,7 +136,7 @@ namespace UnitsNet
                     return Unit switch
                     {
                         MagnetizationUnit.AmperePerMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -152,7 +150,7 @@ namespace UnitsNet
                     return unit switch
                     {
                         MagnetizationUnit.AmperePerMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

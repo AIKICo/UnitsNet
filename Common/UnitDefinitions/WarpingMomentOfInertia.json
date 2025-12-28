@@ -17,7 +17,7 @@
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "m⁶", "m^6" ]
+          "Abbreviations": [ "m⁶" ]
         }
       ]
     },
@@ -32,7 +32,7 @@
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "dm⁶", "dm^6" ]
+          "Abbreviations": [ "dm⁶" ]
         }
       ]
     },
@@ -47,7 +47,7 @@
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "cm⁶", "cm^6" ]
+          "Abbreviations": [ "cm⁶" ]
         }
       ]
     },
@@ -62,7 +62,7 @@
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "mm⁶", "mm^6" ]
+          "Abbreviations": [ "mm⁶" ]
         }
       ]
     },
@@ -72,12 +72,12 @@
       "BaseUnits": {
         "L": "Foot"
       },
-      "FromUnitToBaseFunc": "{x} * Math.Pow(0.3048, 6)",
-      "FromBaseToUnitFunc": "{x} / Math.Pow(0.3048, 6)",
+      "FromUnitToBaseFunc": "{x} * 0.000801843800914862014464",
+      "FromBaseToUnitFunc": "{x} / 0.000801843800914862014464",
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "ft⁶", "ft^6" ]
+          "Abbreviations": [ "ft⁶"]
         }
       ]
     },
@@ -87,12 +87,12 @@
       "BaseUnits": {
         "L": "Inch"
       },
-      "FromUnitToBaseFunc": "{x} * Math.Pow(2.54e-2, 6)",
-      "FromBaseToUnitFunc": "{x} / Math.Pow(2.54e-2, 6)",
+      "FromUnitToBaseFunc": "{x} * 0.000000000268535866540096",
+      "FromBaseToUnitFunc": "{x} / 0.000000000268535866540096",
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "in⁶", "in^6" ]
+          "Abbreviations": [ "in⁶" ]
         }
       ]
     }

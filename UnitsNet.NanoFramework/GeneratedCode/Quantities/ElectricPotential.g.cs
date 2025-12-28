@@ -26,6 +26,9 @@ namespace UnitsNet
     /// <summary>
     ///     In classical electromagnetism, the electric potential (a scalar quantity denoted by Φ, ΦE or V and also called the electric field potential or the electrostatic potential) at a point is the amount of electric potential energy that a unitary point charge would have when located at that point.
     /// </summary>
+    /// <remarks>
+    ///     If you want to map more parameters into the <c>ElectricPotential</c> class (volts RMS, phase angle, etc.), create your own wrapper type such as a record or named tuple.
+    /// </remarks>
     public struct  ElectricPotential
     {
         /// <summary>
@@ -51,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricPotential(double value, ElectricPotentialUnit unit)
         {
             _value = value;
@@ -59,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricPotential, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricPotentialUnit BaseUnit { get; } = ElectricPotentialUnit.Volt;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricPotential.
         /// </summary>
         public static ElectricPotential MaxValue { get; } = new ElectricPotential(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricPotential.
         /// </summary>
         public static ElectricPotential MinValue { get; } = new ElectricPotential(double.MinValue, BaseUnit);
 
@@ -116,37 +118,31 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricPotential"/> from <see cref="ElectricPotentialUnit.Kilovolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricPotential FromKilovolts(double kilovolts) => new ElectricPotential(kilovolts, ElectricPotentialUnit.Kilovolt);
 
         /// <summary>
         ///     Creates a <see cref="ElectricPotential"/> from <see cref="ElectricPotentialUnit.Megavolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricPotential FromMegavolts(double megavolts) => new ElectricPotential(megavolts, ElectricPotentialUnit.Megavolt);
 
         /// <summary>
         ///     Creates a <see cref="ElectricPotential"/> from <see cref="ElectricPotentialUnit.Microvolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricPotential FromMicrovolts(double microvolts) => new ElectricPotential(microvolts, ElectricPotentialUnit.Microvolt);
 
         /// <summary>
         ///     Creates a <see cref="ElectricPotential"/> from <see cref="ElectricPotentialUnit.Millivolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricPotential FromMillivolts(double millivolts) => new ElectricPotential(millivolts, ElectricPotentialUnit.Millivolt);
 
         /// <summary>
         ///     Creates a <see cref="ElectricPotential"/> from <see cref="ElectricPotentialUnit.Nanovolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricPotential FromNanovolts(double nanovolts) => new ElectricPotential(nanovolts, ElectricPotentialUnit.Nanovolt);
 
         /// <summary>
         ///     Creates a <see cref="ElectricPotential"/> from <see cref="ElectricPotentialUnit.Volt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricPotential FromVolts(double volts) => new ElectricPotential(volts, ElectricPotentialUnit.Volt);
 
         /// <summary>
@@ -171,9 +167,9 @@ namespace UnitsNet
                 public double As(ElectricPotentialUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricPotential to another ElectricPotential with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricPotential with the specified unit.</returns>
                 public ElectricPotential ToUnit(ElectricPotentialUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -195,7 +191,7 @@ namespace UnitsNet
                         ElectricPotentialUnit.Millivolt => (_value) * 1e-3d,
                         ElectricPotentialUnit.Nanovolt => (_value) * 1e-9d,
                         ElectricPotentialUnit.Volt => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -214,7 +210,7 @@ namespace UnitsNet
                         ElectricPotentialUnit.Millivolt => (baseUnitValue) / 1e-3d,
                         ElectricPotentialUnit.Nanovolt => (baseUnitValue) / 1e-9d,
                         ElectricPotentialUnit.Volt => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

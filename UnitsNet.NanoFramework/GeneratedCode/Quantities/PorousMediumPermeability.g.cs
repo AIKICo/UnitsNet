@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public PorousMediumPermeability(double value, PorousMediumPermeabilityUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of PorousMediumPermeability, which is Second. All conversions go via this value.
         /// </summary>
         public static PorousMediumPermeabilityUnit BaseUnit { get; } = PorousMediumPermeabilityUnit.SquareMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of PorousMediumPermeability.
         /// </summary>
         public static PorousMediumPermeability MaxValue { get; } = new PorousMediumPermeability(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of PorousMediumPermeability.
         /// </summary>
         public static PorousMediumPermeability MinValue { get; } = new PorousMediumPermeability(double.MinValue, BaseUnit);
 
@@ -114,31 +113,26 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.Darcy"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static PorousMediumPermeability FromDarcys(double darcys) => new PorousMediumPermeability(darcys, PorousMediumPermeabilityUnit.Darcy);
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.Microdarcy"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static PorousMediumPermeability FromMicrodarcys(double microdarcys) => new PorousMediumPermeability(microdarcys, PorousMediumPermeabilityUnit.Microdarcy);
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.Millidarcy"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static PorousMediumPermeability FromMillidarcys(double millidarcys) => new PorousMediumPermeability(millidarcys, PorousMediumPermeabilityUnit.Millidarcy);
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.SquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static PorousMediumPermeability FromSquareCentimeters(double squarecentimeters) => new PorousMediumPermeability(squarecentimeters, PorousMediumPermeabilityUnit.SquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.SquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static PorousMediumPermeability FromSquareMeters(double squaremeters) => new PorousMediumPermeability(squaremeters, PorousMediumPermeabilityUnit.SquareMeter);
 
         /// <summary>
@@ -163,9 +157,9 @@ namespace UnitsNet
                 public double As(PorousMediumPermeabilityUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this PorousMediumPermeability to another PorousMediumPermeability with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A PorousMediumPermeability with the specified unit.</returns>
                 public PorousMediumPermeability ToUnit(PorousMediumPermeabilityUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -186,7 +180,7 @@ namespace UnitsNet
                         PorousMediumPermeabilityUnit.Millidarcy => (_value * 9.869233e-13) * 1e-3d,
                         PorousMediumPermeabilityUnit.SquareCentimeter => _value * 1e-4,
                         PorousMediumPermeabilityUnit.SquareMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -204,7 +198,7 @@ namespace UnitsNet
                         PorousMediumPermeabilityUnit.Millidarcy => (baseUnitValue / 9.869233e-13) / 1e-3d,
                         PorousMediumPermeabilityUnit.SquareCentimeter => baseUnitValue / 1e-4,
                         PorousMediumPermeabilityUnit.SquareMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

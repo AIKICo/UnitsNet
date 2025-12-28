@@ -28,8 +28,6 @@ namespace UnitsNet.Tests.CustomCode
 {
     public class LinearDensityTests : LinearDensityTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
-
         protected override double MicrogramsPerMillimeterInOneKilogramPerMeter => 1e6;
         protected override double MicrogramsPerCentimeterInOneKilogramPerMeter => 1e7;
         protected override double MicrogramsPerMeterInOneKilogramPerMeter => 1e9;
@@ -45,6 +43,11 @@ namespace UnitsNet.Tests.CustomCode
         protected override double KilogramsPerCentimeterInOneKilogramPerMeter => 1e-2;
         protected override double KilogramsPerMeterInOneKilogramPerMeter => 1;
         protected override double KilogramsPerMillimeterInOneKilogramPerMeter => 1e-3;
+
+        protected override double MicrogramsPerFootInOneKilogramPerMeter => 3.048e8;
+        protected override double MilligramsPerFootInOneKilogramPerMeter => 3.048e5;
+        protected override double GramsPerFootInOneKilogramPerMeter => 3.048e2;
+        protected override double KilogramsPerFootInOneKilogramPerMeter => 3.048e-1;
 
         protected override double PoundsPerInchInOneKilogramPerMeter => 5.599741459E-02;
 

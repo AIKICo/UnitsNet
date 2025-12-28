@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Luminance(double value, LuminanceUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Luminance, which is Second. All conversions go via this value.
         /// </summary>
         public static LuminanceUnit BaseUnit { get; } = LuminanceUnit.CandelaPerSquareMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Luminance.
         /// </summary>
         public static Luminance MaxValue { get; } = new Luminance(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Luminance.
         /// </summary>
         public static Luminance MinValue { get; } = new Luminance(double.MinValue, BaseUnit);
 
@@ -139,61 +138,51 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.CandelaPerSquareFoot"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromCandelasPerSquareFoot(double candelaspersquarefoot) => new Luminance(candelaspersquarefoot, LuminanceUnit.CandelaPerSquareFoot);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.CandelaPerSquareInch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromCandelasPerSquareInch(double candelaspersquareinch) => new Luminance(candelaspersquareinch, LuminanceUnit.CandelaPerSquareInch);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.CandelaPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromCandelasPerSquareMeter(double candelaspersquaremeter) => new Luminance(candelaspersquaremeter, LuminanceUnit.CandelaPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.CenticandelaPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromCenticandelasPerSquareMeter(double centicandelaspersquaremeter) => new Luminance(centicandelaspersquaremeter, LuminanceUnit.CenticandelaPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.DecicandelaPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromDecicandelasPerSquareMeter(double decicandelaspersquaremeter) => new Luminance(decicandelaspersquaremeter, LuminanceUnit.DecicandelaPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.KilocandelaPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromKilocandelasPerSquareMeter(double kilocandelaspersquaremeter) => new Luminance(kilocandelaspersquaremeter, LuminanceUnit.KilocandelaPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.MicrocandelaPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromMicrocandelasPerSquareMeter(double microcandelaspersquaremeter) => new Luminance(microcandelaspersquaremeter, LuminanceUnit.MicrocandelaPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.MillicandelaPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromMillicandelasPerSquareMeter(double millicandelaspersquaremeter) => new Luminance(millicandelaspersquaremeter, LuminanceUnit.MillicandelaPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.NanocandelaPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromNanocandelasPerSquareMeter(double nanocandelaspersquaremeter) => new Luminance(nanocandelaspersquaremeter, LuminanceUnit.NanocandelaPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Luminance"/> from <see cref="LuminanceUnit.Nit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Luminance FromNits(double nits) => new Luminance(nits, LuminanceUnit.Nit);
 
         /// <summary>
@@ -218,9 +207,9 @@ namespace UnitsNet
                 public double As(LuminanceUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Luminance to another Luminance with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Luminance with the specified unit.</returns>
                 public Luminance ToUnit(LuminanceUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -236,8 +225,8 @@ namespace UnitsNet
                 {
                     return Unit switch
                     {
-                        LuminanceUnit.CandelaPerSquareFoot => _value* 1.07639e1,
-                        LuminanceUnit.CandelaPerSquareInch => _value* 1.5500031e3,
+                        LuminanceUnit.CandelaPerSquareFoot => _value / 9.290304e-2,
+                        LuminanceUnit.CandelaPerSquareInch => _value / 0.00064516,
                         LuminanceUnit.CandelaPerSquareMeter => _value,
                         LuminanceUnit.CenticandelaPerSquareMeter => (_value) * 1e-2d,
                         LuminanceUnit.DecicandelaPerSquareMeter => (_value) * 1e-1d,
@@ -246,7 +235,7 @@ namespace UnitsNet
                         LuminanceUnit.MillicandelaPerSquareMeter => (_value) * 1e-3d,
                         LuminanceUnit.NanocandelaPerSquareMeter => (_value) * 1e-9d,
                         LuminanceUnit.Nit => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -259,8 +248,8 @@ namespace UnitsNet
 
                     return unit switch
                     {
-                        LuminanceUnit.CandelaPerSquareFoot => baseUnitValue/ 1.07639e1,
-                        LuminanceUnit.CandelaPerSquareInch => baseUnitValue/ 1.5500031e3,
+                        LuminanceUnit.CandelaPerSquareFoot => baseUnitValue * 9.290304e-2,
+                        LuminanceUnit.CandelaPerSquareInch => baseUnitValue * 0.00064516,
                         LuminanceUnit.CandelaPerSquareMeter => baseUnitValue,
                         LuminanceUnit.CenticandelaPerSquareMeter => (baseUnitValue) / 1e-2d,
                         LuminanceUnit.DecicandelaPerSquareMeter => (baseUnitValue) / 1e-1d,
@@ -269,7 +258,7 @@ namespace UnitsNet
                         LuminanceUnit.MillicandelaPerSquareMeter => (baseUnitValue) / 1e-3d,
                         LuminanceUnit.NanocandelaPerSquareMeter => (baseUnitValue) / 1e-9d,
                         LuminanceUnit.Nit => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

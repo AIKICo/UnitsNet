@@ -1,7 +1,9 @@
 ﻿// Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
+using System;
 using System.Globalization;
+using UnitsNet.Tests.Helpers;
 using Xunit;
 
 namespace UnitsNet.Tests
@@ -9,22 +11,22 @@ namespace UnitsNet.Tests
     public class QuantityFormatterTests
     {
         [Theory]
-        [InlineData("C")]
-        [InlineData("C0")]
-        [InlineData("C1")]
-        [InlineData("C2")]
-        [InlineData("C3")]
-        [InlineData("C4")]
-        [InlineData("C5")]
-        [InlineData("C6")]
-        [InlineData("c")]
-        [InlineData("c0")]
-        [InlineData("c1")]
-        [InlineData("c2")]
-        [InlineData("c3")]
-        [InlineData("c4")]
-        [InlineData("c5")]
-        [InlineData("c6")]
+        [InlineData("G")]
+        [InlineData("G0")]
+        [InlineData("G1")]
+        [InlineData("G2")]
+        [InlineData("G3")]
+        [InlineData("G4")]
+        [InlineData("G5")]
+        [InlineData("G6")]
+        [InlineData("g")]
+        [InlineData("g0")]
+        [InlineData("g1")]
+        [InlineData("g2")]
+        [InlineData("g3")]
+        [InlineData("g4")]
+        [InlineData("g5")]
+        [InlineData("g6")]
         [InlineData("E")]
         [InlineData("E0")]
         [InlineData("E1")]
@@ -73,22 +75,6 @@ namespace UnitsNet.Tests
         [InlineData("n4")]
         [InlineData("n5")]
         [InlineData("n6")]
-        [InlineData("P")]
-        [InlineData("P0")]
-        [InlineData("P1")]
-        [InlineData("P2")]
-        [InlineData("P3")]
-        [InlineData("P4")]
-        [InlineData("P5")]
-        [InlineData("P6")]
-        [InlineData("p")]
-        [InlineData("p0")]
-        [InlineData("p1")]
-        [InlineData("p2")]
-        [InlineData("p3")]
-        [InlineData("p4")]
-        [InlineData("p5")]
-        [InlineData("p6")]
         [InlineData("R")]
         [InlineData("R0")]
         [InlineData("R1")]
@@ -110,7 +96,52 @@ namespace UnitsNet.Tests
             var length = Length.FromMeters(123456789.987654321);
 
             var expected = string.Format(CultureInfo.CurrentCulture, $"{{0:{format}}} {{1:a}}", length.Value, length);
-            Assert.Equal(expected, QuantityFormatter.Format(length, format));
+            Assert.Equal(expected, QuantityFormatter.Default.Format(length, format));
+        }
+
+        [Theory]
+        [InlineData("U")]
+        [InlineData("u")]
+        [InlineData("V")]
+        [InlineData("v")]
+        [InlineData("Q")]
+        [InlineData("q")]
+        [InlineData("C")]
+        [InlineData("C0")]
+        [InlineData("C1")]
+        [InlineData("C2")]
+        [InlineData("C3")]
+        [InlineData("C4")]
+        [InlineData("C5")]
+        [InlineData("C6")]
+        [InlineData("c")]
+        [InlineData("c0")]
+        [InlineData("c1")]
+        [InlineData("c2")]
+        [InlineData("c3")]
+        [InlineData("c4")]
+        [InlineData("c5")]
+        [InlineData("c6")]
+        [InlineData("P")]
+        [InlineData("P0")]
+        [InlineData("P1")]
+        [InlineData("P2")]
+        [InlineData("P3")]
+        [InlineData("P4")]
+        [InlineData("P5")]
+        [InlineData("P6")]
+        [InlineData("p")]
+        [InlineData("p0")]
+        [InlineData("p1")]
+        [InlineData("p2")]
+        [InlineData("p3")]
+        [InlineData("p4")]
+        [InlineData("p5")]
+        [InlineData("p6")]
+        public static void Format_WithUnsupportedFormatString_ThrowsFormatException(string format)
+        {
+            var length = Length.FromMeters(123456789.987654321);
+            Assert.Throws<FormatException>(() => QuantityFormatter.Default.Format(length, format));
         }
 
         [Fact]
@@ -143,7 +174,27 @@ namespace UnitsNet.Tests
             var length = Length.FromMeters(123456789.987654321);
 
             var expected = string.Format(CultureInfo.CurrentCulture, $"{{0:{format}}} {{1:a}}", length.Value, length);
-            Assert.Equal(expected, QuantityFormatter.Format(length, format));
+            Assert.Equal(expected, QuantityFormatter.Default.Format(length, format));
+        }
+
+        [Fact]
+        public void Format_WithoutFormatParameter_FormatsWithGeneralFormatWithCurrentCulture()
+        {
+            using var cultureScope = new CultureScope(CultureInfo.InvariantCulture);
+            var length = Length.FromMeters(123.321);
+            var expected = "123.321 m";
+            var actual = QuantityFormatter.Default.Format(length);
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void Format_WithFormatParameter_FormatsWithCurrentCulture()
+        {
+            using var cultureScope = new CultureScope(CultureInfo.InvariantCulture);
+            var length = Length.FromMeters(123.321);
+            var expected = "123.321 m";
+            var actual = QuantityFormatter.Format(length, "G");
+            Assert.Equal(expected, actual);
         }
     }
 }

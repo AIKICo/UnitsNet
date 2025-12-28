@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public AmplitudeRatio(double value, AmplitudeRatioUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of AmplitudeRatio, which is Second. All conversions go via this value.
         /// </summary>
         public static AmplitudeRatioUnit BaseUnit { get; } = AmplitudeRatioUnit.DecibelVolt;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of AmplitudeRatio.
         /// </summary>
         public static AmplitudeRatio MaxValue { get; } = new AmplitudeRatio(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of AmplitudeRatio.
         /// </summary>
         public static AmplitudeRatio MinValue { get; } = new AmplitudeRatio(double.MinValue, BaseUnit);
 
@@ -106,25 +105,21 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="AmplitudeRatio"/> from <see cref="AmplitudeRatioUnit.DecibelMicrovolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AmplitudeRatio FromDecibelMicrovolts(double decibelmicrovolts) => new AmplitudeRatio(decibelmicrovolts, AmplitudeRatioUnit.DecibelMicrovolt);
 
         /// <summary>
         ///     Creates a <see cref="AmplitudeRatio"/> from <see cref="AmplitudeRatioUnit.DecibelMillivolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AmplitudeRatio FromDecibelMillivolts(double decibelmillivolts) => new AmplitudeRatio(decibelmillivolts, AmplitudeRatioUnit.DecibelMillivolt);
 
         /// <summary>
         ///     Creates a <see cref="AmplitudeRatio"/> from <see cref="AmplitudeRatioUnit.DecibelUnloaded"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AmplitudeRatio FromDecibelsUnloaded(double decibelsunloaded) => new AmplitudeRatio(decibelsunloaded, AmplitudeRatioUnit.DecibelUnloaded);
 
         /// <summary>
         ///     Creates a <see cref="AmplitudeRatio"/> from <see cref="AmplitudeRatioUnit.DecibelVolt"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AmplitudeRatio FromDecibelVolts(double decibelvolts) => new AmplitudeRatio(decibelvolts, AmplitudeRatioUnit.DecibelVolt);
 
         /// <summary>
@@ -149,9 +144,9 @@ namespace UnitsNet
                 public double As(AmplitudeRatioUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this AmplitudeRatio to another AmplitudeRatio with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A AmplitudeRatio with the specified unit.</returns>
                 public AmplitudeRatio ToUnit(AmplitudeRatioUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -171,7 +166,7 @@ namespace UnitsNet
                         AmplitudeRatioUnit.DecibelMillivolt => _value - 60,
                         AmplitudeRatioUnit.DecibelUnloaded => _value - 2.218487499,
                         AmplitudeRatioUnit.DecibelVolt => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -188,7 +183,7 @@ namespace UnitsNet
                         AmplitudeRatioUnit.DecibelMillivolt => baseUnitValue + 60,
                         AmplitudeRatioUnit.DecibelUnloaded => baseUnitValue + 2.218487499,
                         AmplitudeRatioUnit.DecibelVolt => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

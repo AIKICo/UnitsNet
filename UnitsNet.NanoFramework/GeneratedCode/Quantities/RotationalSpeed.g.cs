@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public RotationalSpeed(double value, RotationalSpeedUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of RotationalSpeed, which is Second. All conversions go via this value.
         /// </summary>
         public static RotationalSpeedUnit BaseUnit { get; } = RotationalSpeedUnit.RadianPerSecond;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of RotationalSpeed.
         /// </summary>
         public static RotationalSpeed MaxValue { get; } = new RotationalSpeed(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of RotationalSpeed.
         /// </summary>
         public static RotationalSpeed MinValue { get; } = new RotationalSpeed(double.MinValue, BaseUnit);
 
@@ -151,79 +150,66 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.CentiradianPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromCentiradiansPerSecond(double centiradianspersecond) => new RotationalSpeed(centiradianspersecond, RotationalSpeedUnit.CentiradianPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.DeciradianPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromDeciradiansPerSecond(double deciradianspersecond) => new RotationalSpeed(deciradianspersecond, RotationalSpeedUnit.DeciradianPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.DegreePerMinute"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromDegreesPerMinute(double degreesperminute) => new RotationalSpeed(degreesperminute, RotationalSpeedUnit.DegreePerMinute);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.DegreePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromDegreesPerSecond(double degreespersecond) => new RotationalSpeed(degreespersecond, RotationalSpeedUnit.DegreePerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.MicrodegreePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromMicrodegreesPerSecond(double microdegreespersecond) => new RotationalSpeed(microdegreespersecond, RotationalSpeedUnit.MicrodegreePerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.MicroradianPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromMicroradiansPerSecond(double microradianspersecond) => new RotationalSpeed(microradianspersecond, RotationalSpeedUnit.MicroradianPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.MillidegreePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromMillidegreesPerSecond(double millidegreespersecond) => new RotationalSpeed(millidegreespersecond, RotationalSpeedUnit.MillidegreePerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.MilliradianPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromMilliradiansPerSecond(double milliradianspersecond) => new RotationalSpeed(milliradianspersecond, RotationalSpeedUnit.MilliradianPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.NanodegreePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromNanodegreesPerSecond(double nanodegreespersecond) => new RotationalSpeed(nanodegreespersecond, RotationalSpeedUnit.NanodegreePerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.NanoradianPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromNanoradiansPerSecond(double nanoradianspersecond) => new RotationalSpeed(nanoradianspersecond, RotationalSpeedUnit.NanoradianPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.RadianPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromRadiansPerSecond(double radianspersecond) => new RotationalSpeed(radianspersecond, RotationalSpeedUnit.RadianPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.RevolutionPerMinute"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromRevolutionsPerMinute(double revolutionsperminute) => new RotationalSpeed(revolutionsperminute, RotationalSpeedUnit.RevolutionPerMinute);
 
         /// <summary>
         ///     Creates a <see cref="RotationalSpeed"/> from <see cref="RotationalSpeedUnit.RevolutionPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RotationalSpeed FromRevolutionsPerSecond(double revolutionspersecond) => new RotationalSpeed(revolutionspersecond, RotationalSpeedUnit.RevolutionPerSecond);
 
         /// <summary>
@@ -248,9 +234,9 @@ namespace UnitsNet
                 public double As(RotationalSpeedUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this RotationalSpeed to another RotationalSpeed with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A RotationalSpeed with the specified unit.</returns>
                 public RotationalSpeed ToUnit(RotationalSpeedUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -277,9 +263,9 @@ namespace UnitsNet
                         RotationalSpeedUnit.NanodegreePerSecond => ((3.1415926535897931 / 180) * _value) * 1e-9d,
                         RotationalSpeedUnit.NanoradianPerSecond => (_value) * 1e-9d,
                         RotationalSpeedUnit.RadianPerSecond => _value,
-                        RotationalSpeedUnit.RevolutionPerMinute => (_value * 6.2831853072) / 60,
-                        RotationalSpeedUnit.RevolutionPerSecond => _value * 6.2831853072,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        RotationalSpeedUnit.RevolutionPerMinute => (_value * 2 * 3.1415926535897931) / 60,
+                        RotationalSpeedUnit.RevolutionPerSecond => _value * 2 * 3.1415926535897931,
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -303,9 +289,9 @@ namespace UnitsNet
                         RotationalSpeedUnit.NanodegreePerSecond => ((180 / 3.1415926535897931) * baseUnitValue) / 1e-9d,
                         RotationalSpeedUnit.NanoradianPerSecond => (baseUnitValue) / 1e-9d,
                         RotationalSpeedUnit.RadianPerSecond => baseUnitValue,
-                        RotationalSpeedUnit.RevolutionPerMinute => (baseUnitValue / 6.2831853072) * 60,
-                        RotationalSpeedUnit.RevolutionPerSecond => baseUnitValue / 6.2831853072,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        RotationalSpeedUnit.RevolutionPerMinute => (baseUnitValue / (2 * 3.1415926535897931)) * 60,
+                        RotationalSpeedUnit.RevolutionPerSecond => baseUnitValue / (2 * 3.1415926535897931),
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

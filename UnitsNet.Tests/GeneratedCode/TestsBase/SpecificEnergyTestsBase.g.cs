@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -54,7 +56,7 @@ namespace UnitsNet.Tests
         protected abstract double KilowattHoursPerKilogramInOneJoulePerKilogram { get; }
         protected abstract double KilowattHoursPerPoundInOneJoulePerKilogram { get; }
         protected abstract double MegajoulesPerKilogramInOneJoulePerKilogram { get; }
-        protected abstract double MegaJoulesPerTonneInOneJoulePerKilogram { get; }
+        protected abstract double MegajoulesPerTonneInOneJoulePerKilogram { get; }
         protected abstract double MegawattDaysPerKilogramInOneJoulePerKilogram { get; }
         protected abstract double MegawattDaysPerShortTonInOneJoulePerKilogram { get; }
         protected abstract double MegawattDaysPerTonneInOneJoulePerKilogram { get; }
@@ -86,7 +88,7 @@ namespace UnitsNet.Tests
         protected virtual double KilowattHoursPerKilogramTolerance { get { return 1e-5; } }
         protected virtual double KilowattHoursPerPoundTolerance { get { return 1e-5; } }
         protected virtual double MegajoulesPerKilogramTolerance { get { return 1e-5; } }
-        protected virtual double MegaJoulesPerTonneTolerance { get { return 1e-5; } }
+        protected virtual double MegajoulesPerTonneTolerance { get { return 1e-5; } }
         protected virtual double MegawattDaysPerKilogramTolerance { get { return 1e-5; } }
         protected virtual double MegawattDaysPerShortTonTolerance { get { return 1e-5; } }
         protected virtual double MegawattDaysPerTonneTolerance { get { return 1e-5; } }
@@ -122,7 +124,7 @@ namespace UnitsNet.Tests
                 SpecificEnergyUnit.KilowattHourPerKilogram => (KilowattHoursPerKilogramInOneJoulePerKilogram, KilowattHoursPerKilogramTolerance),
                 SpecificEnergyUnit.KilowattHourPerPound => (KilowattHoursPerPoundInOneJoulePerKilogram, KilowattHoursPerPoundTolerance),
                 SpecificEnergyUnit.MegajoulePerKilogram => (MegajoulesPerKilogramInOneJoulePerKilogram, MegajoulesPerKilogramTolerance),
-                SpecificEnergyUnit.MegaJoulePerTonne => (MegaJoulesPerTonneInOneJoulePerKilogram, MegaJoulesPerTonneTolerance),
+                SpecificEnergyUnit.MegajoulePerTonne => (MegajoulesPerTonneInOneJoulePerKilogram, MegajoulesPerTonneTolerance),
                 SpecificEnergyUnit.MegawattDayPerKilogram => (MegawattDaysPerKilogramInOneJoulePerKilogram, MegawattDaysPerKilogramTolerance),
                 SpecificEnergyUnit.MegawattDayPerShortTon => (MegawattDaysPerShortTonInOneJoulePerKilogram, MegawattDaysPerShortTonTolerance),
                 SpecificEnergyUnit.MegawattDayPerTonne => (MegawattDaysPerTonneInOneJoulePerKilogram, MegawattDaysPerTonneTolerance),
@@ -158,7 +160,7 @@ namespace UnitsNet.Tests
             new object[] { SpecificEnergyUnit.KilowattHourPerKilogram },
             new object[] { SpecificEnergyUnit.KilowattHourPerPound },
             new object[] { SpecificEnergyUnit.MegajoulePerKilogram },
-            new object[] { SpecificEnergyUnit.MegaJoulePerTonne },
+            new object[] { SpecificEnergyUnit.MegajoulePerTonne },
             new object[] { SpecificEnergyUnit.MegawattDayPerKilogram },
             new object[] { SpecificEnergyUnit.MegawattDayPerShortTon },
             new object[] { SpecificEnergyUnit.MegawattDayPerTonne },
@@ -183,16 +185,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new SpecificEnergy(double.PositiveInfinity, SpecificEnergyUnit.JoulePerKilogram));
-            Assert.Throws<ArgumentException>(() => new SpecificEnergy(double.NegativeInfinity, SpecificEnergyUnit.JoulePerKilogram));
+            var exception1 = Record.Exception(() => new SpecificEnergy(double.PositiveInfinity, SpecificEnergyUnit.JoulePerKilogram));
+            var exception2 = Record.Exception(() => new SpecificEnergy(double.NegativeInfinity, SpecificEnergyUnit.JoulePerKilogram));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new SpecificEnergy(double.NaN, SpecificEnergyUnit.JoulePerKilogram));
+            var exception = Record.Exception(() => new SpecificEnergy(double.NaN, SpecificEnergyUnit.JoulePerKilogram));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -202,32 +209,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new SpecificEnergy(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (SpecificEnergy) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new SpecificEnergy(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new SpecificEnergy(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void SpecificEnergy_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            SpecificEnergyUnit[] unitsOrderedByName = EnumHelper.GetValues<SpecificEnergyUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new SpecificEnergy(1, SpecificEnergyUnit.JoulePerKilogram);
 
-            QuantityInfo<SpecificEnergyUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<SpecificEnergy, SpecificEnergyUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(SpecificEnergy.Zero, quantityInfo.Zero);
             Assert.Equal("SpecificEnergy", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<SpecificEnergyUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(SpecificEnergy.Zero, quantityInfo.Zero);
+            Assert.Equal(SpecificEnergy.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(SpecificEnergy.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<SpecificEnergyUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -250,7 +261,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(KilowattHoursPerKilogramInOneJoulePerKilogram, jouleperkilogram.KilowattHoursPerKilogram, KilowattHoursPerKilogramTolerance);
             AssertEx.EqualTolerance(KilowattHoursPerPoundInOneJoulePerKilogram, jouleperkilogram.KilowattHoursPerPound, KilowattHoursPerPoundTolerance);
             AssertEx.EqualTolerance(MegajoulesPerKilogramInOneJoulePerKilogram, jouleperkilogram.MegajoulesPerKilogram, MegajoulesPerKilogramTolerance);
-            AssertEx.EqualTolerance(MegaJoulesPerTonneInOneJoulePerKilogram, jouleperkilogram.MegaJoulesPerTonne, MegaJoulesPerTonneTolerance);
+            AssertEx.EqualTolerance(MegajoulesPerTonneInOneJoulePerKilogram, jouleperkilogram.MegajoulesPerTonne, MegajoulesPerTonneTolerance);
             AssertEx.EqualTolerance(MegawattDaysPerKilogramInOneJoulePerKilogram, jouleperkilogram.MegawattDaysPerKilogram, MegawattDaysPerKilogramTolerance);
             AssertEx.EqualTolerance(MegawattDaysPerShortTonInOneJoulePerKilogram, jouleperkilogram.MegawattDaysPerShortTon, MegawattDaysPerShortTonTolerance);
             AssertEx.EqualTolerance(MegawattDaysPerTonneInOneJoulePerKilogram, jouleperkilogram.MegawattDaysPerTonne, MegawattDaysPerTonneTolerance);
@@ -269,139 +280,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = SpecificEnergy.From(1, SpecificEnergyUnit.BtuPerPound);
-            AssertEx.EqualTolerance(1, quantity00.BtuPerPound, BtuPerPoundTolerance);
-            Assert.Equal(SpecificEnergyUnit.BtuPerPound, quantity00.Unit);
-
-            var quantity01 = SpecificEnergy.From(1, SpecificEnergyUnit.CaloriePerGram);
-            AssertEx.EqualTolerance(1, quantity01.CaloriesPerGram, CaloriesPerGramTolerance);
-            Assert.Equal(SpecificEnergyUnit.CaloriePerGram, quantity01.Unit);
-
-            var quantity02 = SpecificEnergy.From(1, SpecificEnergyUnit.GigawattDayPerKilogram);
-            AssertEx.EqualTolerance(1, quantity02.GigawattDaysPerKilogram, GigawattDaysPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.GigawattDayPerKilogram, quantity02.Unit);
-
-            var quantity03 = SpecificEnergy.From(1, SpecificEnergyUnit.GigawattDayPerShortTon);
-            AssertEx.EqualTolerance(1, quantity03.GigawattDaysPerShortTon, GigawattDaysPerShortTonTolerance);
-            Assert.Equal(SpecificEnergyUnit.GigawattDayPerShortTon, quantity03.Unit);
-
-            var quantity04 = SpecificEnergy.From(1, SpecificEnergyUnit.GigawattDayPerTonne);
-            AssertEx.EqualTolerance(1, quantity04.GigawattDaysPerTonne, GigawattDaysPerTonneTolerance);
-            Assert.Equal(SpecificEnergyUnit.GigawattDayPerTonne, quantity04.Unit);
-
-            var quantity05 = SpecificEnergy.From(1, SpecificEnergyUnit.GigawattHourPerKilogram);
-            AssertEx.EqualTolerance(1, quantity05.GigawattHoursPerKilogram, GigawattHoursPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.GigawattHourPerKilogram, quantity05.Unit);
-
-            var quantity06 = SpecificEnergy.From(1, SpecificEnergyUnit.GigawattHourPerPound);
-            AssertEx.EqualTolerance(1, quantity06.GigawattHoursPerPound, GigawattHoursPerPoundTolerance);
-            Assert.Equal(SpecificEnergyUnit.GigawattHourPerPound, quantity06.Unit);
-
-            var quantity07 = SpecificEnergy.From(1, SpecificEnergyUnit.JoulePerKilogram);
-            AssertEx.EqualTolerance(1, quantity07.JoulesPerKilogram, JoulesPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.JoulePerKilogram, quantity07.Unit);
-
-            var quantity08 = SpecificEnergy.From(1, SpecificEnergyUnit.KilocaloriePerGram);
-            AssertEx.EqualTolerance(1, quantity08.KilocaloriesPerGram, KilocaloriesPerGramTolerance);
-            Assert.Equal(SpecificEnergyUnit.KilocaloriePerGram, quantity08.Unit);
-
-            var quantity09 = SpecificEnergy.From(1, SpecificEnergyUnit.KilojoulePerKilogram);
-            AssertEx.EqualTolerance(1, quantity09.KilojoulesPerKilogram, KilojoulesPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.KilojoulePerKilogram, quantity09.Unit);
-
-            var quantity10 = SpecificEnergy.From(1, SpecificEnergyUnit.KilowattDayPerKilogram);
-            AssertEx.EqualTolerance(1, quantity10.KilowattDaysPerKilogram, KilowattDaysPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.KilowattDayPerKilogram, quantity10.Unit);
-
-            var quantity11 = SpecificEnergy.From(1, SpecificEnergyUnit.KilowattDayPerShortTon);
-            AssertEx.EqualTolerance(1, quantity11.KilowattDaysPerShortTon, KilowattDaysPerShortTonTolerance);
-            Assert.Equal(SpecificEnergyUnit.KilowattDayPerShortTon, quantity11.Unit);
-
-            var quantity12 = SpecificEnergy.From(1, SpecificEnergyUnit.KilowattDayPerTonne);
-            AssertEx.EqualTolerance(1, quantity12.KilowattDaysPerTonne, KilowattDaysPerTonneTolerance);
-            Assert.Equal(SpecificEnergyUnit.KilowattDayPerTonne, quantity12.Unit);
-
-            var quantity13 = SpecificEnergy.From(1, SpecificEnergyUnit.KilowattHourPerKilogram);
-            AssertEx.EqualTolerance(1, quantity13.KilowattHoursPerKilogram, KilowattHoursPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.KilowattHourPerKilogram, quantity13.Unit);
-
-            var quantity14 = SpecificEnergy.From(1, SpecificEnergyUnit.KilowattHourPerPound);
-            AssertEx.EqualTolerance(1, quantity14.KilowattHoursPerPound, KilowattHoursPerPoundTolerance);
-            Assert.Equal(SpecificEnergyUnit.KilowattHourPerPound, quantity14.Unit);
-
-            var quantity15 = SpecificEnergy.From(1, SpecificEnergyUnit.MegajoulePerKilogram);
-            AssertEx.EqualTolerance(1, quantity15.MegajoulesPerKilogram, MegajoulesPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.MegajoulePerKilogram, quantity15.Unit);
-
-            var quantity16 = SpecificEnergy.From(1, SpecificEnergyUnit.MegaJoulePerTonne);
-            AssertEx.EqualTolerance(1, quantity16.MegaJoulesPerTonne, MegaJoulesPerTonneTolerance);
-            Assert.Equal(SpecificEnergyUnit.MegaJoulePerTonne, quantity16.Unit);
-
-            var quantity17 = SpecificEnergy.From(1, SpecificEnergyUnit.MegawattDayPerKilogram);
-            AssertEx.EqualTolerance(1, quantity17.MegawattDaysPerKilogram, MegawattDaysPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.MegawattDayPerKilogram, quantity17.Unit);
-
-            var quantity18 = SpecificEnergy.From(1, SpecificEnergyUnit.MegawattDayPerShortTon);
-            AssertEx.EqualTolerance(1, quantity18.MegawattDaysPerShortTon, MegawattDaysPerShortTonTolerance);
-            Assert.Equal(SpecificEnergyUnit.MegawattDayPerShortTon, quantity18.Unit);
-
-            var quantity19 = SpecificEnergy.From(1, SpecificEnergyUnit.MegawattDayPerTonne);
-            AssertEx.EqualTolerance(1, quantity19.MegawattDaysPerTonne, MegawattDaysPerTonneTolerance);
-            Assert.Equal(SpecificEnergyUnit.MegawattDayPerTonne, quantity19.Unit);
-
-            var quantity20 = SpecificEnergy.From(1, SpecificEnergyUnit.MegawattHourPerKilogram);
-            AssertEx.EqualTolerance(1, quantity20.MegawattHoursPerKilogram, MegawattHoursPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.MegawattHourPerKilogram, quantity20.Unit);
-
-            var quantity21 = SpecificEnergy.From(1, SpecificEnergyUnit.MegawattHourPerPound);
-            AssertEx.EqualTolerance(1, quantity21.MegawattHoursPerPound, MegawattHoursPerPoundTolerance);
-            Assert.Equal(SpecificEnergyUnit.MegawattHourPerPound, quantity21.Unit);
-
-            var quantity22 = SpecificEnergy.From(1, SpecificEnergyUnit.TerawattDayPerKilogram);
-            AssertEx.EqualTolerance(1, quantity22.TerawattDaysPerKilogram, TerawattDaysPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.TerawattDayPerKilogram, quantity22.Unit);
-
-            var quantity23 = SpecificEnergy.From(1, SpecificEnergyUnit.TerawattDayPerShortTon);
-            AssertEx.EqualTolerance(1, quantity23.TerawattDaysPerShortTon, TerawattDaysPerShortTonTolerance);
-            Assert.Equal(SpecificEnergyUnit.TerawattDayPerShortTon, quantity23.Unit);
-
-            var quantity24 = SpecificEnergy.From(1, SpecificEnergyUnit.TerawattDayPerTonne);
-            AssertEx.EqualTolerance(1, quantity24.TerawattDaysPerTonne, TerawattDaysPerTonneTolerance);
-            Assert.Equal(SpecificEnergyUnit.TerawattDayPerTonne, quantity24.Unit);
-
-            var quantity25 = SpecificEnergy.From(1, SpecificEnergyUnit.WattDayPerKilogram);
-            AssertEx.EqualTolerance(1, quantity25.WattDaysPerKilogram, WattDaysPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.WattDayPerKilogram, quantity25.Unit);
-
-            var quantity26 = SpecificEnergy.From(1, SpecificEnergyUnit.WattDayPerShortTon);
-            AssertEx.EqualTolerance(1, quantity26.WattDaysPerShortTon, WattDaysPerShortTonTolerance);
-            Assert.Equal(SpecificEnergyUnit.WattDayPerShortTon, quantity26.Unit);
-
-            var quantity27 = SpecificEnergy.From(1, SpecificEnergyUnit.WattDayPerTonne);
-            AssertEx.EqualTolerance(1, quantity27.WattDaysPerTonne, WattDaysPerTonneTolerance);
-            Assert.Equal(SpecificEnergyUnit.WattDayPerTonne, quantity27.Unit);
-
-            var quantity28 = SpecificEnergy.From(1, SpecificEnergyUnit.WattHourPerKilogram);
-            AssertEx.EqualTolerance(1, quantity28.WattHoursPerKilogram, WattHoursPerKilogramTolerance);
-            Assert.Equal(SpecificEnergyUnit.WattHourPerKilogram, quantity28.Unit);
-
-            var quantity29 = SpecificEnergy.From(1, SpecificEnergyUnit.WattHourPerPound);
-            AssertEx.EqualTolerance(1, quantity29.WattHoursPerPound, WattHoursPerPoundTolerance);
-            Assert.Equal(SpecificEnergyUnit.WattHourPerPound, quantity29.Unit);
-
+            Assert.All(EnumHelper.GetValues<SpecificEnergyUnit>(), unit =>
+            {
+                var quantity = SpecificEnergy.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromJoulesPerKilogram_WithInfinityValue_ThrowsArgumentException()
+        public void FromJoulesPerKilogram_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => SpecificEnergy.FromJoulesPerKilogram(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => SpecificEnergy.FromJoulesPerKilogram(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => SpecificEnergy.FromJoulesPerKilogram(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => SpecificEnergy.FromJoulesPerKilogram(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromJoulesPerKilogram_WithNanValue_ThrowsArgumentException()
+        public void FromJoulesPerKilogram_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => SpecificEnergy.FromJoulesPerKilogram(double.NaN));
+            var exception = Record.Exception(() => SpecificEnergy.FromJoulesPerKilogram(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -424,7 +326,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(KilowattHoursPerKilogramInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.KilowattHourPerKilogram), KilowattHoursPerKilogramTolerance);
             AssertEx.EqualTolerance(KilowattHoursPerPoundInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.KilowattHourPerPound), KilowattHoursPerPoundTolerance);
             AssertEx.EqualTolerance(MegajoulesPerKilogramInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.MegajoulePerKilogram), MegajoulesPerKilogramTolerance);
-            AssertEx.EqualTolerance(MegaJoulesPerTonneInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.MegaJoulePerTonne), MegaJoulesPerTonneTolerance);
+            AssertEx.EqualTolerance(MegajoulesPerTonneInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.MegajoulePerTonne), MegajoulesPerTonneTolerance);
             AssertEx.EqualTolerance(MegawattDaysPerKilogramInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.MegawattDayPerKilogram), MegawattDaysPerKilogramTolerance);
             AssertEx.EqualTolerance(MegawattDaysPerShortTonInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.MegawattDayPerShortTon), MegawattDaysPerShortTonTolerance);
             AssertEx.EqualTolerance(MegawattDaysPerTonneInOneJoulePerKilogram, jouleperkilogram.As(SpecificEnergyUnit.MegawattDayPerTonne), MegawattDaysPerTonneTolerance);
@@ -441,760 +343,500 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = SpecificEnergy.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new SpecificEnergy(value: 1, unit: SpecificEnergy.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(SpecificEnergy.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 btu/lb", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BtuPerPound, BtuPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.BtuPerPound, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 cal/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CaloriesPerGram, CaloriesPerGramTolerance);
-                Assert.Equal(SpecificEnergyUnit.CaloriePerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 GWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GigawattDaysPerKilogram, GigawattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 GWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GigawattDaysPerShortTon, GigawattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerShortTon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 GWd/t", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GigawattDaysPerTonne, GigawattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerTonne, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 GWh/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GigawattHoursPerKilogram, GigawattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 GWh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GigawattHoursPerPound, GigawattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerPound, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 J/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.JoulesPerKilogram, JoulesPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.JoulePerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 kcal/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilocaloriesPerGram, KilocaloriesPerGramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilocaloriePerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 kJ/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilojoulesPerKilogram, KilojoulesPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilojoulePerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 kWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilowattDaysPerKilogram, KilowattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 kWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilowattDaysPerShortTon, KilowattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerShortTon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 kWd/t", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilowattDaysPerTonne, KilowattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerTonne, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 kWh/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilowattHoursPerKilogram, KilowattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 kWh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilowattHoursPerPound, KilowattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerPound, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 MJ/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegajoulesPerKilogram, MegajoulesPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegajoulePerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 MJ/t", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegaJoulesPerTonne, MegaJoulesPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegaJoulePerTonne, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 MWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegawattDaysPerKilogram, MegawattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 MWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegawattDaysPerShortTon, MegawattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerShortTon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 MWd/t", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegawattDaysPerTonne, MegawattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerTonne, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 MWh/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegawattHoursPerKilogram, MegawattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 MWh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MegawattHoursPerPound, MegawattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerPound, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 TWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.TerawattDaysPerKilogram, TerawattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 TWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.TerawattDaysPerShortTon, TerawattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerShortTon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 TWd/t", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.TerawattDaysPerTonne, TerawattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerTonne, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 Wd/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattDaysPerKilogram, WattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattDayPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 Wd/ST", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattDaysPerShortTon, WattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattDayPerShortTon, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 Wd/t", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattDaysPerTonne, WattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattDayPerTonne, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 Wh/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattHoursPerKilogram, WattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattHourPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificEnergy.Parse("1 Wh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattHoursPerPound, WattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattHourPerPound, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new SpecificEnergy(value: 1, unit: SpecificEnergy.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(SpecificEnergy.TryParse("1 btu/lb", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BtuPerPound, BtuPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.BtuPerPound, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 cal/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CaloriesPerGram, CaloriesPerGramTolerance);
-                Assert.Equal(SpecificEnergyUnit.CaloriePerGram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 GWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GigawattDaysPerKilogram, GigawattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 GWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GigawattDaysPerShortTon, GigawattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerShortTon, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 GWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GigawattDaysPerTonne, GigawattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerTonne, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 GWh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GigawattHoursPerKilogram, GigawattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 GWh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GigawattHoursPerPound, GigawattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerPound, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 J/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.JoulesPerKilogram, JoulesPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.JoulePerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 kcal/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilocaloriesPerGram, KilocaloriesPerGramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilocaloriePerGram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 kJ/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilojoulesPerKilogram, KilojoulesPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilojoulePerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 kWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilowattDaysPerKilogram, KilowattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 kWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilowattDaysPerShortTon, KilowattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerShortTon, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 kWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilowattDaysPerTonne, KilowattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerTonne, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 kWh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilowattHoursPerKilogram, KilowattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 kWh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilowattHoursPerPound, KilowattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerPound, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 MJ/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegajoulesPerKilogram, MegajoulesPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegajoulePerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 MJ/t", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegaJoulesPerTonne, MegaJoulesPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegaJoulePerTonne, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 MWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegawattDaysPerKilogram, MegawattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 MWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegawattDaysPerShortTon, MegawattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerShortTon, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 MWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegawattDaysPerTonne, MegawattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerTonne, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 MWh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegawattHoursPerKilogram, MegawattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 MWh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MegawattHoursPerPound, MegawattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerPound, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 TWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.TerawattDaysPerKilogram, TerawattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 TWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.TerawattDaysPerShortTon, TerawattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerShortTon, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 TWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.TerawattDaysPerTonne, TerawattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerTonne, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 Wd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattDaysPerKilogram, WattDaysPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattDayPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 Wd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattDaysPerShortTon, WattDaysPerShortTonTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattDayPerShortTon, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 Wd/t", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattDaysPerTonne, WattDaysPerTonneTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattDayPerTonne, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 Wh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattHoursPerKilogram, WattHoursPerKilogramTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattHourPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParse("1 Wh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattHoursPerPound, WattHoursPerPoundTolerance);
-                Assert.Equal(SpecificEnergyUnit.WattHourPerPound, parsed.Unit);
-            }
-
+            var quantity = new SpecificEnergy(value: 1, unit: SpecificEnergy.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("btu/lb", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.BtuPerPound, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new SpecificEnergy(value: 1, unit: SpecificEnergy.BaseUnit);
+            var expectedUnit = SpecificEnergy.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("cal/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.CaloriePerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            SpecificEnergy convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("GWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("GWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerShortTon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("GWd/t", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerTonne, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("GWh/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("GWh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerPound, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("J/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.JoulePerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("kcal/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.KilocaloriePerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("kJ/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.KilojoulePerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("kWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("kWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerShortTon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("kWd/t", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerTonne, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("kWh/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("kWh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerPound, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("MJ/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.MegajoulePerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("MJ/t", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.MegaJoulePerTonne, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("MWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("MWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerShortTon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("MWd/t", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerTonne, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("MWh/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("MWh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerPound, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("TWd/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("TWd/ST", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerShortTon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("TWd/t", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerTonne, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("Wd/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.WattDayPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("Wd/ST", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.WattDayPerShortTon, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("Wd/t", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.WattDayPerTonne, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("Wh/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.WattHourPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = SpecificEnergy.ParseUnit("Wh/lbs", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificEnergyUnit.WattHourPerPound, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("btu/lb", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.BtuPerPound, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new SpecificEnergy(value: 1, unit: SpecificEnergy.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("cal/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.CaloriePerGram, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new SpecificEnergy(value: 1, unit: SpecificEnergy.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("GWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerKilogram, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 btu/lb", SpecificEnergyUnit.BtuPerPound, 4.2)]
+        [InlineData("en-US", "4.2 cal/g", SpecificEnergyUnit.CaloriePerGram, 4.2)]
+        [InlineData("en-US", "4.2 GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 GWd/t", SpecificEnergyUnit.GigawattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound, 4.2)]
+        [InlineData("en-US", "4.2 J/kg", SpecificEnergyUnit.JoulePerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kcal/g", SpecificEnergyUnit.KilocaloriePerGram, 4.2)]
+        [InlineData("en-US", "4.2 kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 kWd/t", SpecificEnergyUnit.KilowattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound, 4.2)]
+        [InlineData("en-US", "4.2 MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 MJ/t", SpecificEnergyUnit.MegajoulePerTonne, 4.2)]
+        [InlineData("en-US", "4.2 MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 MWd/t", SpecificEnergyUnit.MegawattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound, 4.2)]
+        [InlineData("en-US", "4.2 TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 TWd/t", SpecificEnergyUnit.TerawattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 Wd/kg", SpecificEnergyUnit.WattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 Wd/ST", SpecificEnergyUnit.WattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 Wd/t", SpecificEnergyUnit.WattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 Wh/kg", SpecificEnergyUnit.WattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 Wh/lbs", SpecificEnergyUnit.WattHourPerPound, 4.2)]
+        public void Parse(string culture, string quantityString, SpecificEnergyUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = SpecificEnergy.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("GWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerShortTon, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 btu/lb", SpecificEnergyUnit.BtuPerPound, 4.2)]
+        [InlineData("en-US", "4.2 cal/g", SpecificEnergyUnit.CaloriePerGram, 4.2)]
+        [InlineData("en-US", "4.2 GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 GWd/t", SpecificEnergyUnit.GigawattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound, 4.2)]
+        [InlineData("en-US", "4.2 J/kg", SpecificEnergyUnit.JoulePerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kcal/g", SpecificEnergyUnit.KilocaloriePerGram, 4.2)]
+        [InlineData("en-US", "4.2 kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 kWd/t", SpecificEnergyUnit.KilowattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound, 4.2)]
+        [InlineData("en-US", "4.2 MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 MJ/t", SpecificEnergyUnit.MegajoulePerTonne, 4.2)]
+        [InlineData("en-US", "4.2 MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 MWd/t", SpecificEnergyUnit.MegawattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound, 4.2)]
+        [InlineData("en-US", "4.2 TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 TWd/t", SpecificEnergyUnit.TerawattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 Wd/kg", SpecificEnergyUnit.WattDayPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 Wd/ST", SpecificEnergyUnit.WattDayPerShortTon, 4.2)]
+        [InlineData("en-US", "4.2 Wd/t", SpecificEnergyUnit.WattDayPerTonne, 4.2)]
+        [InlineData("en-US", "4.2 Wh/kg", SpecificEnergyUnit.WattHourPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 Wh/lbs", SpecificEnergyUnit.WattHourPerPound, 4.2)]
+        public void TryParse(string culture, string quantityString, SpecificEnergyUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(SpecificEnergy.TryParse(quantityString, out SpecificEnergy parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("GWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.GigawattDayPerTonne, parsedUnit);
-            }
+        [Theory]
+        [InlineData("btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            SpecificEnergyUnit parsedUnit = SpecificEnergy.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("GWh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerKilogram, parsedUnit);
-            }
+        [Theory]
+        [InlineData("btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            SpecificEnergyUnit parsedUnit = SpecificEnergy.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("GWh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.GigawattHourPerPound, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("en-US", "cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("en-US", "GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("en-US", "GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("en-US", "GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("en-US", "GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("en-US", "GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("en-US", "J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("en-US", "kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("en-US", "kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("en-US", "kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("en-US", "kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("en-US", "kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("en-US", "kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("en-US", "kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("en-US", "MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("en-US", "MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("en-US", "MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("en-US", "MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("en-US", "MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("en-US", "MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("en-US", "MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("en-US", "TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("en-US", "TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("en-US", "TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("en-US", "Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("en-US", "Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("en-US", "Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("en-US", "Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("en-US", "Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            SpecificEnergyUnit parsedUnit = SpecificEnergy.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("J/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.JoulePerKilogram, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("en-US", "cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("en-US", "GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("en-US", "GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("en-US", "GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("en-US", "GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("en-US", "GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("en-US", "J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("en-US", "kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("en-US", "kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("en-US", "kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("en-US", "kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("en-US", "kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("en-US", "kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("en-US", "kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("en-US", "MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("en-US", "MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("en-US", "MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("en-US", "MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("en-US", "MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("en-US", "MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("en-US", "MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("en-US", "TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("en-US", "TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("en-US", "TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("en-US", "Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("en-US", "Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("en-US", "Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("en-US", "Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("en-US", "Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            SpecificEnergyUnit parsedUnit = SpecificEnergy.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("kcal/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.KilocaloriePerGram, parsedUnit);
-            }
+        [Theory]
+        [InlineData("btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(SpecificEnergy.TryParseUnit(abbreviation, out SpecificEnergyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("kJ/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.KilojoulePerKilogram, parsedUnit);
-            }
+        [Theory]
+        [InlineData("btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(SpecificEnergy.TryParseUnit(abbreviation, out SpecificEnergyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("kWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerKilogram, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("en-US", "cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("en-US", "GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("en-US", "GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("en-US", "GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("en-US", "GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("en-US", "GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("en-US", "J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("en-US", "kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("en-US", "kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("en-US", "kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("en-US", "kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("en-US", "kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("en-US", "kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("en-US", "kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("en-US", "MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("en-US", "MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("en-US", "MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("en-US", "MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("en-US", "MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("en-US", "MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("en-US", "MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("en-US", "TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("en-US", "TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("en-US", "TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("en-US", "Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("en-US", "Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("en-US", "Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("en-US", "Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("en-US", "Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(SpecificEnergy.TryParseUnit(abbreviation, out SpecificEnergyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("kWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerShortTon, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "btu/lb", SpecificEnergyUnit.BtuPerPound)]
+        [InlineData("en-US", "cal/g", SpecificEnergyUnit.CaloriePerGram)]
+        [InlineData("en-US", "GWd/kg", SpecificEnergyUnit.GigawattDayPerKilogram)]
+        [InlineData("en-US", "GWd/ST", SpecificEnergyUnit.GigawattDayPerShortTon)]
+        [InlineData("en-US", "GWd/t", SpecificEnergyUnit.GigawattDayPerTonne)]
+        [InlineData("en-US", "GWh/kg", SpecificEnergyUnit.GigawattHourPerKilogram)]
+        [InlineData("en-US", "GWh/lbs", SpecificEnergyUnit.GigawattHourPerPound)]
+        [InlineData("en-US", "J/kg", SpecificEnergyUnit.JoulePerKilogram)]
+        [InlineData("en-US", "kcal/g", SpecificEnergyUnit.KilocaloriePerGram)]
+        [InlineData("en-US", "kJ/kg", SpecificEnergyUnit.KilojoulePerKilogram)]
+        [InlineData("en-US", "kWd/kg", SpecificEnergyUnit.KilowattDayPerKilogram)]
+        [InlineData("en-US", "kWd/ST", SpecificEnergyUnit.KilowattDayPerShortTon)]
+        [InlineData("en-US", "kWd/t", SpecificEnergyUnit.KilowattDayPerTonne)]
+        [InlineData("en-US", "kWh/kg", SpecificEnergyUnit.KilowattHourPerKilogram)]
+        [InlineData("en-US", "kWh/lbs", SpecificEnergyUnit.KilowattHourPerPound)]
+        [InlineData("en-US", "MJ/kg", SpecificEnergyUnit.MegajoulePerKilogram)]
+        [InlineData("en-US", "MJ/t", SpecificEnergyUnit.MegajoulePerTonne)]
+        [InlineData("en-US", "MWd/kg", SpecificEnergyUnit.MegawattDayPerKilogram)]
+        [InlineData("en-US", "MWd/ST", SpecificEnergyUnit.MegawattDayPerShortTon)]
+        [InlineData("en-US", "MWd/t", SpecificEnergyUnit.MegawattDayPerTonne)]
+        [InlineData("en-US", "MWh/kg", SpecificEnergyUnit.MegawattHourPerKilogram)]
+        [InlineData("en-US", "MWh/lbs", SpecificEnergyUnit.MegawattHourPerPound)]
+        [InlineData("en-US", "TWd/kg", SpecificEnergyUnit.TerawattDayPerKilogram)]
+        [InlineData("en-US", "TWd/ST", SpecificEnergyUnit.TerawattDayPerShortTon)]
+        [InlineData("en-US", "TWd/t", SpecificEnergyUnit.TerawattDayPerTonne)]
+        [InlineData("en-US", "Wd/kg", SpecificEnergyUnit.WattDayPerKilogram)]
+        [InlineData("en-US", "Wd/ST", SpecificEnergyUnit.WattDayPerShortTon)]
+        [InlineData("en-US", "Wd/t", SpecificEnergyUnit.WattDayPerTonne)]
+        [InlineData("en-US", "Wh/kg", SpecificEnergyUnit.WattHourPerKilogram)]
+        [InlineData("en-US", "Wh/lbs", SpecificEnergyUnit.WattHourPerPound)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, SpecificEnergyUnit expectedUnit)
+        {
+            Assert.True(SpecificEnergy.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out SpecificEnergyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("kWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.KilowattDayPerTonne, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", SpecificEnergyUnit.BtuPerPound, "btu/lb")]
+        [InlineData("en-US", SpecificEnergyUnit.CaloriePerGram, "cal/g")]
+        [InlineData("en-US", SpecificEnergyUnit.GigawattDayPerKilogram, "GWd/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.GigawattDayPerShortTon, "GWd/ST")]
+        [InlineData("en-US", SpecificEnergyUnit.GigawattDayPerTonne, "GWd/t")]
+        [InlineData("en-US", SpecificEnergyUnit.GigawattHourPerKilogram, "GWh/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.GigawattHourPerPound, "GWh/lbs")]
+        [InlineData("en-US", SpecificEnergyUnit.JoulePerKilogram, "J/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.KilocaloriePerGram, "kcal/g")]
+        [InlineData("en-US", SpecificEnergyUnit.KilojoulePerKilogram, "kJ/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.KilowattDayPerKilogram, "kWd/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.KilowattDayPerShortTon, "kWd/ST")]
+        [InlineData("en-US", SpecificEnergyUnit.KilowattDayPerTonne, "kWd/t")]
+        [InlineData("en-US", SpecificEnergyUnit.KilowattHourPerKilogram, "kWh/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.KilowattHourPerPound, "kWh/lbs")]
+        [InlineData("en-US", SpecificEnergyUnit.MegajoulePerKilogram, "MJ/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.MegajoulePerTonne, "MJ/t")]
+        [InlineData("en-US", SpecificEnergyUnit.MegawattDayPerKilogram, "MWd/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.MegawattDayPerShortTon, "MWd/ST")]
+        [InlineData("en-US", SpecificEnergyUnit.MegawattDayPerTonne, "MWd/t")]
+        [InlineData("en-US", SpecificEnergyUnit.MegawattHourPerKilogram, "MWh/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.MegawattHourPerPound, "MWh/lbs")]
+        [InlineData("en-US", SpecificEnergyUnit.TerawattDayPerKilogram, "TWd/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.TerawattDayPerShortTon, "TWd/ST")]
+        [InlineData("en-US", SpecificEnergyUnit.TerawattDayPerTonne, "TWd/t")]
+        [InlineData("en-US", SpecificEnergyUnit.WattDayPerKilogram, "Wd/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.WattDayPerShortTon, "Wd/ST")]
+        [InlineData("en-US", SpecificEnergyUnit.WattDayPerTonne, "Wd/t")]
+        [InlineData("en-US", SpecificEnergyUnit.WattHourPerKilogram, "Wh/kg")]
+        [InlineData("en-US", SpecificEnergyUnit.WattHourPerPound, "Wh/lbs")]
+        public void GetAbbreviationForCulture(string culture, SpecificEnergyUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = SpecificEnergy.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
 
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(SpecificEnergy.Units, unit =>
             {
-                Assert.True(SpecificEnergy.TryParseUnit("kWh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerKilogram, parsedUnit);
-            }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("kWh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.KilowattHourPerPound, parsedUnit);
-            }
+                var defaultAbbreviation = SpecificEnergy.GetAbbreviation(unit);
 
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("MJ/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.MegajoulePerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("MJ/t", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.MegaJoulePerTonne, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("MWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("MWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerShortTon, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("MWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.MegawattDayPerTonne, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("MWh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("MWh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.MegawattHourPerPound, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("TWd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("TWd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerShortTon, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("TWd/t", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.TerawattDayPerTonne, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("Wd/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.WattDayPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("Wd/ST", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.WattDayPerShortTon, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("Wd/t", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.WattDayPerTonne, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("Wh/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.WattHourPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(SpecificEnergy.TryParseUnit("Wh/lbs", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificEnergyUnit.WattHourPerPound, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -1222,12 +864,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(SpecificEnergyUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = SpecificEnergy.Units.First(u => u != SpecificEnergy.BaseUnit);
-
-            var quantity = SpecificEnergy.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(SpecificEnergy.Units.Where(u => u != SpecificEnergy.BaseUnit), fromUnit =>
+            {
+                var quantity = SpecificEnergy.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -1237,6 +879,25 @@ namespace UnitsNet.Tests
             var quantity = default(SpecificEnergy);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(SpecificEnergyUnit unit)
+        {
+            var quantity = SpecificEnergy.From(3, SpecificEnergy.BaseUnit);
+            SpecificEnergy expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<SpecificEnergyUnit> quantityToConvert = quantity;
+                IQuantity<SpecificEnergyUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -1259,7 +920,7 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(1, SpecificEnergy.FromKilowattHoursPerKilogram(jouleperkilogram.KilowattHoursPerKilogram).JoulesPerKilogram, KilowattHoursPerKilogramTolerance);
             AssertEx.EqualTolerance(1, SpecificEnergy.FromKilowattHoursPerPound(jouleperkilogram.KilowattHoursPerPound).JoulesPerKilogram, KilowattHoursPerPoundTolerance);
             AssertEx.EqualTolerance(1, SpecificEnergy.FromMegajoulesPerKilogram(jouleperkilogram.MegajoulesPerKilogram).JoulesPerKilogram, MegajoulesPerKilogramTolerance);
-            AssertEx.EqualTolerance(1, SpecificEnergy.FromMegaJoulesPerTonne(jouleperkilogram.MegaJoulesPerTonne).JoulesPerKilogram, MegaJoulesPerTonneTolerance);
+            AssertEx.EqualTolerance(1, SpecificEnergy.FromMegajoulesPerTonne(jouleperkilogram.MegajoulesPerTonne).JoulesPerKilogram, MegajoulesPerTonneTolerance);
             AssertEx.EqualTolerance(1, SpecificEnergy.FromMegawattDaysPerKilogram(jouleperkilogram.MegawattDaysPerKilogram).JoulesPerKilogram, MegawattDaysPerKilogramTolerance);
             AssertEx.EqualTolerance(1, SpecificEnergy.FromMegawattDaysPerShortTon(jouleperkilogram.MegawattDaysPerShortTon).JoulesPerKilogram, MegawattDaysPerShortTonTolerance);
             AssertEx.EqualTolerance(1, SpecificEnergy.FromMegawattDaysPerTonne(jouleperkilogram.MegawattDaysPerTonne).JoulesPerKilogram, MegawattDaysPerTonneTolerance);
@@ -1370,21 +1031,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = SpecificEnergy.FromJoulesPerKilogram(1);
-            Assert.True(v.Equals(SpecificEnergy.FromJoulesPerKilogram(1), JoulesPerKilogramTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(SpecificEnergy.Zero, JoulesPerKilogramTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = SpecificEnergy.FromJoulesPerKilogram(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(SpecificEnergy.FromJoulesPerKilogram(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             SpecificEnergy jouleperkilogram = SpecificEnergy.FromJoulesPerKilogram(1);
@@ -1398,13 +1044,39 @@ namespace UnitsNet.Tests
             Assert.False(jouleperkilogram.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = SpecificEnergy.FromJoulesPerKilogram(firstValue);
+            var otherQuantity = SpecificEnergy.FromJoulesPerKilogram(secondValue);
+            SpecificEnergy maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, SpecificEnergy.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = SpecificEnergy.FromJoulesPerKilogram(1);
+            var negativeTolerance = SpecificEnergy.FromJoulesPerKilogram(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(SpecificEnergyUnit)).Cast<SpecificEnergyUnit>();
+            var units = Enum.GetValues<SpecificEnergyUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -1417,44 +1089,37 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 btu/lb", new SpecificEnergy(1, SpecificEnergyUnit.BtuPerPound).ToString());
-                Assert.Equal("1 cal/g", new SpecificEnergy(1, SpecificEnergyUnit.CaloriePerGram).ToString());
-                Assert.Equal("1 GWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.GigawattDayPerKilogram).ToString());
-                Assert.Equal("1 GWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.GigawattDayPerShortTon).ToString());
-                Assert.Equal("1 GWd/t", new SpecificEnergy(1, SpecificEnergyUnit.GigawattDayPerTonne).ToString());
-                Assert.Equal("1 GWh/kg", new SpecificEnergy(1, SpecificEnergyUnit.GigawattHourPerKilogram).ToString());
-                Assert.Equal("1 GWh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.GigawattHourPerPound).ToString());
-                Assert.Equal("1 J/kg", new SpecificEnergy(1, SpecificEnergyUnit.JoulePerKilogram).ToString());
-                Assert.Equal("1 kcal/g", new SpecificEnergy(1, SpecificEnergyUnit.KilocaloriePerGram).ToString());
-                Assert.Equal("1 kJ/kg", new SpecificEnergy(1, SpecificEnergyUnit.KilojoulePerKilogram).ToString());
-                Assert.Equal("1 kWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.KilowattDayPerKilogram).ToString());
-                Assert.Equal("1 kWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.KilowattDayPerShortTon).ToString());
-                Assert.Equal("1 kWd/t", new SpecificEnergy(1, SpecificEnergyUnit.KilowattDayPerTonne).ToString());
-                Assert.Equal("1 kWh/kg", new SpecificEnergy(1, SpecificEnergyUnit.KilowattHourPerKilogram).ToString());
-                Assert.Equal("1 kWh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.KilowattHourPerPound).ToString());
-                Assert.Equal("1 MJ/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegajoulePerKilogram).ToString());
-                Assert.Equal("1 MJ/t", new SpecificEnergy(1, SpecificEnergyUnit.MegaJoulePerTonne).ToString());
-                Assert.Equal("1 MWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerKilogram).ToString());
-                Assert.Equal("1 MWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerShortTon).ToString());
-                Assert.Equal("1 MWd/t", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerTonne).ToString());
-                Assert.Equal("1 MWh/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegawattHourPerKilogram).ToString());
-                Assert.Equal("1 MWh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.MegawattHourPerPound).ToString());
-                Assert.Equal("1 TWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.TerawattDayPerKilogram).ToString());
-                Assert.Equal("1 TWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.TerawattDayPerShortTon).ToString());
-                Assert.Equal("1 TWd/t", new SpecificEnergy(1, SpecificEnergyUnit.TerawattDayPerTonne).ToString());
-                Assert.Equal("1 Wd/kg", new SpecificEnergy(1, SpecificEnergyUnit.WattDayPerKilogram).ToString());
-                Assert.Equal("1 Wd/ST", new SpecificEnergy(1, SpecificEnergyUnit.WattDayPerShortTon).ToString());
-                Assert.Equal("1 Wd/t", new SpecificEnergy(1, SpecificEnergyUnit.WattDayPerTonne).ToString());
-                Assert.Equal("1 Wh/kg", new SpecificEnergy(1, SpecificEnergyUnit.WattHourPerKilogram).ToString());
-                Assert.Equal("1 Wh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.WattHourPerPound).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 btu/lb", new SpecificEnergy(1, SpecificEnergyUnit.BtuPerPound).ToString());
+            Assert.Equal("1 cal/g", new SpecificEnergy(1, SpecificEnergyUnit.CaloriePerGram).ToString());
+            Assert.Equal("1 GWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.GigawattDayPerKilogram).ToString());
+            Assert.Equal("1 GWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.GigawattDayPerShortTon).ToString());
+            Assert.Equal("1 GWd/t", new SpecificEnergy(1, SpecificEnergyUnit.GigawattDayPerTonne).ToString());
+            Assert.Equal("1 GWh/kg", new SpecificEnergy(1, SpecificEnergyUnit.GigawattHourPerKilogram).ToString());
+            Assert.Equal("1 GWh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.GigawattHourPerPound).ToString());
+            Assert.Equal("1 J/kg", new SpecificEnergy(1, SpecificEnergyUnit.JoulePerKilogram).ToString());
+            Assert.Equal("1 kcal/g", new SpecificEnergy(1, SpecificEnergyUnit.KilocaloriePerGram).ToString());
+            Assert.Equal("1 kJ/kg", new SpecificEnergy(1, SpecificEnergyUnit.KilojoulePerKilogram).ToString());
+            Assert.Equal("1 kWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.KilowattDayPerKilogram).ToString());
+            Assert.Equal("1 kWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.KilowattDayPerShortTon).ToString());
+            Assert.Equal("1 kWd/t", new SpecificEnergy(1, SpecificEnergyUnit.KilowattDayPerTonne).ToString());
+            Assert.Equal("1 kWh/kg", new SpecificEnergy(1, SpecificEnergyUnit.KilowattHourPerKilogram).ToString());
+            Assert.Equal("1 kWh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.KilowattHourPerPound).ToString());
+            Assert.Equal("1 MJ/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegajoulePerKilogram).ToString());
+            Assert.Equal("1 MJ/t", new SpecificEnergy(1, SpecificEnergyUnit.MegajoulePerTonne).ToString());
+            Assert.Equal("1 MWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerKilogram).ToString());
+            Assert.Equal("1 MWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerShortTon).ToString());
+            Assert.Equal("1 MWd/t", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerTonne).ToString());
+            Assert.Equal("1 MWh/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegawattHourPerKilogram).ToString());
+            Assert.Equal("1 MWh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.MegawattHourPerPound).ToString());
+            Assert.Equal("1 TWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.TerawattDayPerKilogram).ToString());
+            Assert.Equal("1 TWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.TerawattDayPerShortTon).ToString());
+            Assert.Equal("1 TWd/t", new SpecificEnergy(1, SpecificEnergyUnit.TerawattDayPerTonne).ToString());
+            Assert.Equal("1 Wd/kg", new SpecificEnergy(1, SpecificEnergyUnit.WattDayPerKilogram).ToString());
+            Assert.Equal("1 Wd/ST", new SpecificEnergy(1, SpecificEnergyUnit.WattDayPerShortTon).ToString());
+            Assert.Equal("1 Wd/t", new SpecificEnergy(1, SpecificEnergyUnit.WattDayPerTonne).ToString());
+            Assert.Equal("1 Wh/kg", new SpecificEnergy(1, SpecificEnergyUnit.WattHourPerKilogram).ToString());
+            Assert.Equal("1 Wh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.WattHourPerPound).ToString());
         }
 
         [Fact]
@@ -1479,7 +1144,7 @@ namespace UnitsNet.Tests
             Assert.Equal("1 kWh/kg", new SpecificEnergy(1, SpecificEnergyUnit.KilowattHourPerKilogram).ToString(swedishCulture));
             Assert.Equal("1 kWh/lbs", new SpecificEnergy(1, SpecificEnergyUnit.KilowattHourPerPound).ToString(swedishCulture));
             Assert.Equal("1 MJ/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegajoulePerKilogram).ToString(swedishCulture));
-            Assert.Equal("1 MJ/t", new SpecificEnergy(1, SpecificEnergyUnit.MegaJoulePerTonne).ToString(swedishCulture));
+            Assert.Equal("1 MJ/t", new SpecificEnergy(1, SpecificEnergyUnit.MegajoulePerTonne).ToString(swedishCulture));
             Assert.Equal("1 MWd/kg", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerKilogram).ToString(swedishCulture));
             Assert.Equal("1 MWd/ST", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerShortTon).ToString(swedishCulture));
             Assert.Equal("1 MWd/t", new SpecificEnergy(1, SpecificEnergyUnit.MegawattDayPerTonne).ToString(swedishCulture));
@@ -1498,19 +1163,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s1"));
-                Assert.Equal("0.12 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s2"));
-                Assert.Equal("0.123 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s3"));
-                Assert.Equal("0.1235 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s1"));
+            Assert.Equal("0.12 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s2"));
+            Assert.Equal("0.123 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s3"));
+            Assert.Equal("0.1235 J/kg", new SpecificEnergy(0.123456, SpecificEnergyUnit.JoulePerKilogram).ToString("s4"));
         }
 
         [Fact]
@@ -1533,7 +1190,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -1546,150 +1203,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(SpecificEnergy)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(SpecificEnergyUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal(SpecificEnergy.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal(SpecificEnergy.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = SpecificEnergy.FromJoulesPerKilogram(1.0);
-            Assert.Equal(new {SpecificEnergy.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

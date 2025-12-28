@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public RatioChangeRate(double value, RatioChangeRateUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of RatioChangeRate, which is Second. All conversions go via this value.
         /// </summary>
         public static RatioChangeRateUnit BaseUnit { get; } = RatioChangeRateUnit.DecimalFractionPerSecond;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of RatioChangeRate.
         /// </summary>
         public static RatioChangeRate MaxValue { get; } = new RatioChangeRate(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of RatioChangeRate.
         /// </summary>
         public static RatioChangeRate MinValue { get; } = new RatioChangeRate(double.MinValue, BaseUnit);
 
@@ -96,13 +95,11 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="RatioChangeRate"/> from <see cref="RatioChangeRateUnit.DecimalFractionPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RatioChangeRate FromDecimalFractionsPerSecond(double decimalfractionspersecond) => new RatioChangeRate(decimalfractionspersecond, RatioChangeRateUnit.DecimalFractionPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="RatioChangeRate"/> from <see cref="RatioChangeRateUnit.PercentPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static RatioChangeRate FromPercentsPerSecond(double percentspersecond) => new RatioChangeRate(percentspersecond, RatioChangeRateUnit.PercentPerSecond);
 
         /// <summary>
@@ -127,9 +124,9 @@ namespace UnitsNet
                 public double As(RatioChangeRateUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this RatioChangeRate to another RatioChangeRate with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A RatioChangeRate with the specified unit.</returns>
                 public RatioChangeRate ToUnit(RatioChangeRateUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -147,7 +144,7 @@ namespace UnitsNet
                     {
                         RatioChangeRateUnit.DecimalFractionPerSecond => _value,
                         RatioChangeRateUnit.PercentPerSecond => _value / 1e2,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -162,7 +159,7 @@ namespace UnitsNet
                     {
                         RatioChangeRateUnit.DecimalFractionPerSecond => baseUnitValue,
                         RatioChangeRateUnit.PercentPerSecond => baseUnitValue * 1e2,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

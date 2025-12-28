@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -39,9 +41,9 @@ namespace UnitsNet.Tests
     public abstract partial class SpeedTestsBase : QuantityTestsBase
     {
         protected abstract double CentimetersPerHourInOneMeterPerSecond { get; }
-        protected abstract double CentimetersPerMinutesInOneMeterPerSecond { get; }
+        protected abstract double CentimetersPerMinuteInOneMeterPerSecond { get; }
         protected abstract double CentimetersPerSecondInOneMeterPerSecond { get; }
-        protected abstract double DecimetersPerMinutesInOneMeterPerSecond { get; }
+        protected abstract double DecimetersPerMinuteInOneMeterPerSecond { get; }
         protected abstract double DecimetersPerSecondInOneMeterPerSecond { get; }
         protected abstract double FeetPerHourInOneMeterPerSecond { get; }
         protected abstract double FeetPerMinuteInOneMeterPerSecond { get; }
@@ -50,20 +52,20 @@ namespace UnitsNet.Tests
         protected abstract double InchesPerMinuteInOneMeterPerSecond { get; }
         protected abstract double InchesPerSecondInOneMeterPerSecond { get; }
         protected abstract double KilometersPerHourInOneMeterPerSecond { get; }
-        protected abstract double KilometersPerMinutesInOneMeterPerSecond { get; }
+        protected abstract double KilometersPerMinuteInOneMeterPerSecond { get; }
         protected abstract double KilometersPerSecondInOneMeterPerSecond { get; }
         protected abstract double KnotsInOneMeterPerSecond { get; }
         protected abstract double MachInOneMeterPerSecond { get; }
         protected abstract double MetersPerHourInOneMeterPerSecond { get; }
-        protected abstract double MetersPerMinutesInOneMeterPerSecond { get; }
+        protected abstract double MetersPerMinuteInOneMeterPerSecond { get; }
         protected abstract double MetersPerSecondInOneMeterPerSecond { get; }
-        protected abstract double MicrometersPerMinutesInOneMeterPerSecond { get; }
+        protected abstract double MicrometersPerMinuteInOneMeterPerSecond { get; }
         protected abstract double MicrometersPerSecondInOneMeterPerSecond { get; }
         protected abstract double MilesPerHourInOneMeterPerSecond { get; }
         protected abstract double MillimetersPerHourInOneMeterPerSecond { get; }
-        protected abstract double MillimetersPerMinutesInOneMeterPerSecond { get; }
+        protected abstract double MillimetersPerMinuteInOneMeterPerSecond { get; }
         protected abstract double MillimetersPerSecondInOneMeterPerSecond { get; }
-        protected abstract double NanometersPerMinutesInOneMeterPerSecond { get; }
+        protected abstract double NanometersPerMinuteInOneMeterPerSecond { get; }
         protected abstract double NanometersPerSecondInOneMeterPerSecond { get; }
         protected abstract double UsSurveyFeetPerHourInOneMeterPerSecond { get; }
         protected abstract double UsSurveyFeetPerMinuteInOneMeterPerSecond { get; }
@@ -74,9 +76,9 @@ namespace UnitsNet.Tests
 
 // ReSharper disable VirtualMemberNeverOverriden.Global
         protected virtual double CentimetersPerHourTolerance { get { return 1e-5; } }
-        protected virtual double CentimetersPerMinutesTolerance { get { return 1e-5; } }
+        protected virtual double CentimetersPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double CentimetersPerSecondTolerance { get { return 1e-5; } }
-        protected virtual double DecimetersPerMinutesTolerance { get { return 1e-5; } }
+        protected virtual double DecimetersPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double DecimetersPerSecondTolerance { get { return 1e-5; } }
         protected virtual double FeetPerHourTolerance { get { return 1e-5; } }
         protected virtual double FeetPerMinuteTolerance { get { return 1e-5; } }
@@ -85,20 +87,20 @@ namespace UnitsNet.Tests
         protected virtual double InchesPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double InchesPerSecondTolerance { get { return 1e-5; } }
         protected virtual double KilometersPerHourTolerance { get { return 1e-5; } }
-        protected virtual double KilometersPerMinutesTolerance { get { return 1e-5; } }
+        protected virtual double KilometersPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double KilometersPerSecondTolerance { get { return 1e-5; } }
         protected virtual double KnotsTolerance { get { return 1e-5; } }
         protected virtual double MachTolerance { get { return 1e-5; } }
         protected virtual double MetersPerHourTolerance { get { return 1e-5; } }
-        protected virtual double MetersPerMinutesTolerance { get { return 1e-5; } }
+        protected virtual double MetersPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double MetersPerSecondTolerance { get { return 1e-5; } }
-        protected virtual double MicrometersPerMinutesTolerance { get { return 1e-5; } }
+        protected virtual double MicrometersPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double MicrometersPerSecondTolerance { get { return 1e-5; } }
         protected virtual double MilesPerHourTolerance { get { return 1e-5; } }
         protected virtual double MillimetersPerHourTolerance { get { return 1e-5; } }
-        protected virtual double MillimetersPerMinutesTolerance { get { return 1e-5; } }
+        protected virtual double MillimetersPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double MillimetersPerSecondTolerance { get { return 1e-5; } }
-        protected virtual double NanometersPerMinutesTolerance { get { return 1e-5; } }
+        protected virtual double NanometersPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double NanometersPerSecondTolerance { get { return 1e-5; } }
         protected virtual double UsSurveyFeetPerHourTolerance { get { return 1e-5; } }
         protected virtual double UsSurveyFeetPerMinuteTolerance { get { return 1e-5; } }
@@ -113,9 +115,9 @@ namespace UnitsNet.Tests
             return unit switch
             {
                 SpeedUnit.CentimeterPerHour => (CentimetersPerHourInOneMeterPerSecond, CentimetersPerHourTolerance),
-                SpeedUnit.CentimeterPerMinute => (CentimetersPerMinutesInOneMeterPerSecond, CentimetersPerMinutesTolerance),
+                SpeedUnit.CentimeterPerMinute => (CentimetersPerMinuteInOneMeterPerSecond, CentimetersPerMinuteTolerance),
                 SpeedUnit.CentimeterPerSecond => (CentimetersPerSecondInOneMeterPerSecond, CentimetersPerSecondTolerance),
-                SpeedUnit.DecimeterPerMinute => (DecimetersPerMinutesInOneMeterPerSecond, DecimetersPerMinutesTolerance),
+                SpeedUnit.DecimeterPerMinute => (DecimetersPerMinuteInOneMeterPerSecond, DecimetersPerMinuteTolerance),
                 SpeedUnit.DecimeterPerSecond => (DecimetersPerSecondInOneMeterPerSecond, DecimetersPerSecondTolerance),
                 SpeedUnit.FootPerHour => (FeetPerHourInOneMeterPerSecond, FeetPerHourTolerance),
                 SpeedUnit.FootPerMinute => (FeetPerMinuteInOneMeterPerSecond, FeetPerMinuteTolerance),
@@ -124,20 +126,20 @@ namespace UnitsNet.Tests
                 SpeedUnit.InchPerMinute => (InchesPerMinuteInOneMeterPerSecond, InchesPerMinuteTolerance),
                 SpeedUnit.InchPerSecond => (InchesPerSecondInOneMeterPerSecond, InchesPerSecondTolerance),
                 SpeedUnit.KilometerPerHour => (KilometersPerHourInOneMeterPerSecond, KilometersPerHourTolerance),
-                SpeedUnit.KilometerPerMinute => (KilometersPerMinutesInOneMeterPerSecond, KilometersPerMinutesTolerance),
+                SpeedUnit.KilometerPerMinute => (KilometersPerMinuteInOneMeterPerSecond, KilometersPerMinuteTolerance),
                 SpeedUnit.KilometerPerSecond => (KilometersPerSecondInOneMeterPerSecond, KilometersPerSecondTolerance),
                 SpeedUnit.Knot => (KnotsInOneMeterPerSecond, KnotsTolerance),
                 SpeedUnit.Mach => (MachInOneMeterPerSecond, MachTolerance),
                 SpeedUnit.MeterPerHour => (MetersPerHourInOneMeterPerSecond, MetersPerHourTolerance),
-                SpeedUnit.MeterPerMinute => (MetersPerMinutesInOneMeterPerSecond, MetersPerMinutesTolerance),
+                SpeedUnit.MeterPerMinute => (MetersPerMinuteInOneMeterPerSecond, MetersPerMinuteTolerance),
                 SpeedUnit.MeterPerSecond => (MetersPerSecondInOneMeterPerSecond, MetersPerSecondTolerance),
-                SpeedUnit.MicrometerPerMinute => (MicrometersPerMinutesInOneMeterPerSecond, MicrometersPerMinutesTolerance),
+                SpeedUnit.MicrometerPerMinute => (MicrometersPerMinuteInOneMeterPerSecond, MicrometersPerMinuteTolerance),
                 SpeedUnit.MicrometerPerSecond => (MicrometersPerSecondInOneMeterPerSecond, MicrometersPerSecondTolerance),
                 SpeedUnit.MilePerHour => (MilesPerHourInOneMeterPerSecond, MilesPerHourTolerance),
                 SpeedUnit.MillimeterPerHour => (MillimetersPerHourInOneMeterPerSecond, MillimetersPerHourTolerance),
-                SpeedUnit.MillimeterPerMinute => (MillimetersPerMinutesInOneMeterPerSecond, MillimetersPerMinutesTolerance),
+                SpeedUnit.MillimeterPerMinute => (MillimetersPerMinuteInOneMeterPerSecond, MillimetersPerMinuteTolerance),
                 SpeedUnit.MillimeterPerSecond => (MillimetersPerSecondInOneMeterPerSecond, MillimetersPerSecondTolerance),
-                SpeedUnit.NanometerPerMinute => (NanometersPerMinutesInOneMeterPerSecond, NanometersPerMinutesTolerance),
+                SpeedUnit.NanometerPerMinute => (NanometersPerMinuteInOneMeterPerSecond, NanometersPerMinuteTolerance),
                 SpeedUnit.NanometerPerSecond => (NanometersPerSecondInOneMeterPerSecond, NanometersPerSecondTolerance),
                 SpeedUnit.UsSurveyFootPerHour => (UsSurveyFeetPerHourInOneMeterPerSecond, UsSurveyFeetPerHourTolerance),
                 SpeedUnit.UsSurveyFootPerMinute => (UsSurveyFeetPerMinuteInOneMeterPerSecond, UsSurveyFeetPerMinuteTolerance),
@@ -195,16 +197,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Speed(double.PositiveInfinity, SpeedUnit.MeterPerSecond));
-            Assert.Throws<ArgumentException>(() => new Speed(double.NegativeInfinity, SpeedUnit.MeterPerSecond));
+            var exception1 = Record.Exception(() => new Speed(double.PositiveInfinity, SpeedUnit.MeterPerSecond));
+            var exception2 = Record.Exception(() => new Speed(double.NegativeInfinity, SpeedUnit.MeterPerSecond));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Speed(double.NaN, SpeedUnit.MeterPerSecond));
+            var exception = Record.Exception(() => new Speed(double.NaN, SpeedUnit.MeterPerSecond));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -214,32 +221,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new Speed(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Speed) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new Speed(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new Speed(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void Speed_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            SpeedUnit[] unitsOrderedByName = EnumHelper.GetValues<SpeedUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Speed(1, SpeedUnit.MeterPerSecond);
 
-            QuantityInfo<SpeedUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Speed, SpeedUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Speed.Zero, quantityInfo.Zero);
             Assert.Equal("Speed", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<SpeedUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Speed.Zero, quantityInfo.Zero);
+            Assert.Equal(Speed.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Speed.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<SpeedUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -247,9 +258,9 @@ namespace UnitsNet.Tests
         {
             Speed meterpersecond = Speed.FromMetersPerSecond(1);
             AssertEx.EqualTolerance(CentimetersPerHourInOneMeterPerSecond, meterpersecond.CentimetersPerHour, CentimetersPerHourTolerance);
-            AssertEx.EqualTolerance(CentimetersPerMinutesInOneMeterPerSecond, meterpersecond.CentimetersPerMinutes, CentimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(CentimetersPerMinuteInOneMeterPerSecond, meterpersecond.CentimetersPerMinute, CentimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(CentimetersPerSecondInOneMeterPerSecond, meterpersecond.CentimetersPerSecond, CentimetersPerSecondTolerance);
-            AssertEx.EqualTolerance(DecimetersPerMinutesInOneMeterPerSecond, meterpersecond.DecimetersPerMinutes, DecimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(DecimetersPerMinuteInOneMeterPerSecond, meterpersecond.DecimetersPerMinute, DecimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(DecimetersPerSecondInOneMeterPerSecond, meterpersecond.DecimetersPerSecond, DecimetersPerSecondTolerance);
             AssertEx.EqualTolerance(FeetPerHourInOneMeterPerSecond, meterpersecond.FeetPerHour, FeetPerHourTolerance);
             AssertEx.EqualTolerance(FeetPerMinuteInOneMeterPerSecond, meterpersecond.FeetPerMinute, FeetPerMinuteTolerance);
@@ -258,20 +269,20 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(InchesPerMinuteInOneMeterPerSecond, meterpersecond.InchesPerMinute, InchesPerMinuteTolerance);
             AssertEx.EqualTolerance(InchesPerSecondInOneMeterPerSecond, meterpersecond.InchesPerSecond, InchesPerSecondTolerance);
             AssertEx.EqualTolerance(KilometersPerHourInOneMeterPerSecond, meterpersecond.KilometersPerHour, KilometersPerHourTolerance);
-            AssertEx.EqualTolerance(KilometersPerMinutesInOneMeterPerSecond, meterpersecond.KilometersPerMinutes, KilometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(KilometersPerMinuteInOneMeterPerSecond, meterpersecond.KilometersPerMinute, KilometersPerMinuteTolerance);
             AssertEx.EqualTolerance(KilometersPerSecondInOneMeterPerSecond, meterpersecond.KilometersPerSecond, KilometersPerSecondTolerance);
             AssertEx.EqualTolerance(KnotsInOneMeterPerSecond, meterpersecond.Knots, KnotsTolerance);
             AssertEx.EqualTolerance(MachInOneMeterPerSecond, meterpersecond.Mach, MachTolerance);
             AssertEx.EqualTolerance(MetersPerHourInOneMeterPerSecond, meterpersecond.MetersPerHour, MetersPerHourTolerance);
-            AssertEx.EqualTolerance(MetersPerMinutesInOneMeterPerSecond, meterpersecond.MetersPerMinutes, MetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(MetersPerMinuteInOneMeterPerSecond, meterpersecond.MetersPerMinute, MetersPerMinuteTolerance);
             AssertEx.EqualTolerance(MetersPerSecondInOneMeterPerSecond, meterpersecond.MetersPerSecond, MetersPerSecondTolerance);
-            AssertEx.EqualTolerance(MicrometersPerMinutesInOneMeterPerSecond, meterpersecond.MicrometersPerMinutes, MicrometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(MicrometersPerMinuteInOneMeterPerSecond, meterpersecond.MicrometersPerMinute, MicrometersPerMinuteTolerance);
             AssertEx.EqualTolerance(MicrometersPerSecondInOneMeterPerSecond, meterpersecond.MicrometersPerSecond, MicrometersPerSecondTolerance);
             AssertEx.EqualTolerance(MilesPerHourInOneMeterPerSecond, meterpersecond.MilesPerHour, MilesPerHourTolerance);
             AssertEx.EqualTolerance(MillimetersPerHourInOneMeterPerSecond, meterpersecond.MillimetersPerHour, MillimetersPerHourTolerance);
-            AssertEx.EqualTolerance(MillimetersPerMinutesInOneMeterPerSecond, meterpersecond.MillimetersPerMinutes, MillimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(MillimetersPerMinuteInOneMeterPerSecond, meterpersecond.MillimetersPerMinute, MillimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(MillimetersPerSecondInOneMeterPerSecond, meterpersecond.MillimetersPerSecond, MillimetersPerSecondTolerance);
-            AssertEx.EqualTolerance(NanometersPerMinutesInOneMeterPerSecond, meterpersecond.NanometersPerMinutes, NanometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(NanometersPerMinuteInOneMeterPerSecond, meterpersecond.NanometersPerMinute, NanometersPerMinuteTolerance);
             AssertEx.EqualTolerance(NanometersPerSecondInOneMeterPerSecond, meterpersecond.NanometersPerSecond, NanometersPerSecondTolerance);
             AssertEx.EqualTolerance(UsSurveyFeetPerHourInOneMeterPerSecond, meterpersecond.UsSurveyFeetPerHour, UsSurveyFeetPerHourTolerance);
             AssertEx.EqualTolerance(UsSurveyFeetPerMinuteInOneMeterPerSecond, meterpersecond.UsSurveyFeetPerMinute, UsSurveyFeetPerMinuteTolerance);
@@ -284,151 +295,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Speed.From(1, SpeedUnit.CentimeterPerHour);
-            AssertEx.EqualTolerance(1, quantity00.CentimetersPerHour, CentimetersPerHourTolerance);
-            Assert.Equal(SpeedUnit.CentimeterPerHour, quantity00.Unit);
-
-            var quantity01 = Speed.From(1, SpeedUnit.CentimeterPerMinute);
-            AssertEx.EqualTolerance(1, quantity01.CentimetersPerMinutes, CentimetersPerMinutesTolerance);
-            Assert.Equal(SpeedUnit.CentimeterPerMinute, quantity01.Unit);
-
-            var quantity02 = Speed.From(1, SpeedUnit.CentimeterPerSecond);
-            AssertEx.EqualTolerance(1, quantity02.CentimetersPerSecond, CentimetersPerSecondTolerance);
-            Assert.Equal(SpeedUnit.CentimeterPerSecond, quantity02.Unit);
-
-            var quantity03 = Speed.From(1, SpeedUnit.DecimeterPerMinute);
-            AssertEx.EqualTolerance(1, quantity03.DecimetersPerMinutes, DecimetersPerMinutesTolerance);
-            Assert.Equal(SpeedUnit.DecimeterPerMinute, quantity03.Unit);
-
-            var quantity04 = Speed.From(1, SpeedUnit.DecimeterPerSecond);
-            AssertEx.EqualTolerance(1, quantity04.DecimetersPerSecond, DecimetersPerSecondTolerance);
-            Assert.Equal(SpeedUnit.DecimeterPerSecond, quantity04.Unit);
-
-            var quantity05 = Speed.From(1, SpeedUnit.FootPerHour);
-            AssertEx.EqualTolerance(1, quantity05.FeetPerHour, FeetPerHourTolerance);
-            Assert.Equal(SpeedUnit.FootPerHour, quantity05.Unit);
-
-            var quantity06 = Speed.From(1, SpeedUnit.FootPerMinute);
-            AssertEx.EqualTolerance(1, quantity06.FeetPerMinute, FeetPerMinuteTolerance);
-            Assert.Equal(SpeedUnit.FootPerMinute, quantity06.Unit);
-
-            var quantity07 = Speed.From(1, SpeedUnit.FootPerSecond);
-            AssertEx.EqualTolerance(1, quantity07.FeetPerSecond, FeetPerSecondTolerance);
-            Assert.Equal(SpeedUnit.FootPerSecond, quantity07.Unit);
-
-            var quantity08 = Speed.From(1, SpeedUnit.InchPerHour);
-            AssertEx.EqualTolerance(1, quantity08.InchesPerHour, InchesPerHourTolerance);
-            Assert.Equal(SpeedUnit.InchPerHour, quantity08.Unit);
-
-            var quantity09 = Speed.From(1, SpeedUnit.InchPerMinute);
-            AssertEx.EqualTolerance(1, quantity09.InchesPerMinute, InchesPerMinuteTolerance);
-            Assert.Equal(SpeedUnit.InchPerMinute, quantity09.Unit);
-
-            var quantity10 = Speed.From(1, SpeedUnit.InchPerSecond);
-            AssertEx.EqualTolerance(1, quantity10.InchesPerSecond, InchesPerSecondTolerance);
-            Assert.Equal(SpeedUnit.InchPerSecond, quantity10.Unit);
-
-            var quantity11 = Speed.From(1, SpeedUnit.KilometerPerHour);
-            AssertEx.EqualTolerance(1, quantity11.KilometersPerHour, KilometersPerHourTolerance);
-            Assert.Equal(SpeedUnit.KilometerPerHour, quantity11.Unit);
-
-            var quantity12 = Speed.From(1, SpeedUnit.KilometerPerMinute);
-            AssertEx.EqualTolerance(1, quantity12.KilometersPerMinutes, KilometersPerMinutesTolerance);
-            Assert.Equal(SpeedUnit.KilometerPerMinute, quantity12.Unit);
-
-            var quantity13 = Speed.From(1, SpeedUnit.KilometerPerSecond);
-            AssertEx.EqualTolerance(1, quantity13.KilometersPerSecond, KilometersPerSecondTolerance);
-            Assert.Equal(SpeedUnit.KilometerPerSecond, quantity13.Unit);
-
-            var quantity14 = Speed.From(1, SpeedUnit.Knot);
-            AssertEx.EqualTolerance(1, quantity14.Knots, KnotsTolerance);
-            Assert.Equal(SpeedUnit.Knot, quantity14.Unit);
-
-            var quantity15 = Speed.From(1, SpeedUnit.Mach);
-            AssertEx.EqualTolerance(1, quantity15.Mach, MachTolerance);
-            Assert.Equal(SpeedUnit.Mach, quantity15.Unit);
-
-            var quantity16 = Speed.From(1, SpeedUnit.MeterPerHour);
-            AssertEx.EqualTolerance(1, quantity16.MetersPerHour, MetersPerHourTolerance);
-            Assert.Equal(SpeedUnit.MeterPerHour, quantity16.Unit);
-
-            var quantity17 = Speed.From(1, SpeedUnit.MeterPerMinute);
-            AssertEx.EqualTolerance(1, quantity17.MetersPerMinutes, MetersPerMinutesTolerance);
-            Assert.Equal(SpeedUnit.MeterPerMinute, quantity17.Unit);
-
-            var quantity18 = Speed.From(1, SpeedUnit.MeterPerSecond);
-            AssertEx.EqualTolerance(1, quantity18.MetersPerSecond, MetersPerSecondTolerance);
-            Assert.Equal(SpeedUnit.MeterPerSecond, quantity18.Unit);
-
-            var quantity19 = Speed.From(1, SpeedUnit.MicrometerPerMinute);
-            AssertEx.EqualTolerance(1, quantity19.MicrometersPerMinutes, MicrometersPerMinutesTolerance);
-            Assert.Equal(SpeedUnit.MicrometerPerMinute, quantity19.Unit);
-
-            var quantity20 = Speed.From(1, SpeedUnit.MicrometerPerSecond);
-            AssertEx.EqualTolerance(1, quantity20.MicrometersPerSecond, MicrometersPerSecondTolerance);
-            Assert.Equal(SpeedUnit.MicrometerPerSecond, quantity20.Unit);
-
-            var quantity21 = Speed.From(1, SpeedUnit.MilePerHour);
-            AssertEx.EqualTolerance(1, quantity21.MilesPerHour, MilesPerHourTolerance);
-            Assert.Equal(SpeedUnit.MilePerHour, quantity21.Unit);
-
-            var quantity22 = Speed.From(1, SpeedUnit.MillimeterPerHour);
-            AssertEx.EqualTolerance(1, quantity22.MillimetersPerHour, MillimetersPerHourTolerance);
-            Assert.Equal(SpeedUnit.MillimeterPerHour, quantity22.Unit);
-
-            var quantity23 = Speed.From(1, SpeedUnit.MillimeterPerMinute);
-            AssertEx.EqualTolerance(1, quantity23.MillimetersPerMinutes, MillimetersPerMinutesTolerance);
-            Assert.Equal(SpeedUnit.MillimeterPerMinute, quantity23.Unit);
-
-            var quantity24 = Speed.From(1, SpeedUnit.MillimeterPerSecond);
-            AssertEx.EqualTolerance(1, quantity24.MillimetersPerSecond, MillimetersPerSecondTolerance);
-            Assert.Equal(SpeedUnit.MillimeterPerSecond, quantity24.Unit);
-
-            var quantity25 = Speed.From(1, SpeedUnit.NanometerPerMinute);
-            AssertEx.EqualTolerance(1, quantity25.NanometersPerMinutes, NanometersPerMinutesTolerance);
-            Assert.Equal(SpeedUnit.NanometerPerMinute, quantity25.Unit);
-
-            var quantity26 = Speed.From(1, SpeedUnit.NanometerPerSecond);
-            AssertEx.EqualTolerance(1, quantity26.NanometersPerSecond, NanometersPerSecondTolerance);
-            Assert.Equal(SpeedUnit.NanometerPerSecond, quantity26.Unit);
-
-            var quantity27 = Speed.From(1, SpeedUnit.UsSurveyFootPerHour);
-            AssertEx.EqualTolerance(1, quantity27.UsSurveyFeetPerHour, UsSurveyFeetPerHourTolerance);
-            Assert.Equal(SpeedUnit.UsSurveyFootPerHour, quantity27.Unit);
-
-            var quantity28 = Speed.From(1, SpeedUnit.UsSurveyFootPerMinute);
-            AssertEx.EqualTolerance(1, quantity28.UsSurveyFeetPerMinute, UsSurveyFeetPerMinuteTolerance);
-            Assert.Equal(SpeedUnit.UsSurveyFootPerMinute, quantity28.Unit);
-
-            var quantity29 = Speed.From(1, SpeedUnit.UsSurveyFootPerSecond);
-            AssertEx.EqualTolerance(1, quantity29.UsSurveyFeetPerSecond, UsSurveyFeetPerSecondTolerance);
-            Assert.Equal(SpeedUnit.UsSurveyFootPerSecond, quantity29.Unit);
-
-            var quantity30 = Speed.From(1, SpeedUnit.YardPerHour);
-            AssertEx.EqualTolerance(1, quantity30.YardsPerHour, YardsPerHourTolerance);
-            Assert.Equal(SpeedUnit.YardPerHour, quantity30.Unit);
-
-            var quantity31 = Speed.From(1, SpeedUnit.YardPerMinute);
-            AssertEx.EqualTolerance(1, quantity31.YardsPerMinute, YardsPerMinuteTolerance);
-            Assert.Equal(SpeedUnit.YardPerMinute, quantity31.Unit);
-
-            var quantity32 = Speed.From(1, SpeedUnit.YardPerSecond);
-            AssertEx.EqualTolerance(1, quantity32.YardsPerSecond, YardsPerSecondTolerance);
-            Assert.Equal(SpeedUnit.YardPerSecond, quantity32.Unit);
-
+            Assert.All(EnumHelper.GetValues<SpeedUnit>(), unit =>
+            {
+                var quantity = Speed.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromMetersPerSecond_WithInfinityValue_ThrowsArgumentException()
+        public void FromMetersPerSecond_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Speed.FromMetersPerSecond(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Speed.FromMetersPerSecond(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Speed.FromMetersPerSecond(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Speed.FromMetersPerSecond(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromMetersPerSecond_WithNanValue_ThrowsArgumentException()
+        public void FromMetersPerSecond_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Speed.FromMetersPerSecond(double.NaN));
+            var exception = Record.Exception(() => Speed.FromMetersPerSecond(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -436,9 +326,9 @@ namespace UnitsNet.Tests
         {
             var meterpersecond = Speed.FromMetersPerSecond(1);
             AssertEx.EqualTolerance(CentimetersPerHourInOneMeterPerSecond, meterpersecond.As(SpeedUnit.CentimeterPerHour), CentimetersPerHourTolerance);
-            AssertEx.EqualTolerance(CentimetersPerMinutesInOneMeterPerSecond, meterpersecond.As(SpeedUnit.CentimeterPerMinute), CentimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(CentimetersPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.CentimeterPerMinute), CentimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(CentimetersPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.CentimeterPerSecond), CentimetersPerSecondTolerance);
-            AssertEx.EqualTolerance(DecimetersPerMinutesInOneMeterPerSecond, meterpersecond.As(SpeedUnit.DecimeterPerMinute), DecimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(DecimetersPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.DecimeterPerMinute), DecimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(DecimetersPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.DecimeterPerSecond), DecimetersPerSecondTolerance);
             AssertEx.EqualTolerance(FeetPerHourInOneMeterPerSecond, meterpersecond.As(SpeedUnit.FootPerHour), FeetPerHourTolerance);
             AssertEx.EqualTolerance(FeetPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.FootPerMinute), FeetPerMinuteTolerance);
@@ -447,20 +337,20 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(InchesPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.InchPerMinute), InchesPerMinuteTolerance);
             AssertEx.EqualTolerance(InchesPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.InchPerSecond), InchesPerSecondTolerance);
             AssertEx.EqualTolerance(KilometersPerHourInOneMeterPerSecond, meterpersecond.As(SpeedUnit.KilometerPerHour), KilometersPerHourTolerance);
-            AssertEx.EqualTolerance(KilometersPerMinutesInOneMeterPerSecond, meterpersecond.As(SpeedUnit.KilometerPerMinute), KilometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(KilometersPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.KilometerPerMinute), KilometersPerMinuteTolerance);
             AssertEx.EqualTolerance(KilometersPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.KilometerPerSecond), KilometersPerSecondTolerance);
             AssertEx.EqualTolerance(KnotsInOneMeterPerSecond, meterpersecond.As(SpeedUnit.Knot), KnotsTolerance);
             AssertEx.EqualTolerance(MachInOneMeterPerSecond, meterpersecond.As(SpeedUnit.Mach), MachTolerance);
             AssertEx.EqualTolerance(MetersPerHourInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MeterPerHour), MetersPerHourTolerance);
-            AssertEx.EqualTolerance(MetersPerMinutesInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MeterPerMinute), MetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(MetersPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MeterPerMinute), MetersPerMinuteTolerance);
             AssertEx.EqualTolerance(MetersPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MeterPerSecond), MetersPerSecondTolerance);
-            AssertEx.EqualTolerance(MicrometersPerMinutesInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MicrometerPerMinute), MicrometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(MicrometersPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MicrometerPerMinute), MicrometersPerMinuteTolerance);
             AssertEx.EqualTolerance(MicrometersPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MicrometerPerSecond), MicrometersPerSecondTolerance);
             AssertEx.EqualTolerance(MilesPerHourInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MilePerHour), MilesPerHourTolerance);
             AssertEx.EqualTolerance(MillimetersPerHourInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MillimeterPerHour), MillimetersPerHourTolerance);
-            AssertEx.EqualTolerance(MillimetersPerMinutesInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MillimeterPerMinute), MillimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(MillimetersPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MillimeterPerMinute), MillimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(MillimetersPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.MillimeterPerSecond), MillimetersPerSecondTolerance);
-            AssertEx.EqualTolerance(NanometersPerMinutesInOneMeterPerSecond, meterpersecond.As(SpeedUnit.NanometerPerMinute), NanometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(NanometersPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.NanometerPerMinute), NanometersPerMinuteTolerance);
             AssertEx.EqualTolerance(NanometersPerSecondInOneMeterPerSecond, meterpersecond.As(SpeedUnit.NanometerPerSecond), NanometersPerSecondTolerance);
             AssertEx.EqualTolerance(UsSurveyFeetPerHourInOneMeterPerSecond, meterpersecond.As(SpeedUnit.UsSurveyFootPerHour), UsSurveyFeetPerHourTolerance);
             AssertEx.EqualTolerance(UsSurveyFeetPerMinuteInOneMeterPerSecond, meterpersecond.As(SpeedUnit.UsSurveyFootPerMinute), UsSurveyFeetPerMinuteTolerance);
@@ -471,1552 +361,761 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = Speed.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new Speed(value: 1, unit: Speed.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(Speed.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = Speed.Parse("1 cm/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerHour, CentimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 см/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerHour, CentimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 cm/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerMinutes, CentimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 см/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerMinutes, CentimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 cm/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerSecond, CentimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 см/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerSecond, CentimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 dm/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerMinutes, DecimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 дм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerMinutes, DecimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 dm/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerSecond, DecimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 дм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerSecond, DecimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 ft/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.FeetPerHour, FeetPerHourTolerance);
-                Assert.Equal(SpeedUnit.FootPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 фут/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.FeetPerHour, FeetPerHourTolerance);
-                Assert.Equal(SpeedUnit.FootPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 ft/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.FeetPerMinute, FeetPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.FootPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 фут/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.FeetPerMinute, FeetPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.FootPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 ft/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.FeetPerSecond, FeetPerSecondTolerance);
-                Assert.Equal(SpeedUnit.FootPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 фут/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.FeetPerSecond, FeetPerSecondTolerance);
-                Assert.Equal(SpeedUnit.FootPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 in/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InchesPerHour, InchesPerHourTolerance);
-                Assert.Equal(SpeedUnit.InchPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 in/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InchesPerMinute, InchesPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.InchPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 in/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InchesPerSecond, InchesPerSecondTolerance);
-                Assert.Equal(SpeedUnit.InchPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 km/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerHour, KilometersPerHourTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 км/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerHour, KilometersPerHourTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 km/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerMinutes, KilometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 км/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerMinutes, KilometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 km/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerSecond, KilometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 км/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerSecond, KilometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 kn", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 kt", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 knot", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 knots", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 уз.", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 M", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 Ma", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 MN", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 MACH", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 мах", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 m/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetersPerHour, MetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MeterPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 м/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MetersPerHour, MetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MeterPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 m/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetersPerMinutes, MetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 м/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MetersPerMinutes, MetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 m/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MetersPerSecond, MetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 м/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MetersPerSecond, MetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 µm/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerMinutes, MicrometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 мкм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerMinutes, MicrometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 µm/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerSecond, MicrometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 мкм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerSecond, MicrometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 mph", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MilesPerHour, MilesPerHourTolerance);
-                Assert.Equal(SpeedUnit.MilePerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 миль/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MilesPerHour, MilesPerHourTolerance);
-                Assert.Equal(SpeedUnit.MilePerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 mm/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerHour, MillimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 мм/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerHour, MillimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 mm/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerMinutes, MillimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 мм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerMinutes, MillimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 mm/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerSecond, MillimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 мм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerSecond, MillimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 nm/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerMinutes, NanometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 нм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerMinutes, NanometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 nm/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerSecond, NanometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 нм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerSecond, NanometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 ftUS/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsSurveyFeetPerHour, UsSurveyFeetPerHourTolerance);
-                Assert.Equal(SpeedUnit.UsSurveyFootPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 ftUS/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsSurveyFeetPerMinute, UsSurveyFeetPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.UsSurveyFootPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 ftUS/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.UsSurveyFeetPerSecond, UsSurveyFeetPerSecondTolerance);
-                Assert.Equal(SpeedUnit.UsSurveyFootPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 yd/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.YardsPerHour, YardsPerHourTolerance);
-                Assert.Equal(SpeedUnit.YardPerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 yd/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.YardsPerMinute, YardsPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.YardPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Speed.Parse("1 yd/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.YardsPerSecond, YardsPerSecondTolerance);
-                Assert.Equal(SpeedUnit.YardPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new Speed(value: 1, unit: Speed.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(Speed.TryParse("1 cm/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerHour, CentimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 см/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerHour, CentimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 cm/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerMinutes, CentimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 см/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerMinutes, CentimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 cm/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerSecond, CentimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 см/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentimetersPerSecond, CentimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 dm/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerMinutes, DecimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 дм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerMinutes, DecimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 dm/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerSecond, DecimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 дм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecimetersPerSecond, DecimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 ft/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.FeetPerHour, FeetPerHourTolerance);
-                Assert.Equal(SpeedUnit.FootPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 фут/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.FeetPerHour, FeetPerHourTolerance);
-                Assert.Equal(SpeedUnit.FootPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 ft/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.FeetPerMinute, FeetPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.FootPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 фут/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.FeetPerMinute, FeetPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.FootPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 ft/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.FeetPerSecond, FeetPerSecondTolerance);
-                Assert.Equal(SpeedUnit.FootPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 фут/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.FeetPerSecond, FeetPerSecondTolerance);
-                Assert.Equal(SpeedUnit.FootPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 in/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InchesPerHour, InchesPerHourTolerance);
-                Assert.Equal(SpeedUnit.InchPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 in/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InchesPerMinute, InchesPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.InchPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 in/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InchesPerSecond, InchesPerSecondTolerance);
-                Assert.Equal(SpeedUnit.InchPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 km/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerHour, KilometersPerHourTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 км/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerHour, KilometersPerHourTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 km/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerMinutes, KilometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 км/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerMinutes, KilometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 km/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerSecond, KilometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 км/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilometersPerSecond, KilometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 kn", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 kt", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 knot", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 knots", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 уз.", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Knots, KnotsTolerance);
-                Assert.Equal(SpeedUnit.Knot, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 M", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 Ma", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 MN", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 MACH", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 мах", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Mach, MachTolerance);
-                Assert.Equal(SpeedUnit.Mach, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 m/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetersPerHour, MetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MeterPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 м/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetersPerHour, MetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MeterPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 m/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetersPerMinutes, MetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 м/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetersPerMinutes, MetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 m/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetersPerSecond, MetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 м/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MetersPerSecond, MetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 µm/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerMinutes, MicrometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 мкм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerMinutes, MicrometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 µm/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerSecond, MicrometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 мкм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicrometersPerSecond, MicrometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 mph", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MilesPerHour, MilesPerHourTolerance);
-                Assert.Equal(SpeedUnit.MilePerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 миль/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MilesPerHour, MilesPerHourTolerance);
-                Assert.Equal(SpeedUnit.MilePerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 mm/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerHour, MillimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 мм/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerHour, MillimetersPerHourTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 mm/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerMinutes, MillimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 мм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerMinutes, MillimetersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 mm/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerSecond, MillimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 мм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MillimetersPerSecond, MillimetersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 nm/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerMinutes, NanometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 нм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerMinutes, NanometersPerMinutesTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 nm/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerSecond, NanometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 нм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanometersPerSecond, NanometersPerSecondTolerance);
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 ftUS/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsSurveyFeetPerHour, UsSurveyFeetPerHourTolerance);
-                Assert.Equal(SpeedUnit.UsSurveyFootPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 ftUS/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsSurveyFeetPerMinute, UsSurveyFeetPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.UsSurveyFootPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 ftUS/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.UsSurveyFeetPerSecond, UsSurveyFeetPerSecondTolerance);
-                Assert.Equal(SpeedUnit.UsSurveyFootPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 yd/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.YardsPerHour, YardsPerHourTolerance);
-                Assert.Equal(SpeedUnit.YardPerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 yd/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.YardsPerMinute, YardsPerMinuteTolerance);
-                Assert.Equal(SpeedUnit.YardPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Speed.TryParse("1 yd/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.YardsPerSecond, YardsPerSecondTolerance);
-                Assert.Equal(SpeedUnit.YardPerSecond, parsed.Unit);
-            }
-
+            var quantity = new Speed(value: 1, unit: Speed.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("cm/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Speed(value: 1, unit: Speed.BaseUnit);
+            var expectedUnit = Speed.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("см/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            Speed convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("cm/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("см/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("cm/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("см/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("dm/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("дм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("dm/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("дм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("ft/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.FootPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("фут/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.FootPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("ft/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.FootPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("фут/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.FootPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("ft/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.FootPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("фут/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.FootPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("in/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.InchPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("in/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.InchPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("in/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.InchPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("km/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("км/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("km/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("км/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("km/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("км/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("kn", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("kt", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("knot", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("knots", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("уз.", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("M", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("Ma", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("MN", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("MACH", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("мах", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("m/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MeterPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("м/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MeterPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("m/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("м/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("m/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("м/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("µm/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("мкм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("µm/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("мкм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("mph", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MilePerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("миль/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MilePerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("mm/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("мм/ч", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("mm/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("мм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("mm/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("мм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("nm/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("нм/мин", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("nm/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("нм/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("ftUS/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.UsSurveyFootPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("ftUS/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.UsSurveyFootPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("ftUS/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.UsSurveyFootPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("yd/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.YardPerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("yd/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.YardPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Speed.ParseUnit("yd/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpeedUnit.YardPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(Speed.TryParseUnit("cm/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new Speed(value: 1, unit: Speed.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("см/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.CentimeterPerHour, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new Speed(value: 1, unit: Speed.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("cm/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 cm/h", SpeedUnit.CentimeterPerHour, 4.2)]
+        [InlineData("en-US", "4.2 cm/min", SpeedUnit.CentimeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 cm/s", SpeedUnit.CentimeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 dm/min", SpeedUnit.DecimeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 dm/s", SpeedUnit.DecimeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 ft/h", SpeedUnit.FootPerHour, 4.2)]
+        [InlineData("en-US", "4.2 ft/min", SpeedUnit.FootPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 ft/s", SpeedUnit.FootPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 in/h", SpeedUnit.InchPerHour, 4.2)]
+        [InlineData("en-US", "4.2 in/min", SpeedUnit.InchPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 in/s", SpeedUnit.InchPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 km/h", SpeedUnit.KilometerPerHour, 4.2)]
+        [InlineData("en-US", "4.2 km/min", SpeedUnit.KilometerPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 km/s", SpeedUnit.KilometerPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 kn", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 kt", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 knot", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 knots", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 M", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 Ma", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 MN", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 MACH", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 m/h", SpeedUnit.MeterPerHour, 4.2)]
+        [InlineData("en-US", "4.2 m/min", SpeedUnit.MeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 m/s", SpeedUnit.MeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 µm/min", SpeedUnit.MicrometerPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 µm/s", SpeedUnit.MicrometerPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 mph", SpeedUnit.MilePerHour, 4.2)]
+        [InlineData("en-US", "4.2 mm/h", SpeedUnit.MillimeterPerHour, 4.2)]
+        [InlineData("en-US", "4.2 mm/min", SpeedUnit.MillimeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 mm/s", SpeedUnit.MillimeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 nm/min", SpeedUnit.NanometerPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 nm/s", SpeedUnit.NanometerPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 ftUS/h", SpeedUnit.UsSurveyFootPerHour, 4.2)]
+        [InlineData("en-US", "4.2 ftUS/min", SpeedUnit.UsSurveyFootPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 ftUS/s", SpeedUnit.UsSurveyFootPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 yd/h", SpeedUnit.YardPerHour, 4.2)]
+        [InlineData("en-US", "4.2 yd/min", SpeedUnit.YardPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 yd/s", SpeedUnit.YardPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 см/ч", SpeedUnit.CentimeterPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 см/мин", SpeedUnit.CentimeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 см/с", SpeedUnit.CentimeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 дм/мин", SpeedUnit.DecimeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 дм/с", SpeedUnit.DecimeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 фут/ч", SpeedUnit.FootPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 фут/мин", SpeedUnit.FootPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 фут/с", SpeedUnit.FootPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 км/ч", SpeedUnit.KilometerPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 км/мин", SpeedUnit.KilometerPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 км/с", SpeedUnit.KilometerPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 уз.", SpeedUnit.Knot, 4.2)]
+        [InlineData("ru-RU", "4,2 мах", SpeedUnit.Mach, 4.2)]
+        [InlineData("ru-RU", "4,2 м/ч", SpeedUnit.MeterPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 м/мин", SpeedUnit.MeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 м/с", SpeedUnit.MeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 мкм/мин", SpeedUnit.MicrometerPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 мкм/с", SpeedUnit.MicrometerPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 миль/ч", SpeedUnit.MilePerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 мм/ч", SpeedUnit.MillimeterPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 мм/мин", SpeedUnit.MillimeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 мм/с", SpeedUnit.MillimeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 нм/мин", SpeedUnit.NanometerPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 нм/с", SpeedUnit.NanometerPerSecond, 4.2)]
+        public void Parse(string culture, string quantityString, SpeedUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Speed.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("см/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.CentimeterPerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 cm/h", SpeedUnit.CentimeterPerHour, 4.2)]
+        [InlineData("en-US", "4.2 cm/min", SpeedUnit.CentimeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 cm/s", SpeedUnit.CentimeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 dm/min", SpeedUnit.DecimeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 dm/s", SpeedUnit.DecimeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 ft/h", SpeedUnit.FootPerHour, 4.2)]
+        [InlineData("en-US", "4.2 ft/min", SpeedUnit.FootPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 ft/s", SpeedUnit.FootPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 in/h", SpeedUnit.InchPerHour, 4.2)]
+        [InlineData("en-US", "4.2 in/min", SpeedUnit.InchPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 in/s", SpeedUnit.InchPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 km/h", SpeedUnit.KilometerPerHour, 4.2)]
+        [InlineData("en-US", "4.2 km/min", SpeedUnit.KilometerPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 km/s", SpeedUnit.KilometerPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 kn", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 kt", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 knot", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 knots", SpeedUnit.Knot, 4.2)]
+        [InlineData("en-US", "4.2 M", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 Ma", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 MN", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 MACH", SpeedUnit.Mach, 4.2)]
+        [InlineData("en-US", "4.2 m/h", SpeedUnit.MeterPerHour, 4.2)]
+        [InlineData("en-US", "4.2 m/min", SpeedUnit.MeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 m/s", SpeedUnit.MeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 µm/min", SpeedUnit.MicrometerPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 µm/s", SpeedUnit.MicrometerPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 mph", SpeedUnit.MilePerHour, 4.2)]
+        [InlineData("en-US", "4.2 mm/h", SpeedUnit.MillimeterPerHour, 4.2)]
+        [InlineData("en-US", "4.2 mm/min", SpeedUnit.MillimeterPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 mm/s", SpeedUnit.MillimeterPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 nm/min", SpeedUnit.NanometerPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 nm/s", SpeedUnit.NanometerPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 ftUS/h", SpeedUnit.UsSurveyFootPerHour, 4.2)]
+        [InlineData("en-US", "4.2 ftUS/min", SpeedUnit.UsSurveyFootPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 ftUS/s", SpeedUnit.UsSurveyFootPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 yd/h", SpeedUnit.YardPerHour, 4.2)]
+        [InlineData("en-US", "4.2 yd/min", SpeedUnit.YardPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 yd/s", SpeedUnit.YardPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 см/ч", SpeedUnit.CentimeterPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 см/мин", SpeedUnit.CentimeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 см/с", SpeedUnit.CentimeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 дм/мин", SpeedUnit.DecimeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 дм/с", SpeedUnit.DecimeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 фут/ч", SpeedUnit.FootPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 фут/мин", SpeedUnit.FootPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 фут/с", SpeedUnit.FootPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 км/ч", SpeedUnit.KilometerPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 км/мин", SpeedUnit.KilometerPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 км/с", SpeedUnit.KilometerPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 уз.", SpeedUnit.Knot, 4.2)]
+        [InlineData("ru-RU", "4,2 мах", SpeedUnit.Mach, 4.2)]
+        [InlineData("ru-RU", "4,2 м/ч", SpeedUnit.MeterPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 м/мин", SpeedUnit.MeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 м/с", SpeedUnit.MeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 мкм/мин", SpeedUnit.MicrometerPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 мкм/с", SpeedUnit.MicrometerPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 миль/ч", SpeedUnit.MilePerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 мм/ч", SpeedUnit.MillimeterPerHour, 4.2)]
+        [InlineData("ru-RU", "4,2 мм/мин", SpeedUnit.MillimeterPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 мм/с", SpeedUnit.MillimeterPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 нм/мин", SpeedUnit.NanometerPerMinute, 4.2)]
+        [InlineData("ru-RU", "4,2 нм/с", SpeedUnit.NanometerPerSecond, 4.2)]
+        public void TryParse(string culture, string quantityString, SpeedUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Speed.TryParse(quantityString, out Speed parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("cm/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("in/h", SpeedUnit.InchPerHour)]
+        [InlineData("in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("kn", SpeedUnit.Knot)]
+        [InlineData("kt", SpeedUnit.Knot)]
+        [InlineData("knot", SpeedUnit.Knot)]
+        [InlineData("knots", SpeedUnit.Knot)]
+        [InlineData("M", SpeedUnit.Mach)]
+        [InlineData("Ma", SpeedUnit.Mach)]
+        [InlineData("MN", SpeedUnit.Mach)]
+        [InlineData("MACH", SpeedUnit.Mach)]
+        [InlineData("m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("mph", SpeedUnit.MilePerHour)]
+        [InlineData("mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("yd/s", SpeedUnit.YardPerSecond)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, SpeedUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            SpeedUnit parsedUnit = Speed.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("см/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.CentimeterPerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("in/h", SpeedUnit.InchPerHour)]
+        [InlineData("in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("kn", SpeedUnit.Knot)]
+        [InlineData("kt", SpeedUnit.Knot)]
+        [InlineData("knot", SpeedUnit.Knot)]
+        [InlineData("knots", SpeedUnit.Knot)]
+        [InlineData("M", SpeedUnit.Mach)]
+        [InlineData("Ma", SpeedUnit.Mach)]
+        [InlineData("MN", SpeedUnit.Mach)]
+        [InlineData("MACH", SpeedUnit.Mach)]
+        [InlineData("m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("mph", SpeedUnit.MilePerHour)]
+        [InlineData("mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("yd/s", SpeedUnit.YardPerSecond)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, SpeedUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            SpeedUnit parsedUnit = Speed.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("dm/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("en-US", "cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("en-US", "cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("en-US", "dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("en-US", "dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("en-US", "ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("en-US", "ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("en-US", "ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("en-US", "in/h", SpeedUnit.InchPerHour)]
+        [InlineData("en-US", "in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("en-US", "in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("en-US", "km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("en-US", "km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("en-US", "km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("en-US", "kn", SpeedUnit.Knot)]
+        [InlineData("en-US", "kt", SpeedUnit.Knot)]
+        [InlineData("en-US", "knot", SpeedUnit.Knot)]
+        [InlineData("en-US", "knots", SpeedUnit.Knot)]
+        [InlineData("en-US", "M", SpeedUnit.Mach)]
+        [InlineData("en-US", "Ma", SpeedUnit.Mach)]
+        [InlineData("en-US", "MN", SpeedUnit.Mach)]
+        [InlineData("en-US", "MACH", SpeedUnit.Mach)]
+        [InlineData("en-US", "m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("en-US", "m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("en-US", "m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("en-US", "µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("en-US", "µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("en-US", "mph", SpeedUnit.MilePerHour)]
+        [InlineData("en-US", "mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("en-US", "mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("en-US", "mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("en-US", "nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("en-US", "nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("en-US", "ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("en-US", "ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("en-US", "ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("en-US", "yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("en-US", "yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("en-US", "yd/s", SpeedUnit.YardPerSecond)]
+        [InlineData("ru-RU", "см/ч", SpeedUnit.CentimeterPerHour)]
+        [InlineData("ru-RU", "см/мин", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("ru-RU", "см/с", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("ru-RU", "дм/мин", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("ru-RU", "дм/с", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ru-RU", "фут/ч", SpeedUnit.FootPerHour)]
+        [InlineData("ru-RU", "фут/мин", SpeedUnit.FootPerMinute)]
+        [InlineData("ru-RU", "фут/с", SpeedUnit.FootPerSecond)]
+        [InlineData("ru-RU", "км/ч", SpeedUnit.KilometerPerHour)]
+        [InlineData("ru-RU", "км/мин", SpeedUnit.KilometerPerMinute)]
+        [InlineData("ru-RU", "км/с", SpeedUnit.KilometerPerSecond)]
+        [InlineData("ru-RU", "уз.", SpeedUnit.Knot)]
+        [InlineData("ru-RU", "мах", SpeedUnit.Mach)]
+        [InlineData("ru-RU", "м/ч", SpeedUnit.MeterPerHour)]
+        [InlineData("ru-RU", "м/мин", SpeedUnit.MeterPerMinute)]
+        [InlineData("ru-RU", "м/с", SpeedUnit.MeterPerSecond)]
+        [InlineData("ru-RU", "мкм/мин", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("ru-RU", "мкм/с", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("ru-RU", "миль/ч", SpeedUnit.MilePerHour)]
+        [InlineData("ru-RU", "мм/ч", SpeedUnit.MillimeterPerHour)]
+        [InlineData("ru-RU", "мм/мин", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("ru-RU", "мм/с", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("ru-RU", "нм/мин", SpeedUnit.NanometerPerMinute)]
+        [InlineData("ru-RU", "нм/с", SpeedUnit.NanometerPerSecond)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, SpeedUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            SpeedUnit parsedUnit = Speed.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("дм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.DecimeterPerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("en-US", "cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("en-US", "cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("en-US", "dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("en-US", "dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("en-US", "ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("en-US", "ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("en-US", "ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("en-US", "in/h", SpeedUnit.InchPerHour)]
+        [InlineData("en-US", "in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("en-US", "in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("en-US", "km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("en-US", "km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("en-US", "km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("en-US", "kn", SpeedUnit.Knot)]
+        [InlineData("en-US", "kt", SpeedUnit.Knot)]
+        [InlineData("en-US", "knot", SpeedUnit.Knot)]
+        [InlineData("en-US", "knots", SpeedUnit.Knot)]
+        [InlineData("en-US", "M", SpeedUnit.Mach)]
+        [InlineData("en-US", "Ma", SpeedUnit.Mach)]
+        [InlineData("en-US", "MN", SpeedUnit.Mach)]
+        [InlineData("en-US", "MACH", SpeedUnit.Mach)]
+        [InlineData("en-US", "m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("en-US", "m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("en-US", "m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("en-US", "µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("en-US", "µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("en-US", "mph", SpeedUnit.MilePerHour)]
+        [InlineData("en-US", "mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("en-US", "mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("en-US", "mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("en-US", "nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("en-US", "nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("en-US", "ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("en-US", "ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("en-US", "ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("en-US", "yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("en-US", "yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("en-US", "yd/s", SpeedUnit.YardPerSecond)]
+        [InlineData("ru-RU", "см/ч", SpeedUnit.CentimeterPerHour)]
+        [InlineData("ru-RU", "см/мин", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("ru-RU", "см/с", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("ru-RU", "дм/мин", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("ru-RU", "дм/с", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ru-RU", "фут/ч", SpeedUnit.FootPerHour)]
+        [InlineData("ru-RU", "фут/мин", SpeedUnit.FootPerMinute)]
+        [InlineData("ru-RU", "фут/с", SpeedUnit.FootPerSecond)]
+        [InlineData("ru-RU", "км/ч", SpeedUnit.KilometerPerHour)]
+        [InlineData("ru-RU", "км/мин", SpeedUnit.KilometerPerMinute)]
+        [InlineData("ru-RU", "км/с", SpeedUnit.KilometerPerSecond)]
+        [InlineData("ru-RU", "уз.", SpeedUnit.Knot)]
+        [InlineData("ru-RU", "мах", SpeedUnit.Mach)]
+        [InlineData("ru-RU", "м/ч", SpeedUnit.MeterPerHour)]
+        [InlineData("ru-RU", "м/мин", SpeedUnit.MeterPerMinute)]
+        [InlineData("ru-RU", "м/с", SpeedUnit.MeterPerSecond)]
+        [InlineData("ru-RU", "мкм/мин", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("ru-RU", "мкм/с", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("ru-RU", "миль/ч", SpeedUnit.MilePerHour)]
+        [InlineData("ru-RU", "мм/ч", SpeedUnit.MillimeterPerHour)]
+        [InlineData("ru-RU", "мм/мин", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("ru-RU", "мм/с", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("ru-RU", "нм/мин", SpeedUnit.NanometerPerMinute)]
+        [InlineData("ru-RU", "нм/с", SpeedUnit.NanometerPerSecond)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, SpeedUnit expectedUnit)
+        {
+            SpeedUnit parsedUnit = Speed.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("dm/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("in/h", SpeedUnit.InchPerHour)]
+        [InlineData("in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("kn", SpeedUnit.Knot)]
+        [InlineData("kt", SpeedUnit.Knot)]
+        [InlineData("knot", SpeedUnit.Knot)]
+        [InlineData("knots", SpeedUnit.Knot)]
+        [InlineData("M", SpeedUnit.Mach)]
+        [InlineData("Ma", SpeedUnit.Mach)]
+        [InlineData("MN", SpeedUnit.Mach)]
+        [InlineData("MACH", SpeedUnit.Mach)]
+        [InlineData("m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("mph", SpeedUnit.MilePerHour)]
+        [InlineData("mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("yd/s", SpeedUnit.YardPerSecond)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, SpeedUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Speed.TryParseUnit(abbreviation, out SpeedUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("дм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.DecimeterPerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("in/h", SpeedUnit.InchPerHour)]
+        [InlineData("in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("kn", SpeedUnit.Knot)]
+        [InlineData("kt", SpeedUnit.Knot)]
+        [InlineData("knot", SpeedUnit.Knot)]
+        [InlineData("knots", SpeedUnit.Knot)]
+        [InlineData("M", SpeedUnit.Mach)]
+        [InlineData("Ma", SpeedUnit.Mach)]
+        [InlineData("MN", SpeedUnit.Mach)]
+        [InlineData("MACH", SpeedUnit.Mach)]
+        [InlineData("m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("mph", SpeedUnit.MilePerHour)]
+        [InlineData("mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("yd/s", SpeedUnit.YardPerSecond)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, SpeedUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Speed.TryParseUnit(abbreviation, out SpeedUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("ft/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.FootPerHour, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("en-US", "cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("en-US", "cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("en-US", "dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("en-US", "dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("en-US", "ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("en-US", "ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("en-US", "ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("en-US", "in/h", SpeedUnit.InchPerHour)]
+        [InlineData("en-US", "in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("en-US", "in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("en-US", "km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("en-US", "km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("en-US", "km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("en-US", "kn", SpeedUnit.Knot)]
+        [InlineData("en-US", "kt", SpeedUnit.Knot)]
+        [InlineData("en-US", "knot", SpeedUnit.Knot)]
+        [InlineData("en-US", "knots", SpeedUnit.Knot)]
+        [InlineData("en-US", "M", SpeedUnit.Mach)]
+        [InlineData("en-US", "Ma", SpeedUnit.Mach)]
+        [InlineData("en-US", "MN", SpeedUnit.Mach)]
+        [InlineData("en-US", "MACH", SpeedUnit.Mach)]
+        [InlineData("en-US", "m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("en-US", "m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("en-US", "m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("en-US", "µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("en-US", "µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("en-US", "mph", SpeedUnit.MilePerHour)]
+        [InlineData("en-US", "mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("en-US", "mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("en-US", "mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("en-US", "nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("en-US", "nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("en-US", "ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("en-US", "ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("en-US", "ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("en-US", "yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("en-US", "yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("en-US", "yd/s", SpeedUnit.YardPerSecond)]
+        [InlineData("ru-RU", "см/ч", SpeedUnit.CentimeterPerHour)]
+        [InlineData("ru-RU", "см/мин", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("ru-RU", "см/с", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("ru-RU", "дм/мин", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("ru-RU", "дм/с", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ru-RU", "фут/ч", SpeedUnit.FootPerHour)]
+        [InlineData("ru-RU", "фут/мин", SpeedUnit.FootPerMinute)]
+        [InlineData("ru-RU", "фут/с", SpeedUnit.FootPerSecond)]
+        [InlineData("ru-RU", "км/ч", SpeedUnit.KilometerPerHour)]
+        [InlineData("ru-RU", "км/мин", SpeedUnit.KilometerPerMinute)]
+        [InlineData("ru-RU", "км/с", SpeedUnit.KilometerPerSecond)]
+        [InlineData("ru-RU", "уз.", SpeedUnit.Knot)]
+        [InlineData("ru-RU", "мах", SpeedUnit.Mach)]
+        [InlineData("ru-RU", "м/ч", SpeedUnit.MeterPerHour)]
+        [InlineData("ru-RU", "м/мин", SpeedUnit.MeterPerMinute)]
+        [InlineData("ru-RU", "м/с", SpeedUnit.MeterPerSecond)]
+        [InlineData("ru-RU", "мкм/мин", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("ru-RU", "мкм/с", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("ru-RU", "миль/ч", SpeedUnit.MilePerHour)]
+        [InlineData("ru-RU", "мм/ч", SpeedUnit.MillimeterPerHour)]
+        [InlineData("ru-RU", "мм/мин", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("ru-RU", "мм/с", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("ru-RU", "нм/мин", SpeedUnit.NanometerPerMinute)]
+        [InlineData("ru-RU", "нм/с", SpeedUnit.NanometerPerSecond)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, SpeedUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Speed.TryParseUnit(abbreviation, out SpeedUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("фут/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.FootPerHour, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "cm/h", SpeedUnit.CentimeterPerHour)]
+        [InlineData("en-US", "cm/min", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("en-US", "cm/s", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("en-US", "dm/min", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("en-US", "dm/s", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("en-US", "ft/h", SpeedUnit.FootPerHour)]
+        [InlineData("en-US", "ft/min", SpeedUnit.FootPerMinute)]
+        [InlineData("en-US", "ft/s", SpeedUnit.FootPerSecond)]
+        [InlineData("en-US", "in/h", SpeedUnit.InchPerHour)]
+        [InlineData("en-US", "in/min", SpeedUnit.InchPerMinute)]
+        [InlineData("en-US", "in/s", SpeedUnit.InchPerSecond)]
+        [InlineData("en-US", "km/h", SpeedUnit.KilometerPerHour)]
+        [InlineData("en-US", "km/min", SpeedUnit.KilometerPerMinute)]
+        [InlineData("en-US", "km/s", SpeedUnit.KilometerPerSecond)]
+        [InlineData("en-US", "kn", SpeedUnit.Knot)]
+        [InlineData("en-US", "kt", SpeedUnit.Knot)]
+        [InlineData("en-US", "knot", SpeedUnit.Knot)]
+        [InlineData("en-US", "knots", SpeedUnit.Knot)]
+        [InlineData("en-US", "M", SpeedUnit.Mach)]
+        [InlineData("en-US", "Ma", SpeedUnit.Mach)]
+        [InlineData("en-US", "MN", SpeedUnit.Mach)]
+        [InlineData("en-US", "MACH", SpeedUnit.Mach)]
+        [InlineData("en-US", "m/h", SpeedUnit.MeterPerHour)]
+        [InlineData("en-US", "m/min", SpeedUnit.MeterPerMinute)]
+        [InlineData("en-US", "m/s", SpeedUnit.MeterPerSecond)]
+        [InlineData("en-US", "µm/min", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("en-US", "µm/s", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("en-US", "mph", SpeedUnit.MilePerHour)]
+        [InlineData("en-US", "mm/h", SpeedUnit.MillimeterPerHour)]
+        [InlineData("en-US", "mm/min", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("en-US", "mm/s", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("en-US", "nm/min", SpeedUnit.NanometerPerMinute)]
+        [InlineData("en-US", "nm/s", SpeedUnit.NanometerPerSecond)]
+        [InlineData("en-US", "ftUS/h", SpeedUnit.UsSurveyFootPerHour)]
+        [InlineData("en-US", "ftUS/min", SpeedUnit.UsSurveyFootPerMinute)]
+        [InlineData("en-US", "ftUS/s", SpeedUnit.UsSurveyFootPerSecond)]
+        [InlineData("en-US", "yd/h", SpeedUnit.YardPerHour)]
+        [InlineData("en-US", "yd/min", SpeedUnit.YardPerMinute)]
+        [InlineData("en-US", "yd/s", SpeedUnit.YardPerSecond)]
+        [InlineData("ru-RU", "см/ч", SpeedUnit.CentimeterPerHour)]
+        [InlineData("ru-RU", "см/мин", SpeedUnit.CentimeterPerMinute)]
+        [InlineData("ru-RU", "см/с", SpeedUnit.CentimeterPerSecond)]
+        [InlineData("ru-RU", "дм/мин", SpeedUnit.DecimeterPerMinute)]
+        [InlineData("ru-RU", "дм/с", SpeedUnit.DecimeterPerSecond)]
+        [InlineData("ru-RU", "фут/ч", SpeedUnit.FootPerHour)]
+        [InlineData("ru-RU", "фут/мин", SpeedUnit.FootPerMinute)]
+        [InlineData("ru-RU", "фут/с", SpeedUnit.FootPerSecond)]
+        [InlineData("ru-RU", "км/ч", SpeedUnit.KilometerPerHour)]
+        [InlineData("ru-RU", "км/мин", SpeedUnit.KilometerPerMinute)]
+        [InlineData("ru-RU", "км/с", SpeedUnit.KilometerPerSecond)]
+        [InlineData("ru-RU", "уз.", SpeedUnit.Knot)]
+        [InlineData("ru-RU", "мах", SpeedUnit.Mach)]
+        [InlineData("ru-RU", "м/ч", SpeedUnit.MeterPerHour)]
+        [InlineData("ru-RU", "м/мин", SpeedUnit.MeterPerMinute)]
+        [InlineData("ru-RU", "м/с", SpeedUnit.MeterPerSecond)]
+        [InlineData("ru-RU", "мкм/мин", SpeedUnit.MicrometerPerMinute)]
+        [InlineData("ru-RU", "мкм/с", SpeedUnit.MicrometerPerSecond)]
+        [InlineData("ru-RU", "миль/ч", SpeedUnit.MilePerHour)]
+        [InlineData("ru-RU", "мм/ч", SpeedUnit.MillimeterPerHour)]
+        [InlineData("ru-RU", "мм/мин", SpeedUnit.MillimeterPerMinute)]
+        [InlineData("ru-RU", "мм/с", SpeedUnit.MillimeterPerSecond)]
+        [InlineData("ru-RU", "нм/мин", SpeedUnit.NanometerPerMinute)]
+        [InlineData("ru-RU", "нм/с", SpeedUnit.NanometerPerSecond)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, SpeedUnit expectedUnit)
+        {
+            Assert.True(Speed.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out SpeedUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Speed.TryParseUnit("ft/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.FootPerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", SpeedUnit.CentimeterPerHour, "cm/h")]
+        [InlineData("en-US", SpeedUnit.CentimeterPerMinute, "cm/min")]
+        [InlineData("en-US", SpeedUnit.CentimeterPerSecond, "cm/s")]
+        [InlineData("en-US", SpeedUnit.DecimeterPerMinute, "dm/min")]
+        [InlineData("en-US", SpeedUnit.DecimeterPerSecond, "dm/s")]
+        [InlineData("en-US", SpeedUnit.FootPerHour, "ft/h")]
+        [InlineData("en-US", SpeedUnit.FootPerMinute, "ft/min")]
+        [InlineData("en-US", SpeedUnit.FootPerSecond, "ft/s")]
+        [InlineData("en-US", SpeedUnit.InchPerHour, "in/h")]
+        [InlineData("en-US", SpeedUnit.InchPerMinute, "in/min")]
+        [InlineData("en-US", SpeedUnit.InchPerSecond, "in/s")]
+        [InlineData("en-US", SpeedUnit.KilometerPerHour, "km/h")]
+        [InlineData("en-US", SpeedUnit.KilometerPerMinute, "km/min")]
+        [InlineData("en-US", SpeedUnit.KilometerPerSecond, "km/s")]
+        [InlineData("en-US", SpeedUnit.Knot, "kn")]
+        [InlineData("en-US", SpeedUnit.Mach, "M")]
+        [InlineData("en-US", SpeedUnit.MeterPerHour, "m/h")]
+        [InlineData("en-US", SpeedUnit.MeterPerMinute, "m/min")]
+        [InlineData("en-US", SpeedUnit.MeterPerSecond, "m/s")]
+        [InlineData("en-US", SpeedUnit.MicrometerPerMinute, "µm/min")]
+        [InlineData("en-US", SpeedUnit.MicrometerPerSecond, "µm/s")]
+        [InlineData("en-US", SpeedUnit.MilePerHour, "mph")]
+        [InlineData("en-US", SpeedUnit.MillimeterPerHour, "mm/h")]
+        [InlineData("en-US", SpeedUnit.MillimeterPerMinute, "mm/min")]
+        [InlineData("en-US", SpeedUnit.MillimeterPerSecond, "mm/s")]
+        [InlineData("en-US", SpeedUnit.NanometerPerMinute, "nm/min")]
+        [InlineData("en-US", SpeedUnit.NanometerPerSecond, "nm/s")]
+        [InlineData("en-US", SpeedUnit.UsSurveyFootPerHour, "ftUS/h")]
+        [InlineData("en-US", SpeedUnit.UsSurveyFootPerMinute, "ftUS/min")]
+        [InlineData("en-US", SpeedUnit.UsSurveyFootPerSecond, "ftUS/s")]
+        [InlineData("en-US", SpeedUnit.YardPerHour, "yd/h")]
+        [InlineData("en-US", SpeedUnit.YardPerMinute, "yd/min")]
+        [InlineData("en-US", SpeedUnit.YardPerSecond, "yd/s")]
+        [InlineData("ru-RU", SpeedUnit.CentimeterPerHour, "см/ч")]
+        [InlineData("ru-RU", SpeedUnit.CentimeterPerMinute, "см/мин")]
+        [InlineData("ru-RU", SpeedUnit.CentimeterPerSecond, "см/с")]
+        [InlineData("ru-RU", SpeedUnit.DecimeterPerMinute, "дм/мин")]
+        [InlineData("ru-RU", SpeedUnit.DecimeterPerSecond, "дм/с")]
+        [InlineData("ru-RU", SpeedUnit.FootPerHour, "фут/ч")]
+        [InlineData("ru-RU", SpeedUnit.FootPerMinute, "фут/мин")]
+        [InlineData("ru-RU", SpeedUnit.FootPerSecond, "фут/с")]
+        [InlineData("ru-RU", SpeedUnit.KilometerPerHour, "км/ч")]
+        [InlineData("ru-RU", SpeedUnit.KilometerPerMinute, "км/мин")]
+        [InlineData("ru-RU", SpeedUnit.KilometerPerSecond, "км/с")]
+        [InlineData("ru-RU", SpeedUnit.Knot, "уз.")]
+        [InlineData("ru-RU", SpeedUnit.Mach, "мах")]
+        [InlineData("ru-RU", SpeedUnit.MeterPerHour, "м/ч")]
+        [InlineData("ru-RU", SpeedUnit.MeterPerMinute, "м/мин")]
+        [InlineData("ru-RU", SpeedUnit.MeterPerSecond, "м/с")]
+        [InlineData("ru-RU", SpeedUnit.MicrometerPerMinute, "мкм/мин")]
+        [InlineData("ru-RU", SpeedUnit.MicrometerPerSecond, "мкм/с")]
+        [InlineData("ru-RU", SpeedUnit.MilePerHour, "миль/ч")]
+        [InlineData("ru-RU", SpeedUnit.MillimeterPerHour, "мм/ч")]
+        [InlineData("ru-RU", SpeedUnit.MillimeterPerMinute, "мм/мин")]
+        [InlineData("ru-RU", SpeedUnit.MillimeterPerSecond, "мм/с")]
+        [InlineData("ru-RU", SpeedUnit.NanometerPerMinute, "нм/мин")]
+        [InlineData("ru-RU", SpeedUnit.NanometerPerSecond, "нм/с")]
+        public void GetAbbreviationForCulture(string culture, SpeedUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Speed.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
 
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(Speed.Units, unit =>
             {
-                Assert.True(Speed.TryParseUnit("фут/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.FootPerMinute, parsedUnit);
-            }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-            {
-                Assert.True(Speed.TryParseUnit("ft/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.FootPerSecond, parsedUnit);
-            }
+                var defaultAbbreviation = Speed.GetAbbreviation(unit);
 
-            {
-                Assert.True(Speed.TryParseUnit("фут/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.FootPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("in/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.InchPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("in/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.InchPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("in/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.InchPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("km/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("км/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.KilometerPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("km/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("км/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.KilometerPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("km/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("км/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.KilometerPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("kn", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("kt", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("knot", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("knots", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("уз.", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Knot, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("M", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("Ma", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("MN", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("MACH", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("мах", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.Mach, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("m/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MeterPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("м/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MeterPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("m/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("м/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MeterPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("m/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("м/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MeterPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("µm/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("мкм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MicrometerPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("µm/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("мкм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MicrometerPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("mph", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MilePerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("миль/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MilePerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("mm/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("мм/ч", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MillimeterPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("mm/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("мм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MillimeterPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("mm/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("мм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.MillimeterPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("nm/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("нм/мин", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.NanometerPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("nm/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("нм/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.NanometerPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("ftUS/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.UsSurveyFootPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("ftUS/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.UsSurveyFootPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("ftUS/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.UsSurveyFootPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("yd/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.YardPerHour, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("yd/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.YardPerMinute, parsedUnit);
-            }
-
-            {
-                Assert.True(Speed.TryParseUnit("yd/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpeedUnit.YardPerSecond, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -2044,12 +1143,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(SpeedUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Speed.Units.First(u => u != Speed.BaseUnit);
-
-            var quantity = Speed.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Speed.Units.Where(u => u != Speed.BaseUnit), fromUnit =>
+            {
+                var quantity = Speed.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -2061,14 +1160,33 @@ namespace UnitsNet.Tests
             Assert.Equal(converted.Unit, unit);
         }
 
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(SpeedUnit unit)
+        {
+            var quantity = Speed.From(3, Speed.BaseUnit);
+            Speed expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<SpeedUnit> quantityToConvert = quantity;
+                IQuantity<SpeedUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
+        }
+
         [Fact]
         public void ConversionRoundTrip()
         {
             Speed meterpersecond = Speed.FromMetersPerSecond(1);
             AssertEx.EqualTolerance(1, Speed.FromCentimetersPerHour(meterpersecond.CentimetersPerHour).MetersPerSecond, CentimetersPerHourTolerance);
-            AssertEx.EqualTolerance(1, Speed.FromCentimetersPerMinutes(meterpersecond.CentimetersPerMinutes).MetersPerSecond, CentimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(1, Speed.FromCentimetersPerMinute(meterpersecond.CentimetersPerMinute).MetersPerSecond, CentimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromCentimetersPerSecond(meterpersecond.CentimetersPerSecond).MetersPerSecond, CentimetersPerSecondTolerance);
-            AssertEx.EqualTolerance(1, Speed.FromDecimetersPerMinutes(meterpersecond.DecimetersPerMinutes).MetersPerSecond, DecimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(1, Speed.FromDecimetersPerMinute(meterpersecond.DecimetersPerMinute).MetersPerSecond, DecimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromDecimetersPerSecond(meterpersecond.DecimetersPerSecond).MetersPerSecond, DecimetersPerSecondTolerance);
             AssertEx.EqualTolerance(1, Speed.FromFeetPerHour(meterpersecond.FeetPerHour).MetersPerSecond, FeetPerHourTolerance);
             AssertEx.EqualTolerance(1, Speed.FromFeetPerMinute(meterpersecond.FeetPerMinute).MetersPerSecond, FeetPerMinuteTolerance);
@@ -2077,20 +1195,20 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance(1, Speed.FromInchesPerMinute(meterpersecond.InchesPerMinute).MetersPerSecond, InchesPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromInchesPerSecond(meterpersecond.InchesPerSecond).MetersPerSecond, InchesPerSecondTolerance);
             AssertEx.EqualTolerance(1, Speed.FromKilometersPerHour(meterpersecond.KilometersPerHour).MetersPerSecond, KilometersPerHourTolerance);
-            AssertEx.EqualTolerance(1, Speed.FromKilometersPerMinutes(meterpersecond.KilometersPerMinutes).MetersPerSecond, KilometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(1, Speed.FromKilometersPerMinute(meterpersecond.KilometersPerMinute).MetersPerSecond, KilometersPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromKilometersPerSecond(meterpersecond.KilometersPerSecond).MetersPerSecond, KilometersPerSecondTolerance);
             AssertEx.EqualTolerance(1, Speed.FromKnots(meterpersecond.Knots).MetersPerSecond, KnotsTolerance);
             AssertEx.EqualTolerance(1, Speed.FromMach(meterpersecond.Mach).MetersPerSecond, MachTolerance);
             AssertEx.EqualTolerance(1, Speed.FromMetersPerHour(meterpersecond.MetersPerHour).MetersPerSecond, MetersPerHourTolerance);
-            AssertEx.EqualTolerance(1, Speed.FromMetersPerMinutes(meterpersecond.MetersPerMinutes).MetersPerSecond, MetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(1, Speed.FromMetersPerMinute(meterpersecond.MetersPerMinute).MetersPerSecond, MetersPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromMetersPerSecond(meterpersecond.MetersPerSecond).MetersPerSecond, MetersPerSecondTolerance);
-            AssertEx.EqualTolerance(1, Speed.FromMicrometersPerMinutes(meterpersecond.MicrometersPerMinutes).MetersPerSecond, MicrometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(1, Speed.FromMicrometersPerMinute(meterpersecond.MicrometersPerMinute).MetersPerSecond, MicrometersPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromMicrometersPerSecond(meterpersecond.MicrometersPerSecond).MetersPerSecond, MicrometersPerSecondTolerance);
             AssertEx.EqualTolerance(1, Speed.FromMilesPerHour(meterpersecond.MilesPerHour).MetersPerSecond, MilesPerHourTolerance);
             AssertEx.EqualTolerance(1, Speed.FromMillimetersPerHour(meterpersecond.MillimetersPerHour).MetersPerSecond, MillimetersPerHourTolerance);
-            AssertEx.EqualTolerance(1, Speed.FromMillimetersPerMinutes(meterpersecond.MillimetersPerMinutes).MetersPerSecond, MillimetersPerMinutesTolerance);
+            AssertEx.EqualTolerance(1, Speed.FromMillimetersPerMinute(meterpersecond.MillimetersPerMinute).MetersPerSecond, MillimetersPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromMillimetersPerSecond(meterpersecond.MillimetersPerSecond).MetersPerSecond, MillimetersPerSecondTolerance);
-            AssertEx.EqualTolerance(1, Speed.FromNanometersPerMinutes(meterpersecond.NanometersPerMinutes).MetersPerSecond, NanometersPerMinutesTolerance);
+            AssertEx.EqualTolerance(1, Speed.FromNanometersPerMinute(meterpersecond.NanometersPerMinute).MetersPerSecond, NanometersPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Speed.FromNanometersPerSecond(meterpersecond.NanometersPerSecond).MetersPerSecond, NanometersPerSecondTolerance);
             AssertEx.EqualTolerance(1, Speed.FromUsSurveyFeetPerHour(meterpersecond.UsSurveyFeetPerHour).MetersPerSecond, UsSurveyFeetPerHourTolerance);
             AssertEx.EqualTolerance(1, Speed.FromUsSurveyFeetPerMinute(meterpersecond.UsSurveyFeetPerMinute).MetersPerSecond, UsSurveyFeetPerMinuteTolerance);
@@ -2195,21 +1313,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Speed.FromMetersPerSecond(1);
-            Assert.True(v.Equals(Speed.FromMetersPerSecond(1), MetersPerSecondTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Speed.Zero, MetersPerSecondTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Speed.FromMetersPerSecond(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Speed.FromMetersPerSecond(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Speed meterpersecond = Speed.FromMetersPerSecond(1);
@@ -2223,13 +1326,39 @@ namespace UnitsNet.Tests
             Assert.False(meterpersecond.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Speed.FromMetersPerSecond(firstValue);
+            var otherQuantity = Speed.FromMetersPerSecond(secondValue);
+            Speed maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Speed.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Speed.FromMetersPerSecond(1);
+            var negativeTolerance = Speed.FromMetersPerSecond(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(SpeedUnit)).Cast<SpeedUnit>();
+            var units = Enum.GetValues<SpeedUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -2242,47 +1371,40 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 cm/h", new Speed(1, SpeedUnit.CentimeterPerHour).ToString());
-                Assert.Equal("1 cm/min", new Speed(1, SpeedUnit.CentimeterPerMinute).ToString());
-                Assert.Equal("1 cm/s", new Speed(1, SpeedUnit.CentimeterPerSecond).ToString());
-                Assert.Equal("1 dm/min", new Speed(1, SpeedUnit.DecimeterPerMinute).ToString());
-                Assert.Equal("1 dm/s", new Speed(1, SpeedUnit.DecimeterPerSecond).ToString());
-                Assert.Equal("1 ft/h", new Speed(1, SpeedUnit.FootPerHour).ToString());
-                Assert.Equal("1 ft/min", new Speed(1, SpeedUnit.FootPerMinute).ToString());
-                Assert.Equal("1 ft/s", new Speed(1, SpeedUnit.FootPerSecond).ToString());
-                Assert.Equal("1 in/h", new Speed(1, SpeedUnit.InchPerHour).ToString());
-                Assert.Equal("1 in/min", new Speed(1, SpeedUnit.InchPerMinute).ToString());
-                Assert.Equal("1 in/s", new Speed(1, SpeedUnit.InchPerSecond).ToString());
-                Assert.Equal("1 km/h", new Speed(1, SpeedUnit.KilometerPerHour).ToString());
-                Assert.Equal("1 km/min", new Speed(1, SpeedUnit.KilometerPerMinute).ToString());
-                Assert.Equal("1 km/s", new Speed(1, SpeedUnit.KilometerPerSecond).ToString());
-                Assert.Equal("1 kn", new Speed(1, SpeedUnit.Knot).ToString());
-                Assert.Equal("1 M", new Speed(1, SpeedUnit.Mach).ToString());
-                Assert.Equal("1 m/h", new Speed(1, SpeedUnit.MeterPerHour).ToString());
-                Assert.Equal("1 m/min", new Speed(1, SpeedUnit.MeterPerMinute).ToString());
-                Assert.Equal("1 m/s", new Speed(1, SpeedUnit.MeterPerSecond).ToString());
-                Assert.Equal("1 µm/min", new Speed(1, SpeedUnit.MicrometerPerMinute).ToString());
-                Assert.Equal("1 µm/s", new Speed(1, SpeedUnit.MicrometerPerSecond).ToString());
-                Assert.Equal("1 mph", new Speed(1, SpeedUnit.MilePerHour).ToString());
-                Assert.Equal("1 mm/h", new Speed(1, SpeedUnit.MillimeterPerHour).ToString());
-                Assert.Equal("1 mm/min", new Speed(1, SpeedUnit.MillimeterPerMinute).ToString());
-                Assert.Equal("1 mm/s", new Speed(1, SpeedUnit.MillimeterPerSecond).ToString());
-                Assert.Equal("1 nm/min", new Speed(1, SpeedUnit.NanometerPerMinute).ToString());
-                Assert.Equal("1 nm/s", new Speed(1, SpeedUnit.NanometerPerSecond).ToString());
-                Assert.Equal("1 ftUS/h", new Speed(1, SpeedUnit.UsSurveyFootPerHour).ToString());
-                Assert.Equal("1 ftUS/min", new Speed(1, SpeedUnit.UsSurveyFootPerMinute).ToString());
-                Assert.Equal("1 ftUS/s", new Speed(1, SpeedUnit.UsSurveyFootPerSecond).ToString());
-                Assert.Equal("1 yd/h", new Speed(1, SpeedUnit.YardPerHour).ToString());
-                Assert.Equal("1 yd/min", new Speed(1, SpeedUnit.YardPerMinute).ToString());
-                Assert.Equal("1 yd/s", new Speed(1, SpeedUnit.YardPerSecond).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 cm/h", new Speed(1, SpeedUnit.CentimeterPerHour).ToString());
+            Assert.Equal("1 cm/min", new Speed(1, SpeedUnit.CentimeterPerMinute).ToString());
+            Assert.Equal("1 cm/s", new Speed(1, SpeedUnit.CentimeterPerSecond).ToString());
+            Assert.Equal("1 dm/min", new Speed(1, SpeedUnit.DecimeterPerMinute).ToString());
+            Assert.Equal("1 dm/s", new Speed(1, SpeedUnit.DecimeterPerSecond).ToString());
+            Assert.Equal("1 ft/h", new Speed(1, SpeedUnit.FootPerHour).ToString());
+            Assert.Equal("1 ft/min", new Speed(1, SpeedUnit.FootPerMinute).ToString());
+            Assert.Equal("1 ft/s", new Speed(1, SpeedUnit.FootPerSecond).ToString());
+            Assert.Equal("1 in/h", new Speed(1, SpeedUnit.InchPerHour).ToString());
+            Assert.Equal("1 in/min", new Speed(1, SpeedUnit.InchPerMinute).ToString());
+            Assert.Equal("1 in/s", new Speed(1, SpeedUnit.InchPerSecond).ToString());
+            Assert.Equal("1 km/h", new Speed(1, SpeedUnit.KilometerPerHour).ToString());
+            Assert.Equal("1 km/min", new Speed(1, SpeedUnit.KilometerPerMinute).ToString());
+            Assert.Equal("1 km/s", new Speed(1, SpeedUnit.KilometerPerSecond).ToString());
+            Assert.Equal("1 kn", new Speed(1, SpeedUnit.Knot).ToString());
+            Assert.Equal("1 M", new Speed(1, SpeedUnit.Mach).ToString());
+            Assert.Equal("1 m/h", new Speed(1, SpeedUnit.MeterPerHour).ToString());
+            Assert.Equal("1 m/min", new Speed(1, SpeedUnit.MeterPerMinute).ToString());
+            Assert.Equal("1 m/s", new Speed(1, SpeedUnit.MeterPerSecond).ToString());
+            Assert.Equal("1 µm/min", new Speed(1, SpeedUnit.MicrometerPerMinute).ToString());
+            Assert.Equal("1 µm/s", new Speed(1, SpeedUnit.MicrometerPerSecond).ToString());
+            Assert.Equal("1 mph", new Speed(1, SpeedUnit.MilePerHour).ToString());
+            Assert.Equal("1 mm/h", new Speed(1, SpeedUnit.MillimeterPerHour).ToString());
+            Assert.Equal("1 mm/min", new Speed(1, SpeedUnit.MillimeterPerMinute).ToString());
+            Assert.Equal("1 mm/s", new Speed(1, SpeedUnit.MillimeterPerSecond).ToString());
+            Assert.Equal("1 nm/min", new Speed(1, SpeedUnit.NanometerPerMinute).ToString());
+            Assert.Equal("1 nm/s", new Speed(1, SpeedUnit.NanometerPerSecond).ToString());
+            Assert.Equal("1 ftUS/h", new Speed(1, SpeedUnit.UsSurveyFootPerHour).ToString());
+            Assert.Equal("1 ftUS/min", new Speed(1, SpeedUnit.UsSurveyFootPerMinute).ToString());
+            Assert.Equal("1 ftUS/s", new Speed(1, SpeedUnit.UsSurveyFootPerSecond).ToString());
+            Assert.Equal("1 yd/h", new Speed(1, SpeedUnit.YardPerHour).ToString());
+            Assert.Equal("1 yd/min", new Speed(1, SpeedUnit.YardPerMinute).ToString());
+            Assert.Equal("1 yd/s", new Speed(1, SpeedUnit.YardPerSecond).ToString());
         }
 
         [Fact]
@@ -2329,19 +1451,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s1"));
-                Assert.Equal("0.12 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s2"));
-                Assert.Equal("0.123 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s3"));
-                Assert.Equal("0.1235 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s1"));
+            Assert.Equal("0.12 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s2"));
+            Assert.Equal("0.123 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s3"));
+            Assert.Equal("0.1235 m/s", new Speed(0.123456, SpeedUnit.MeterPerSecond).ToString("s4"));
         }
 
         [Fact]
@@ -2364,7 +1478,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -2377,150 +1491,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Speed)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(SpeedUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal(Speed.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal(Speed.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Speed.FromMetersPerSecond(1.0);
-            Assert.Equal(new {Speed.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

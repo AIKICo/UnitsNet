@@ -13,13 +13,20 @@
     {
       "SingularName": "JoulePerMoleKelvin",
       "PluralName": "JoulesPerMoleKelvin",
+      "BaseUnits": {
+        "L": "Meter",
+        "M": "Kilogram",
+        "T": "Second",
+        "Θ": "Kelvin",
+        "N": "Mole"
+      },
       "FromUnitToBaseFunc": "{x}",
       "FromBaseToUnitFunc": "{x}",
       "Prefixes": [ "Kilo", "Mega" ],
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "J/(mol*K)" ]
+          "Abbreviations": [ "J/(mol·K)" ]
         }
       ]
     }

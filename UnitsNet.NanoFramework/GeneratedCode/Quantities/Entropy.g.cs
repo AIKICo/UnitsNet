@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Entropy(double value, EntropyUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Entropy, which is Second. All conversions go via this value.
         /// </summary>
         public static EntropyUnit BaseUnit { get; } = EntropyUnit.JoulePerKelvin;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Entropy.
         /// </summary>
         public static Entropy MaxValue { get; } = new Entropy(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Entropy.
         /// </summary>
         public static Entropy MinValue { get; } = new Entropy(double.MinValue, BaseUnit);
 
@@ -121,43 +120,36 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Entropy"/> from <see cref="EntropyUnit.CaloriePerKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Entropy FromCaloriesPerKelvin(double caloriesperkelvin) => new Entropy(caloriesperkelvin, EntropyUnit.CaloriePerKelvin);
 
         /// <summary>
         ///     Creates a <see cref="Entropy"/> from <see cref="EntropyUnit.JoulePerDegreeCelsius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Entropy FromJoulesPerDegreeCelsius(double joulesperdegreecelsius) => new Entropy(joulesperdegreecelsius, EntropyUnit.JoulePerDegreeCelsius);
 
         /// <summary>
         ///     Creates a <see cref="Entropy"/> from <see cref="EntropyUnit.JoulePerKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Entropy FromJoulesPerKelvin(double joulesperkelvin) => new Entropy(joulesperkelvin, EntropyUnit.JoulePerKelvin);
 
         /// <summary>
         ///     Creates a <see cref="Entropy"/> from <see cref="EntropyUnit.KilocaloriePerKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Entropy FromKilocaloriesPerKelvin(double kilocaloriesperkelvin) => new Entropy(kilocaloriesperkelvin, EntropyUnit.KilocaloriePerKelvin);
 
         /// <summary>
         ///     Creates a <see cref="Entropy"/> from <see cref="EntropyUnit.KilojoulePerDegreeCelsius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Entropy FromKilojoulesPerDegreeCelsius(double kilojoulesperdegreecelsius) => new Entropy(kilojoulesperdegreecelsius, EntropyUnit.KilojoulePerDegreeCelsius);
 
         /// <summary>
         ///     Creates a <see cref="Entropy"/> from <see cref="EntropyUnit.KilojoulePerKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Entropy FromKilojoulesPerKelvin(double kilojoulesperkelvin) => new Entropy(kilojoulesperkelvin, EntropyUnit.KilojoulePerKelvin);
 
         /// <summary>
         ///     Creates a <see cref="Entropy"/> from <see cref="EntropyUnit.MegajoulePerKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Entropy FromMegajoulesPerKelvin(double megajoulesperkelvin) => new Entropy(megajoulesperkelvin, EntropyUnit.MegajoulePerKelvin);
 
         /// <summary>
@@ -182,9 +174,9 @@ namespace UnitsNet
                 public double As(EntropyUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Entropy to another Entropy with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Entropy with the specified unit.</returns>
                 public Entropy ToUnit(EntropyUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -207,7 +199,7 @@ namespace UnitsNet
                         EntropyUnit.KilojoulePerDegreeCelsius => (_value) * 1e3d,
                         EntropyUnit.KilojoulePerKelvin => (_value) * 1e3d,
                         EntropyUnit.MegajoulePerKelvin => (_value) * 1e6d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -227,7 +219,7 @@ namespace UnitsNet
                         EntropyUnit.KilojoulePerDegreeCelsius => (baseUnitValue) / 1e3d,
                         EntropyUnit.KilojoulePerKelvin => (baseUnitValue) / 1e3d,
                         EntropyUnit.MegajoulePerKelvin => (baseUnitValue) / 1e6d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

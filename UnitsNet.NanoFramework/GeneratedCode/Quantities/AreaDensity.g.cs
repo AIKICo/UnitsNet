@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public AreaDensity(double value, AreaDensityUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of AreaDensity, which is Second. All conversions go via this value.
         /// </summary>
         public static AreaDensityUnit BaseUnit { get; } = AreaDensityUnit.KilogramPerSquareMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of AreaDensity.
         /// </summary>
         public static AreaDensity MaxValue { get; } = new AreaDensity(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of AreaDensity.
         /// </summary>
         public static AreaDensity MinValue { get; } = new AreaDensity(double.MinValue, BaseUnit);
 
@@ -101,19 +100,16 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="AreaDensity"/> from <see cref="AreaDensityUnit.GramPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaDensity FromGramsPerSquareMeter(double gramspersquaremeter) => new AreaDensity(gramspersquaremeter, AreaDensityUnit.GramPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="AreaDensity"/> from <see cref="AreaDensityUnit.KilogramPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaDensity FromKilogramsPerSquareMeter(double kilogramspersquaremeter) => new AreaDensity(kilogramspersquaremeter, AreaDensityUnit.KilogramPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="AreaDensity"/> from <see cref="AreaDensityUnit.MilligramPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaDensity FromMilligramsPerSquareMeter(double milligramspersquaremeter) => new AreaDensity(milligramspersquaremeter, AreaDensityUnit.MilligramPerSquareMeter);
 
         /// <summary>
@@ -138,9 +134,9 @@ namespace UnitsNet
                 public double As(AreaDensityUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this AreaDensity to another AreaDensity with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A AreaDensity with the specified unit.</returns>
                 public AreaDensity ToUnit(AreaDensityUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -159,7 +155,7 @@ namespace UnitsNet
                         AreaDensityUnit.GramPerSquareMeter => _value / 1000,
                         AreaDensityUnit.KilogramPerSquareMeter => _value,
                         AreaDensityUnit.MilligramPerSquareMeter => _value / 1000000,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -175,7 +171,7 @@ namespace UnitsNet
                         AreaDensityUnit.GramPerSquareMeter => baseUnitValue * 1000,
                         AreaDensityUnit.KilogramPerSquareMeter => baseUnitValue,
                         AreaDensityUnit.MilligramPerSquareMeter => baseUnitValue * 1000000,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

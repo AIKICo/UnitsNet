@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public BrakeSpecificFuelConsumption(double value, BrakeSpecificFuelConsumptionUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of BrakeSpecificFuelConsumption, which is Second. All conversions go via this value.
         /// </summary>
         public static BrakeSpecificFuelConsumptionUnit BaseUnit { get; } = BrakeSpecificFuelConsumptionUnit.KilogramPerJoule;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of BrakeSpecificFuelConsumption.
         /// </summary>
         public static BrakeSpecificFuelConsumption MaxValue { get; } = new BrakeSpecificFuelConsumption(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of BrakeSpecificFuelConsumption.
         /// </summary>
         public static BrakeSpecificFuelConsumption MinValue { get; } = new BrakeSpecificFuelConsumption(double.MinValue, BaseUnit);
 
@@ -101,19 +100,16 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="BrakeSpecificFuelConsumption"/> from <see cref="BrakeSpecificFuelConsumptionUnit.GramPerKiloWattHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static BrakeSpecificFuelConsumption FromGramsPerKiloWattHour(double gramsperkilowatthour) => new BrakeSpecificFuelConsumption(gramsperkilowatthour, BrakeSpecificFuelConsumptionUnit.GramPerKiloWattHour);
 
         /// <summary>
         ///     Creates a <see cref="BrakeSpecificFuelConsumption"/> from <see cref="BrakeSpecificFuelConsumptionUnit.KilogramPerJoule"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static BrakeSpecificFuelConsumption FromKilogramsPerJoule(double kilogramsperjoule) => new BrakeSpecificFuelConsumption(kilogramsperjoule, BrakeSpecificFuelConsumptionUnit.KilogramPerJoule);
 
         /// <summary>
         ///     Creates a <see cref="BrakeSpecificFuelConsumption"/> from <see cref="BrakeSpecificFuelConsumptionUnit.PoundPerMechanicalHorsepowerHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static BrakeSpecificFuelConsumption FromPoundsPerMechanicalHorsepowerHour(double poundspermechanicalhorsepowerhour) => new BrakeSpecificFuelConsumption(poundspermechanicalhorsepowerhour, BrakeSpecificFuelConsumptionUnit.PoundPerMechanicalHorsepowerHour);
 
         /// <summary>
@@ -138,9 +134,9 @@ namespace UnitsNet
                 public double As(BrakeSpecificFuelConsumptionUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this BrakeSpecificFuelConsumption to another BrakeSpecificFuelConsumption with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A BrakeSpecificFuelConsumption with the specified unit.</returns>
                 public BrakeSpecificFuelConsumption ToUnit(BrakeSpecificFuelConsumptionUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -158,8 +154,8 @@ namespace UnitsNet
                     {
                         BrakeSpecificFuelConsumptionUnit.GramPerKiloWattHour => _value / 3.6e9,
                         BrakeSpecificFuelConsumptionUnit.KilogramPerJoule => _value,
-                        BrakeSpecificFuelConsumptionUnit.PoundPerMechanicalHorsepowerHour => _value * 1.689659410672e-7,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        BrakeSpecificFuelConsumptionUnit.PoundPerMechanicalHorsepowerHour => _value * (0.45359237 / (76.0402249 * 9.80665))/3600,
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -174,8 +170,8 @@ namespace UnitsNet
                     {
                         BrakeSpecificFuelConsumptionUnit.GramPerKiloWattHour => baseUnitValue * 3.6e9,
                         BrakeSpecificFuelConsumptionUnit.KilogramPerJoule => baseUnitValue,
-                        BrakeSpecificFuelConsumptionUnit.PoundPerMechanicalHorsepowerHour => baseUnitValue / 1.689659410672e-7,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        BrakeSpecificFuelConsumptionUnit.PoundPerMechanicalHorsepowerHour => baseUnitValue * 3600 / (0.45359237 / (76.0402249 * 9.80665)),
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

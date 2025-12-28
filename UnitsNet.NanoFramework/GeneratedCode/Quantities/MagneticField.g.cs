@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public MagneticField(double value, MagneticFieldUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of MagneticField, which is Second. All conversions go via this value.
         /// </summary>
         public static MagneticFieldUnit BaseUnit { get; } = MagneticFieldUnit.Tesla;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of MagneticField.
         /// </summary>
         public static MagneticField MaxValue { get; } = new MagneticField(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of MagneticField.
         /// </summary>
         public static MagneticField MinValue { get; } = new MagneticField(double.MinValue, BaseUnit);
 
@@ -119,37 +118,31 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="MagneticField"/> from <see cref="MagneticFieldUnit.Gauss"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MagneticField FromGausses(double gausses) => new MagneticField(gausses, MagneticFieldUnit.Gauss);
 
         /// <summary>
         ///     Creates a <see cref="MagneticField"/> from <see cref="MagneticFieldUnit.Microtesla"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MagneticField FromMicroteslas(double microteslas) => new MagneticField(microteslas, MagneticFieldUnit.Microtesla);
 
         /// <summary>
         ///     Creates a <see cref="MagneticField"/> from <see cref="MagneticFieldUnit.Milligauss"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MagneticField FromMilligausses(double milligausses) => new MagneticField(milligausses, MagneticFieldUnit.Milligauss);
 
         /// <summary>
         ///     Creates a <see cref="MagneticField"/> from <see cref="MagneticFieldUnit.Millitesla"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MagneticField FromMilliteslas(double milliteslas) => new MagneticField(milliteslas, MagneticFieldUnit.Millitesla);
 
         /// <summary>
         ///     Creates a <see cref="MagneticField"/> from <see cref="MagneticFieldUnit.Nanotesla"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MagneticField FromNanoteslas(double nanoteslas) => new MagneticField(nanoteslas, MagneticFieldUnit.Nanotesla);
 
         /// <summary>
         ///     Creates a <see cref="MagneticField"/> from <see cref="MagneticFieldUnit.Tesla"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MagneticField FromTeslas(double teslas) => new MagneticField(teslas, MagneticFieldUnit.Tesla);
 
         /// <summary>
@@ -174,9 +167,9 @@ namespace UnitsNet
                 public double As(MagneticFieldUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this MagneticField to another MagneticField with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A MagneticField with the specified unit.</returns>
                 public MagneticField ToUnit(MagneticFieldUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -198,7 +191,7 @@ namespace UnitsNet
                         MagneticFieldUnit.Millitesla => (_value) * 1e-3d,
                         MagneticFieldUnit.Nanotesla => (_value) * 1e-9d,
                         MagneticFieldUnit.Tesla => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -217,7 +210,7 @@ namespace UnitsNet
                         MagneticFieldUnit.Millitesla => (baseUnitValue) / 1e-3d,
                         MagneticFieldUnit.Nanotesla => (baseUnitValue) / 1e-9d,
                         MagneticFieldUnit.Tesla => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

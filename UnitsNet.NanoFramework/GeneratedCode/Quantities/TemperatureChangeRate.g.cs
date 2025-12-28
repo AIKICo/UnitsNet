@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public TemperatureChangeRate(double value, TemperatureChangeRateUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of TemperatureChangeRate, which is Second. All conversions go via this value.
         /// </summary>
         public static TemperatureChangeRateUnit BaseUnit { get; } = TemperatureChangeRateUnit.DegreeCelsiusPerSecond;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of TemperatureChangeRate.
         /// </summary>
         public static TemperatureChangeRate MaxValue { get; } = new TemperatureChangeRate(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of TemperatureChangeRate.
         /// </summary>
         public static TemperatureChangeRate MinValue { get; } = new TemperatureChangeRate(double.MinValue, BaseUnit);
 
@@ -95,6 +94,11 @@ namespace UnitsNet
         public double DecidegreesCelsiusPerSecond => As(TemperatureChangeRateUnit.DecidegreeCelsiusPerSecond);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeCelsiusPerHour"/>
+        /// </summary>
+        public double DegreesCelsiusPerHour => As(TemperatureChangeRateUnit.DegreeCelsiusPerHour);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeCelsiusPerMinute"/>
         /// </summary>
         public double DegreesCelsiusPerMinute => As(TemperatureChangeRateUnit.DegreeCelsiusPerMinute);
@@ -103,6 +107,36 @@ namespace UnitsNet
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeCelsiusPerSecond"/>
         /// </summary>
         public double DegreesCelsiusPerSecond => As(TemperatureChangeRateUnit.DegreeCelsiusPerSecond);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeFahrenheitPerHour"/>
+        /// </summary>
+        public double DegreesFahrenheitPerHour => As(TemperatureChangeRateUnit.DegreeFahrenheitPerHour);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeFahrenheitPerMinute"/>
+        /// </summary>
+        public double DegreesFahrenheitPerMinute => As(TemperatureChangeRateUnit.DegreeFahrenheitPerMinute);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeFahrenheitPerSecond"/>
+        /// </summary>
+        public double DegreesFahrenheitPerSecond => As(TemperatureChangeRateUnit.DegreeFahrenheitPerSecond);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeKelvinPerHour"/>
+        /// </summary>
+        public double DegreesKelvinPerHour => As(TemperatureChangeRateUnit.DegreeKelvinPerHour);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeKelvinPerMinute"/>
+        /// </summary>
+        public double DegreesKelvinPerMinute => As(TemperatureChangeRateUnit.DegreeKelvinPerMinute);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.DegreeKelvinPerSecond"/>
+        /// </summary>
+        public double DegreesKelvinPerSecond => As(TemperatureChangeRateUnit.DegreeKelvinPerSecond);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureChangeRateUnit.HectodegreeCelsiusPerSecond"/>
@@ -136,61 +170,86 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.CentidegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromCentidegreesCelsiusPerSecond(double centidegreescelsiuspersecond) => new TemperatureChangeRate(centidegreescelsiuspersecond, TemperatureChangeRateUnit.CentidegreeCelsiusPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DecadegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromDecadegreesCelsiusPerSecond(double decadegreescelsiuspersecond) => new TemperatureChangeRate(decadegreescelsiuspersecond, TemperatureChangeRateUnit.DecadegreeCelsiusPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DecidegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromDecidegreesCelsiusPerSecond(double decidegreescelsiuspersecond) => new TemperatureChangeRate(decidegreescelsiuspersecond, TemperatureChangeRateUnit.DecidegreeCelsiusPerSecond);
+
+        /// <summary>
+        ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeCelsiusPerHour"/>.
+        /// </summary>
+        public static TemperatureChangeRate FromDegreesCelsiusPerHour(double degreescelsiusperhour) => new TemperatureChangeRate(degreescelsiusperhour, TemperatureChangeRateUnit.DegreeCelsiusPerHour);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeCelsiusPerMinute"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromDegreesCelsiusPerMinute(double degreescelsiusperminute) => new TemperatureChangeRate(degreescelsiusperminute, TemperatureChangeRateUnit.DegreeCelsiusPerMinute);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromDegreesCelsiusPerSecond(double degreescelsiuspersecond) => new TemperatureChangeRate(degreescelsiuspersecond, TemperatureChangeRateUnit.DegreeCelsiusPerSecond);
+
+        /// <summary>
+        ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeFahrenheitPerHour"/>.
+        /// </summary>
+        public static TemperatureChangeRate FromDegreesFahrenheitPerHour(double degreesfahrenheitperhour) => new TemperatureChangeRate(degreesfahrenheitperhour, TemperatureChangeRateUnit.DegreeFahrenheitPerHour);
+
+        /// <summary>
+        ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeFahrenheitPerMinute"/>.
+        /// </summary>
+        public static TemperatureChangeRate FromDegreesFahrenheitPerMinute(double degreesfahrenheitperminute) => new TemperatureChangeRate(degreesfahrenheitperminute, TemperatureChangeRateUnit.DegreeFahrenheitPerMinute);
+
+        /// <summary>
+        ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeFahrenheitPerSecond"/>.
+        /// </summary>
+        public static TemperatureChangeRate FromDegreesFahrenheitPerSecond(double degreesfahrenheitpersecond) => new TemperatureChangeRate(degreesfahrenheitpersecond, TemperatureChangeRateUnit.DegreeFahrenheitPerSecond);
+
+        /// <summary>
+        ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeKelvinPerHour"/>.
+        /// </summary>
+        public static TemperatureChangeRate FromDegreesKelvinPerHour(double degreeskelvinperhour) => new TemperatureChangeRate(degreeskelvinperhour, TemperatureChangeRateUnit.DegreeKelvinPerHour);
+
+        /// <summary>
+        ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeKelvinPerMinute"/>.
+        /// </summary>
+        public static TemperatureChangeRate FromDegreesKelvinPerMinute(double degreeskelvinperminute) => new TemperatureChangeRate(degreeskelvinperminute, TemperatureChangeRateUnit.DegreeKelvinPerMinute);
+
+        /// <summary>
+        ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.DegreeKelvinPerSecond"/>.
+        /// </summary>
+        public static TemperatureChangeRate FromDegreesKelvinPerSecond(double degreeskelvinpersecond) => new TemperatureChangeRate(degreeskelvinpersecond, TemperatureChangeRateUnit.DegreeKelvinPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.HectodegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromHectodegreesCelsiusPerSecond(double hectodegreescelsiuspersecond) => new TemperatureChangeRate(hectodegreescelsiuspersecond, TemperatureChangeRateUnit.HectodegreeCelsiusPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.KilodegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromKilodegreesCelsiusPerSecond(double kilodegreescelsiuspersecond) => new TemperatureChangeRate(kilodegreescelsiuspersecond, TemperatureChangeRateUnit.KilodegreeCelsiusPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.MicrodegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromMicrodegreesCelsiusPerSecond(double microdegreescelsiuspersecond) => new TemperatureChangeRate(microdegreescelsiuspersecond, TemperatureChangeRateUnit.MicrodegreeCelsiusPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.MillidegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromMillidegreesCelsiusPerSecond(double millidegreescelsiuspersecond) => new TemperatureChangeRate(millidegreescelsiuspersecond, TemperatureChangeRateUnit.MillidegreeCelsiusPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureChangeRate"/> from <see cref="TemperatureChangeRateUnit.NanodegreeCelsiusPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureChangeRate FromNanodegreesCelsiusPerSecond(double nanodegreescelsiuspersecond) => new TemperatureChangeRate(nanodegreescelsiuspersecond, TemperatureChangeRateUnit.NanodegreeCelsiusPerSecond);
 
         /// <summary>
@@ -215,9 +274,9 @@ namespace UnitsNet
                 public double As(TemperatureChangeRateUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this TemperatureChangeRate to another TemperatureChangeRate with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A TemperatureChangeRate with the specified unit.</returns>
                 public TemperatureChangeRate ToUnit(TemperatureChangeRateUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -236,14 +295,21 @@ namespace UnitsNet
                         TemperatureChangeRateUnit.CentidegreeCelsiusPerSecond => (_value) * 1e-2d,
                         TemperatureChangeRateUnit.DecadegreeCelsiusPerSecond => (_value) * 1e1d,
                         TemperatureChangeRateUnit.DecidegreeCelsiusPerSecond => (_value) * 1e-1d,
+                        TemperatureChangeRateUnit.DegreeCelsiusPerHour => _value / 3600,
                         TemperatureChangeRateUnit.DegreeCelsiusPerMinute => _value / 60,
                         TemperatureChangeRateUnit.DegreeCelsiusPerSecond => _value,
+                        TemperatureChangeRateUnit.DegreeFahrenheitPerHour => _value * 5 / 9 / 3600,
+                        TemperatureChangeRateUnit.DegreeFahrenheitPerMinute => _value * 5 / 9 / 60,
+                        TemperatureChangeRateUnit.DegreeFahrenheitPerSecond => _value * 5 / 9,
+                        TemperatureChangeRateUnit.DegreeKelvinPerHour => _value / 3600,
+                        TemperatureChangeRateUnit.DegreeKelvinPerMinute => _value / 60,
+                        TemperatureChangeRateUnit.DegreeKelvinPerSecond => _value,
                         TemperatureChangeRateUnit.HectodegreeCelsiusPerSecond => (_value) * 1e2d,
                         TemperatureChangeRateUnit.KilodegreeCelsiusPerSecond => (_value) * 1e3d,
                         TemperatureChangeRateUnit.MicrodegreeCelsiusPerSecond => (_value) * 1e-6d,
                         TemperatureChangeRateUnit.MillidegreeCelsiusPerSecond => (_value) * 1e-3d,
                         TemperatureChangeRateUnit.NanodegreeCelsiusPerSecond => (_value) * 1e-9d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -259,14 +325,21 @@ namespace UnitsNet
                         TemperatureChangeRateUnit.CentidegreeCelsiusPerSecond => (baseUnitValue) / 1e-2d,
                         TemperatureChangeRateUnit.DecadegreeCelsiusPerSecond => (baseUnitValue) / 1e1d,
                         TemperatureChangeRateUnit.DecidegreeCelsiusPerSecond => (baseUnitValue) / 1e-1d,
+                        TemperatureChangeRateUnit.DegreeCelsiusPerHour => baseUnitValue * 3600,
                         TemperatureChangeRateUnit.DegreeCelsiusPerMinute => baseUnitValue * 60,
                         TemperatureChangeRateUnit.DegreeCelsiusPerSecond => baseUnitValue,
+                        TemperatureChangeRateUnit.DegreeFahrenheitPerHour => baseUnitValue * 9 / 5 * 3600,
+                        TemperatureChangeRateUnit.DegreeFahrenheitPerMinute => baseUnitValue * 9 / 5 * 60,
+                        TemperatureChangeRateUnit.DegreeFahrenheitPerSecond => baseUnitValue * 9 / 5,
+                        TemperatureChangeRateUnit.DegreeKelvinPerHour => baseUnitValue * 3600,
+                        TemperatureChangeRateUnit.DegreeKelvinPerMinute => baseUnitValue * 60,
+                        TemperatureChangeRateUnit.DegreeKelvinPerSecond => baseUnitValue,
                         TemperatureChangeRateUnit.HectodegreeCelsiusPerSecond => (baseUnitValue) / 1e2d,
                         TemperatureChangeRateUnit.KilodegreeCelsiusPerSecond => (baseUnitValue) / 1e3d,
                         TemperatureChangeRateUnit.MicrodegreeCelsiusPerSecond => (baseUnitValue) / 1e-6d,
                         TemperatureChangeRateUnit.MillidegreeCelsiusPerSecond => (baseUnitValue) / 1e-3d,
                         TemperatureChangeRateUnit.NanodegreeCelsiusPerSecond => (baseUnitValue) / 1e-9d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

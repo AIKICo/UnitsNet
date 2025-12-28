@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Turbidity(double value, TurbidityUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Turbidity, which is Second. All conversions go via this value.
         /// </summary>
         public static TurbidityUnit BaseUnit { get; } = TurbidityUnit.NTU;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Turbidity.
         /// </summary>
         public static Turbidity MaxValue { get; } = new Turbidity(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Turbidity.
         /// </summary>
         public static Turbidity MinValue { get; } = new Turbidity(double.MinValue, BaseUnit);
 
@@ -94,7 +93,6 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Turbidity"/> from <see cref="TurbidityUnit.NTU"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Turbidity FromNTU(double ntu) => new Turbidity(ntu, TurbidityUnit.NTU);
 
         /// <summary>
@@ -119,9 +117,9 @@ namespace UnitsNet
                 public double As(TurbidityUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Turbidity to another Turbidity with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Turbidity with the specified unit.</returns>
                 public Turbidity ToUnit(TurbidityUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -138,7 +136,7 @@ namespace UnitsNet
                     return Unit switch
                     {
                         TurbidityUnit.NTU => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -152,7 +150,7 @@ namespace UnitsNet
                     return unit switch
                     {
                         TurbidityUnit.NTU => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

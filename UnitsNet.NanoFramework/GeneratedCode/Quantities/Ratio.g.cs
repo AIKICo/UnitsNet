@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Ratio(double value, RatioUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Ratio, which is Second. All conversions go via this value.
         /// </summary>
         public static RatioUnit BaseUnit { get; } = RatioUnit.DecimalFraction;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Ratio.
         /// </summary>
         public static Ratio MaxValue { get; } = new Ratio(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Ratio.
         /// </summary>
         public static Ratio MinValue { get; } = new Ratio(double.MinValue, BaseUnit);
 
@@ -116,37 +115,31 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Ratio"/> from <see cref="RatioUnit.DecimalFraction"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Ratio FromDecimalFractions(double decimalfractions) => new Ratio(decimalfractions, RatioUnit.DecimalFraction);
 
         /// <summary>
         ///     Creates a <see cref="Ratio"/> from <see cref="RatioUnit.PartPerBillion"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Ratio FromPartsPerBillion(double partsperbillion) => new Ratio(partsperbillion, RatioUnit.PartPerBillion);
 
         /// <summary>
         ///     Creates a <see cref="Ratio"/> from <see cref="RatioUnit.PartPerMillion"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Ratio FromPartsPerMillion(double partspermillion) => new Ratio(partspermillion, RatioUnit.PartPerMillion);
 
         /// <summary>
         ///     Creates a <see cref="Ratio"/> from <see cref="RatioUnit.PartPerThousand"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Ratio FromPartsPerThousand(double partsperthousand) => new Ratio(partsperthousand, RatioUnit.PartPerThousand);
 
         /// <summary>
         ///     Creates a <see cref="Ratio"/> from <see cref="RatioUnit.PartPerTrillion"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Ratio FromPartsPerTrillion(double partspertrillion) => new Ratio(partspertrillion, RatioUnit.PartPerTrillion);
 
         /// <summary>
         ///     Creates a <see cref="Ratio"/> from <see cref="RatioUnit.Percent"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Ratio FromPercent(double percent) => new Ratio(percent, RatioUnit.Percent);
 
         /// <summary>
@@ -171,9 +164,9 @@ namespace UnitsNet
                 public double As(RatioUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Ratio to another Ratio with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Ratio with the specified unit.</returns>
                 public Ratio ToUnit(RatioUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -195,7 +188,7 @@ namespace UnitsNet
                         RatioUnit.PartPerThousand => _value / 1e3,
                         RatioUnit.PartPerTrillion => _value / 1e12,
                         RatioUnit.Percent => _value / 1e2,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -214,7 +207,7 @@ namespace UnitsNet
                         RatioUnit.PartPerThousand => baseUnitValue * 1e3,
                         RatioUnit.PartPerTrillion => baseUnitValue * 1e12,
                         RatioUnit.Percent => baseUnitValue * 1e2,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

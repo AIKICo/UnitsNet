@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public LuminousFlux(double value, LuminousFluxUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of LuminousFlux, which is Second. All conversions go via this value.
         /// </summary>
         public static LuminousFluxUnit BaseUnit { get; } = LuminousFluxUnit.Lumen;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of LuminousFlux.
         /// </summary>
         public static LuminousFlux MaxValue { get; } = new LuminousFlux(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of LuminousFlux.
         /// </summary>
         public static LuminousFlux MinValue { get; } = new LuminousFlux(double.MinValue, BaseUnit);
 
@@ -94,7 +93,6 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="LuminousFlux"/> from <see cref="LuminousFluxUnit.Lumen"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static LuminousFlux FromLumens(double lumens) => new LuminousFlux(lumens, LuminousFluxUnit.Lumen);
 
         /// <summary>
@@ -119,9 +117,9 @@ namespace UnitsNet
                 public double As(LuminousFluxUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this LuminousFlux to another LuminousFlux with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A LuminousFlux with the specified unit.</returns>
                 public LuminousFlux ToUnit(LuminousFluxUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -138,7 +136,7 @@ namespace UnitsNet
                     return Unit switch
                     {
                         LuminousFluxUnit.Lumen => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -152,7 +150,7 @@ namespace UnitsNet
                     return unit switch
                     {
                         LuminousFluxUnit.Lumen => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

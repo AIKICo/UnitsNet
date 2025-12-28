@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Duration(double value, DurationUnit unit)
         {
             _value = value;
@@ -64,12 +63,12 @@ namespace UnitsNet
         public static DurationUnit BaseUnit { get; } = DurationUnit.Second;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Duration.
         /// </summary>
         public static Duration MaxValue { get; } = new Duration(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Duration.
         /// </summary>
         public static Duration MinValue { get; } = new Duration(double.MinValue, BaseUnit);
 
@@ -120,9 +119,19 @@ namespace UnitsNet
         public double Nanoseconds => As(DurationUnit.Nanosecond);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="DurationUnit.Picosecond"/>
+        /// </summary>
+        public double Picoseconds => As(DurationUnit.Picosecond);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="DurationUnit.Second"/>
         /// </summary>
         public double Seconds => As(DurationUnit.Second);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="DurationUnit.Sol"/>
+        /// </summary>
+        public double Sols => As(DurationUnit.Sol);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="DurationUnit.Week"/>
@@ -141,67 +150,66 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Day"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromDays(double days) => new Duration(days, DurationUnit.Day);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Hour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromHours(double hours) => new Duration(hours, DurationUnit.Hour);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.JulianYear"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromJulianYears(double julianyears) => new Duration(julianyears, DurationUnit.JulianYear);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Microsecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromMicroseconds(double microseconds) => new Duration(microseconds, DurationUnit.Microsecond);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Millisecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromMilliseconds(double milliseconds) => new Duration(milliseconds, DurationUnit.Millisecond);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Minute"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromMinutes(double minutes) => new Duration(minutes, DurationUnit.Minute);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Month30"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromMonths30(double months30) => new Duration(months30, DurationUnit.Month30);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Nanosecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromNanoseconds(double nanoseconds) => new Duration(nanoseconds, DurationUnit.Nanosecond);
+
+        /// <summary>
+        ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Picosecond"/>.
+        /// </summary>
+        public static Duration FromPicoseconds(double picoseconds) => new Duration(picoseconds, DurationUnit.Picosecond);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Second"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromSeconds(double seconds) => new Duration(seconds, DurationUnit.Second);
+
+        /// <summary>
+        ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Sol"/>.
+        /// </summary>
+        public static Duration FromSols(double sols) => new Duration(sols, DurationUnit.Sol);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Week"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromWeeks(double weeks) => new Duration(weeks, DurationUnit.Week);
 
         /// <summary>
         ///     Creates a <see cref="Duration"/> from <see cref="DurationUnit.Year365"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Duration FromYears365(double years365) => new Duration(years365, DurationUnit.Year365);
 
         /// <summary>
@@ -252,10 +260,12 @@ namespace UnitsNet
                         DurationUnit.Minute => _value * 60,
                         DurationUnit.Month30 => _value * 30 * 24 * 3600,
                         DurationUnit.Nanosecond => (_value) * 1e-9d,
+                        DurationUnit.Picosecond => (_value) * 1e-12d,
                         DurationUnit.Second => _value,
+                        DurationUnit.Sol => _value * 88775.244,
                         DurationUnit.Week => _value * 7 * 24 * 3600,
                         DurationUnit.Year365 => _value * 365 * 24 * 3600,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -276,10 +286,12 @@ namespace UnitsNet
                         DurationUnit.Minute => baseUnitValue / 60,
                         DurationUnit.Month30 => baseUnitValue / (30 * 24 * 3600),
                         DurationUnit.Nanosecond => (baseUnitValue) / 1e-9d,
+                        DurationUnit.Picosecond => (baseUnitValue) / 1e-12d,
                         DurationUnit.Second => baseUnitValue,
+                        DurationUnit.Sol => baseUnitValue / 88775.244,
                         DurationUnit.Week => baseUnitValue / (7 * 24 * 3600),
                         DurationUnit.Year365 => baseUnitValue / (365 * 24 * 3600),
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

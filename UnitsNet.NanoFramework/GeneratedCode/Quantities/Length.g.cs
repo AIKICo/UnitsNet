@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Length(double value, LengthUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Length, which is Second. All conversions go via this value.
         /// </summary>
         public static LengthUnit BaseUnit { get; } = LengthUnit.Meter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Length.
         /// </summary>
         public static Length MaxValue { get; } = new Length(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Length.
         /// </summary>
         public static Length MinValue { get; } = new Length(double.MinValue, BaseUnit);
 
@@ -130,9 +129,19 @@ namespace UnitsNet
         public double Fathoms => As(LengthUnit.Fathom);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.Femtometer"/>
+        /// </summary>
+        public double Femtometers => As(LengthUnit.Femtometer);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.Foot"/>
         /// </summary>
         public double Feet => As(LengthUnit.Foot);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.Gigameter"/>
+        /// </summary>
+        public double Gigameters => As(LengthUnit.Gigameter);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.Hand"/>
@@ -168,6 +177,11 @@ namespace UnitsNet
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.Kiloparsec"/>
         /// </summary>
         public double Kiloparsecs => As(LengthUnit.Kiloparsec);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.Kiloyard"/>
+        /// </summary>
+        public double Kiloyards => As(LengthUnit.Kiloyard);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.LightYear"/>
@@ -235,6 +249,11 @@ namespace UnitsNet
         public double Parsecs => As(LengthUnit.Parsec);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.Picometer"/>
+        /// </summary>
+        public double Picometers => As(LengthUnit.Picometer);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LengthUnit.PrinterPica"/>
         /// </summary>
         public double PrinterPicas => As(LengthUnit.PrinterPica);
@@ -276,229 +295,211 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Angstrom"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromAngstroms(double angstroms) => new Length(angstroms, LengthUnit.Angstrom);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.AstronomicalUnit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromAstronomicalUnits(double astronomicalunits) => new Length(astronomicalunits, LengthUnit.AstronomicalUnit);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Centimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromCentimeters(double centimeters) => new Length(centimeters, LengthUnit.Centimeter);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Chain"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromChains(double chains) => new Length(chains, LengthUnit.Chain);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.DataMile"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromDataMiles(double datamiles) => new Length(datamiles, LengthUnit.DataMile);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Decameter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromDecameters(double decameters) => new Length(decameters, LengthUnit.Decameter);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Decimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromDecimeters(double decimeters) => new Length(decimeters, LengthUnit.Decimeter);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.DtpPica"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromDtpPicas(double dtppicas) => new Length(dtppicas, LengthUnit.DtpPica);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.DtpPoint"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromDtpPoints(double dtppoints) => new Length(dtppoints, LengthUnit.DtpPoint);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Fathom"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromFathoms(double fathoms) => new Length(fathoms, LengthUnit.Fathom);
+
+        /// <summary>
+        ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Femtometer"/>.
+        /// </summary>
+        public static Length FromFemtometers(double femtometers) => new Length(femtometers, LengthUnit.Femtometer);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Foot"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromFeet(double feet) => new Length(feet, LengthUnit.Foot);
+
+        /// <summary>
+        ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Gigameter"/>.
+        /// </summary>
+        public static Length FromGigameters(double gigameters) => new Length(gigameters, LengthUnit.Gigameter);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Hand"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromHands(double hands) => new Length(hands, LengthUnit.Hand);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Hectometer"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromHectometers(double hectometers) => new Length(hectometers, LengthUnit.Hectometer);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Inch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromInches(double inches) => new Length(inches, LengthUnit.Inch);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Kilofoot"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromKilofeet(double kilofeet) => new Length(kilofeet, LengthUnit.Kilofoot);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.KilolightYear"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromKilolightYears(double kilolightyears) => new Length(kilolightyears, LengthUnit.KilolightYear);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Kilometer"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromKilometers(double kilometers) => new Length(kilometers, LengthUnit.Kilometer);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Kiloparsec"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromKiloparsecs(double kiloparsecs) => new Length(kiloparsecs, LengthUnit.Kiloparsec);
+
+        /// <summary>
+        ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Kiloyard"/>.
+        /// </summary>
+        public static Length FromKiloyards(double kiloyards) => new Length(kiloyards, LengthUnit.Kiloyard);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.LightYear"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromLightYears(double lightyears) => new Length(lightyears, LengthUnit.LightYear);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.MegalightYear"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMegalightYears(double megalightyears) => new Length(megalightyears, LengthUnit.MegalightYear);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Megameter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMegameters(double megameters) => new Length(megameters, LengthUnit.Megameter);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Megaparsec"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMegaparsecs(double megaparsecs) => new Length(megaparsecs, LengthUnit.Megaparsec);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Meter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMeters(double meters) => new Length(meters, LengthUnit.Meter);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Microinch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMicroinches(double microinches) => new Length(microinches, LengthUnit.Microinch);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Micrometer"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMicrometers(double micrometers) => new Length(micrometers, LengthUnit.Micrometer);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Mil"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMils(double mils) => new Length(mils, LengthUnit.Mil);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Mile"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMiles(double miles) => new Length(miles, LengthUnit.Mile);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Millimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromMillimeters(double millimeters) => new Length(millimeters, LengthUnit.Millimeter);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Nanometer"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromNanometers(double nanometers) => new Length(nanometers, LengthUnit.Nanometer);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.NauticalMile"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromNauticalMiles(double nauticalmiles) => new Length(nauticalmiles, LengthUnit.NauticalMile);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Parsec"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromParsecs(double parsecs) => new Length(parsecs, LengthUnit.Parsec);
+
+        /// <summary>
+        ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Picometer"/>.
+        /// </summary>
+        public static Length FromPicometers(double picometers) => new Length(picometers, LengthUnit.Picometer);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.PrinterPica"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromPrinterPicas(double printerpicas) => new Length(printerpicas, LengthUnit.PrinterPica);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.PrinterPoint"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromPrinterPoints(double printerpoints) => new Length(printerpoints, LengthUnit.PrinterPoint);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Shackle"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromShackles(double shackles) => new Length(shackles, LengthUnit.Shackle);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.SolarRadius"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromSolarRadiuses(double solarradiuses) => new Length(solarradiuses, LengthUnit.SolarRadius);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Twip"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromTwips(double twips) => new Length(twips, LengthUnit.Twip);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.UsSurveyFoot"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromUsSurveyFeet(double ussurveyfeet) => new Length(ussurveyfeet, LengthUnit.UsSurveyFoot);
 
         /// <summary>
         ///     Creates a <see cref="Length"/> from <see cref="LengthUnit.Yard"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Length FromYards(double yards) => new Length(yards, LengthUnit.Yard);
 
         /// <summary>
@@ -523,9 +524,9 @@ namespace UnitsNet
                 public double As(LengthUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Length to another Length with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Length with the specified unit.</returns>
                 public Length ToUnit(LengthUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -548,10 +549,12 @@ namespace UnitsNet
                         LengthUnit.DataMile => _value * 1828.8,
                         LengthUnit.Decameter => (_value) * 1e1d,
                         LengthUnit.Decimeter => (_value) * 1e-1d,
-                        LengthUnit.DtpPica => _value / 236.220472441,
-                        LengthUnit.DtpPoint => (_value / 72) * 2.54e-2,
+                        LengthUnit.DtpPica => _value * 2.54e-2 / 6,
+                        LengthUnit.DtpPoint => _value * 2.54e-2 / 72,
                         LengthUnit.Fathom => _value * 1.8288,
+                        LengthUnit.Femtometer => (_value) * 1e-15d,
                         LengthUnit.Foot => _value * 0.3048,
+                        LengthUnit.Gigameter => (_value) * 1e9d,
                         LengthUnit.Hand => _value * 1.016e-1,
                         LengthUnit.Hectometer => (_value) * 1e2d,
                         LengthUnit.Inch => _value * 2.54e-2,
@@ -559,6 +562,7 @@ namespace UnitsNet
                         LengthUnit.KilolightYear => (_value * 9.46073047258e15) * 1e3d,
                         LengthUnit.Kilometer => (_value) * 1e3d,
                         LengthUnit.Kiloparsec => (_value * 3.08567758128e16) * 1e3d,
+                        LengthUnit.Kiloyard => (_value * 0.9144) * 1e3d,
                         LengthUnit.LightYear => _value * 9.46073047258e15,
                         LengthUnit.MegalightYear => (_value * 9.46073047258e15) * 1e6d,
                         LengthUnit.Megameter => (_value) * 1e6d,
@@ -572,14 +576,15 @@ namespace UnitsNet
                         LengthUnit.Nanometer => (_value) * 1e-9d,
                         LengthUnit.NauticalMile => _value * 1852,
                         LengthUnit.Parsec => _value * 3.08567758128e16,
-                        LengthUnit.PrinterPica => _value / 237.106301584,
-                        LengthUnit.PrinterPoint => (_value / 72.27) * 2.54e-2,
+                        LengthUnit.Picometer => (_value) * 1e-12d,
+                        LengthUnit.PrinterPica => _value * 2.54e-2 * 400 / 2409,
+                        LengthUnit.PrinterPoint => _value * 2.54e-2 / 72.27 ,
                         LengthUnit.Shackle => _value * 27.432,
-                        LengthUnit.SolarRadius => _value * 6.95510000E+08,
-                        LengthUnit.Twip => _value / 56692.913385826,
+                        LengthUnit.SolarRadius => _value * 6.95700e8,
+                        LengthUnit.Twip => _value * 2.54e-2 / 1440,
                         LengthUnit.UsSurveyFoot => _value * 1200 / 3937,
                         LengthUnit.Yard => _value * 0.9144,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -599,10 +604,12 @@ namespace UnitsNet
                         LengthUnit.DataMile => baseUnitValue / 1828.8,
                         LengthUnit.Decameter => (baseUnitValue) / 1e1d,
                         LengthUnit.Decimeter => (baseUnitValue) / 1e-1d,
-                        LengthUnit.DtpPica => baseUnitValue * 236.220472441,
-                        LengthUnit.DtpPoint => (baseUnitValue / 2.54e-2) * 72,
+                        LengthUnit.DtpPica => baseUnitValue * 6 / 2.54e-2,
+                        LengthUnit.DtpPoint => baseUnitValue * 72 / 2.54e-2,
                         LengthUnit.Fathom => baseUnitValue / 1.8288,
+                        LengthUnit.Femtometer => (baseUnitValue) / 1e-15d,
                         LengthUnit.Foot => baseUnitValue / 0.3048,
+                        LengthUnit.Gigameter => (baseUnitValue) / 1e9d,
                         LengthUnit.Hand => baseUnitValue / 1.016e-1,
                         LengthUnit.Hectometer => (baseUnitValue) / 1e2d,
                         LengthUnit.Inch => baseUnitValue / 2.54e-2,
@@ -610,6 +617,7 @@ namespace UnitsNet
                         LengthUnit.KilolightYear => (baseUnitValue / 9.46073047258e15) / 1e3d,
                         LengthUnit.Kilometer => (baseUnitValue) / 1e3d,
                         LengthUnit.Kiloparsec => (baseUnitValue / 3.08567758128e16) / 1e3d,
+                        LengthUnit.Kiloyard => (baseUnitValue / 0.9144) / 1e3d,
                         LengthUnit.LightYear => baseUnitValue / 9.46073047258e15,
                         LengthUnit.MegalightYear => (baseUnitValue / 9.46073047258e15) / 1e6d,
                         LengthUnit.Megameter => (baseUnitValue) / 1e6d,
@@ -623,14 +631,15 @@ namespace UnitsNet
                         LengthUnit.Nanometer => (baseUnitValue) / 1e-9d,
                         LengthUnit.NauticalMile => baseUnitValue / 1852,
                         LengthUnit.Parsec => baseUnitValue / 3.08567758128e16,
-                        LengthUnit.PrinterPica => baseUnitValue * 237.106301584,
-                        LengthUnit.PrinterPoint => (baseUnitValue / 2.54e-2) * 72.27,
+                        LengthUnit.Picometer => (baseUnitValue) / 1e-12d,
+                        LengthUnit.PrinterPica => baseUnitValue / (2.54e-2 * 400 / 2409),
+                        LengthUnit.PrinterPoint => baseUnitValue * 72.27 / 2.54e-2,
                         LengthUnit.Shackle => baseUnitValue / 27.432,
-                        LengthUnit.SolarRadius => baseUnitValue / 6.95510000E+08,
-                        LengthUnit.Twip => baseUnitValue * 56692.913385826,
+                        LengthUnit.SolarRadius => baseUnitValue / 6.95700e8,
+                        LengthUnit.Twip => baseUnitValue * 1440 / 2.54e-2,
                         LengthUnit.UsSurveyFoot => baseUnitValue * 3937 / 1200,
                         LengthUnit.Yard => baseUnitValue / 0.9144,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

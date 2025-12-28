@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Permittivity(double value, PermittivityUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Permittivity, which is Second. All conversions go via this value.
         /// </summary>
         public static PermittivityUnit BaseUnit { get; } = PermittivityUnit.FaradPerMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Permittivity.
         /// </summary>
         public static Permittivity MaxValue { get; } = new Permittivity(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Permittivity.
         /// </summary>
         public static Permittivity MinValue { get; } = new Permittivity(double.MinValue, BaseUnit);
 
@@ -94,7 +93,6 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Permittivity"/> from <see cref="PermittivityUnit.FaradPerMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Permittivity FromFaradsPerMeter(double faradspermeter) => new Permittivity(faradspermeter, PermittivityUnit.FaradPerMeter);
 
         /// <summary>
@@ -119,9 +117,9 @@ namespace UnitsNet
                 public double As(PermittivityUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Permittivity to another Permittivity with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Permittivity with the specified unit.</returns>
                 public Permittivity ToUnit(PermittivityUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -138,7 +136,7 @@ namespace UnitsNet
                     return Unit switch
                     {
                         PermittivityUnit.FaradPerMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -152,7 +150,7 @@ namespace UnitsNet
                     return unit switch
                     {
                         PermittivityUnit.FaradPerMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

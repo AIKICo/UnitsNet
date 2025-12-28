@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricCharge(double value, ElectricChargeUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricCharge, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricChargeUnit BaseUnit { get; } = ElectricChargeUnit.Coulomb;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricCharge.
         /// </summary>
         public static ElectricCharge MaxValue { get; } = new ElectricCharge(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricCharge.
         /// </summary>
         public static ElectricCharge MinValue { get; } = new ElectricCharge(double.MinValue, BaseUnit);
 
@@ -144,67 +143,56 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.AmpereHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromAmpereHours(double amperehours) => new ElectricCharge(amperehours, ElectricChargeUnit.AmpereHour);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.Coulomb"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromCoulombs(double coulombs) => new ElectricCharge(coulombs, ElectricChargeUnit.Coulomb);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.KiloampereHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromKiloampereHours(double kiloamperehours) => new ElectricCharge(kiloamperehours, ElectricChargeUnit.KiloampereHour);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.Kilocoulomb"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromKilocoulombs(double kilocoulombs) => new ElectricCharge(kilocoulombs, ElectricChargeUnit.Kilocoulomb);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.MegaampereHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromMegaampereHours(double megaamperehours) => new ElectricCharge(megaamperehours, ElectricChargeUnit.MegaampereHour);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.Megacoulomb"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromMegacoulombs(double megacoulombs) => new ElectricCharge(megacoulombs, ElectricChargeUnit.Megacoulomb);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.Microcoulomb"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromMicrocoulombs(double microcoulombs) => new ElectricCharge(microcoulombs, ElectricChargeUnit.Microcoulomb);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.MilliampereHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromMilliampereHours(double milliamperehours) => new ElectricCharge(milliamperehours, ElectricChargeUnit.MilliampereHour);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.Millicoulomb"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromMillicoulombs(double millicoulombs) => new ElectricCharge(millicoulombs, ElectricChargeUnit.Millicoulomb);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.Nanocoulomb"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromNanocoulombs(double nanocoulombs) => new ElectricCharge(nanocoulombs, ElectricChargeUnit.Nanocoulomb);
 
         /// <summary>
         ///     Creates a <see cref="ElectricCharge"/> from <see cref="ElectricChargeUnit.Picocoulomb"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricCharge FromPicocoulombs(double picocoulombs) => new ElectricCharge(picocoulombs, ElectricChargeUnit.Picocoulomb);
 
         /// <summary>
@@ -229,9 +217,9 @@ namespace UnitsNet
                 public double As(ElectricChargeUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricCharge to another ElectricCharge with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricCharge with the specified unit.</returns>
                 public ElectricCharge ToUnit(ElectricChargeUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -247,18 +235,18 @@ namespace UnitsNet
                 {
                     return Unit switch
                     {
-                        ElectricChargeUnit.AmpereHour => _value / 2.77777777777e-4,
+                        ElectricChargeUnit.AmpereHour => _value * 3600,
                         ElectricChargeUnit.Coulomb => _value,
-                        ElectricChargeUnit.KiloampereHour => (_value / 2.77777777777e-4) * 1e3d,
+                        ElectricChargeUnit.KiloampereHour => (_value * 3600) * 1e3d,
                         ElectricChargeUnit.Kilocoulomb => (_value) * 1e3d,
-                        ElectricChargeUnit.MegaampereHour => (_value / 2.77777777777e-4) * 1e6d,
+                        ElectricChargeUnit.MegaampereHour => (_value * 3600) * 1e6d,
                         ElectricChargeUnit.Megacoulomb => (_value) * 1e6d,
                         ElectricChargeUnit.Microcoulomb => (_value) * 1e-6d,
-                        ElectricChargeUnit.MilliampereHour => (_value / 2.77777777777e-4) * 1e-3d,
+                        ElectricChargeUnit.MilliampereHour => (_value * 3600) * 1e-3d,
                         ElectricChargeUnit.Millicoulomb => (_value) * 1e-3d,
                         ElectricChargeUnit.Nanocoulomb => (_value) * 1e-9d,
                         ElectricChargeUnit.Picocoulomb => (_value) * 1e-12d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -271,18 +259,18 @@ namespace UnitsNet
 
                     return unit switch
                     {
-                        ElectricChargeUnit.AmpereHour => baseUnitValue * 2.77777777777e-4,
+                        ElectricChargeUnit.AmpereHour => baseUnitValue / 3600,
                         ElectricChargeUnit.Coulomb => baseUnitValue,
-                        ElectricChargeUnit.KiloampereHour => (baseUnitValue * 2.77777777777e-4) / 1e3d,
+                        ElectricChargeUnit.KiloampereHour => (baseUnitValue / 3600) / 1e3d,
                         ElectricChargeUnit.Kilocoulomb => (baseUnitValue) / 1e3d,
-                        ElectricChargeUnit.MegaampereHour => (baseUnitValue * 2.77777777777e-4) / 1e6d,
+                        ElectricChargeUnit.MegaampereHour => (baseUnitValue / 3600) / 1e6d,
                         ElectricChargeUnit.Megacoulomb => (baseUnitValue) / 1e6d,
                         ElectricChargeUnit.Microcoulomb => (baseUnitValue) / 1e-6d,
-                        ElectricChargeUnit.MilliampereHour => (baseUnitValue * 2.77777777777e-4) / 1e-3d,
+                        ElectricChargeUnit.MilliampereHour => (baseUnitValue / 3600) / 1e-3d,
                         ElectricChargeUnit.Millicoulomb => (baseUnitValue) / 1e-3d,
                         ElectricChargeUnit.Nanocoulomb => (baseUnitValue) / 1e-9d,
                         ElectricChargeUnit.Picocoulomb => (baseUnitValue) / 1e-12d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

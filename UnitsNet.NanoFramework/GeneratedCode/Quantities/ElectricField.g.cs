@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricField(double value, ElectricFieldUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricField, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricFieldUnit BaseUnit { get; } = ElectricFieldUnit.VoltPerMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricField.
         /// </summary>
         public static ElectricField MaxValue { get; } = new ElectricField(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricField.
         /// </summary>
         public static ElectricField MinValue { get; } = new ElectricField(double.MinValue, BaseUnit);
 
@@ -94,7 +93,6 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricField"/> from <see cref="ElectricFieldUnit.VoltPerMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricField FromVoltsPerMeter(double voltspermeter) => new ElectricField(voltspermeter, ElectricFieldUnit.VoltPerMeter);
 
         /// <summary>
@@ -119,9 +117,9 @@ namespace UnitsNet
                 public double As(ElectricFieldUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricField to another ElectricField with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricField with the specified unit.</returns>
                 public ElectricField ToUnit(ElectricFieldUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -138,7 +136,7 @@ namespace UnitsNet
                     return Unit switch
                     {
                         ElectricFieldUnit.VoltPerMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -152,7 +150,7 @@ namespace UnitsNet
                     return unit switch
                     {
                         ElectricFieldUnit.VoltPerMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

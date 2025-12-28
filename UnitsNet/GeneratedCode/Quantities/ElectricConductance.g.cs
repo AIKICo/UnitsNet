@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -33,49 +32,116 @@ namespace UnitsNet
 {
     /// <inheritdoc />
     /// <summary>
-    ///     The electrical conductance of an electrical conductor is a measure of the easeness to pass an electric current through that conductor.
+    ///     The electrical conductance of an object is a measure of the ease with which an electric current passes. Along with susceptance, it is one of two elements of admittance. Its reciprocal quantity is electrical resistance.
     /// </summary>
     /// <remarks>
     ///     https://en.wikipedia.org/wiki/Electrical_resistance_and_conductance
     /// </remarks>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct ElectricConductance :
-        IArithmeticQuantity<ElectricConductance, ElectricConductanceUnit, double>,
+        IArithmeticQuantity<ElectricConductance, ElectricConductanceUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<ElectricConductance, ElectricConductance, double>,
+        IComparisonOperators<ElectricConductance, ElectricConductance, bool>,
+        IParsable<ElectricConductance>,
+#endif
         IComparable,
         IComparable<ElectricConductance>,
-        IConvertible,
         IEquatable<ElectricConductance>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly ElectricConductanceUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="ElectricConductance"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class ElectricConductanceInfo: QuantityInfo<ElectricConductance, ElectricConductanceUnit>
+        {
+            /// <inheritdoc />
+            public ElectricConductanceInfo(string name, ElectricConductanceUnit baseUnit, IEnumerable<IUnitDefinition<ElectricConductanceUnit>> unitMappings, ElectricConductance zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<ElectricConductance, ElectricConductanceUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public ElectricConductanceInfo(string name, ElectricConductanceUnit baseUnit, IEnumerable<IUnitDefinition<ElectricConductanceUnit>> unitMappings, ElectricConductance zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, ElectricConductance.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.ElectricConductance", typeof(ElectricConductance).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricConductanceInfo"/> class with the default settings for the ElectricConductance quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="ElectricConductanceInfo"/> class with the default settings.</returns>
+            public static ElectricConductanceInfo CreateDefault()
+            {
+                return new ElectricConductanceInfo(nameof(ElectricConductance), DefaultBaseUnit, GetDefaultMappings(), new ElectricConductance(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricConductanceInfo"/> class with the default settings for the ElectricConductance quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="ElectricConductanceInfo"/> class with the default settings.
+            /// </returns>
+            public static ElectricConductanceInfo CreateDefault(Func<IEnumerable<UnitDefinition<ElectricConductanceUnit>>, IEnumerable<IUnitDefinition<ElectricConductanceUnit>>> customizeUnits)
+            {
+                return new ElectricConductanceInfo(nameof(ElectricConductance), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new ElectricConductance(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="ElectricConductance"/> is [T^3][L^-2][M^-1][I^2].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(-2, -1, 3, 2, 0, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of ElectricConductance is Siemens. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static ElectricConductanceUnit DefaultBaseUnit { get; } = ElectricConductanceUnit.Siemens;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="ElectricConductanceUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{ElectricConductanceUnit}"/> representing the default unit mappings for ElectricConductance.</returns>
+            public static IEnumerable<UnitDefinition<ElectricConductanceUnit>> GetDefaultMappings()
+            {
+                yield return new (ElectricConductanceUnit.Gigamho, "Gigamho", "Gigamhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Gigasiemens, "Gigasiemens", "Gigasiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Microgram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricConductanceUnit.Kilomho, "Kilomho", "Kilomhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Kilosiemens, "Kilosiemens", "Kilosiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Gram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricConductanceUnit.Megamho, "Megamho", "Megamhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Megasiemens, "Megasiemens", "Megasiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Milligram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricConductanceUnit.Mho, "Mho", "Mhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Micromho, "Micromho", "Micromhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Microsiemens, "Microsiemens", "Microsiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Milliampere));
+                yield return new (ElectricConductanceUnit.Millimho, "Millimho", "Millimhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Millisiemens, "Millisiemens", "Millisiemens", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Nanomho, "Nanomho", "Nanomhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Nanosiemens, "Nanosiemens", "Nanosiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Millisecond, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricConductanceUnit.Siemens, "Siemens", "Siemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricConductanceUnit.Teramho, "Teramho", "Teramhos", BaseUnits.Undefined);
+                yield return new (ElectricConductanceUnit.Terasiemens, "Terasiemens", "Terasiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Nanogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+            }
+        }
 
         static ElectricConductance()
         {
-            BaseDimensions = new BaseDimensions(-2, -1, 3, 2, 0, 0, 0);
-            BaseUnit = ElectricConductanceUnit.Siemens;
-            Units = Enum.GetValues(typeof(ElectricConductanceUnit)).Cast<ElectricConductanceUnit>().ToArray();
-            Zero = new ElectricConductance(0, BaseUnit);
-            Info = new QuantityInfo<ElectricConductanceUnit>("ElectricConductance",
-                new UnitInfo<ElectricConductanceUnit>[]
-                {
-                    new UnitInfo<ElectricConductanceUnit>(ElectricConductanceUnit.Kilosiemens, "Kilosiemens", BaseUnits.Undefined, "ElectricConductance"),
-                    new UnitInfo<ElectricConductanceUnit>(ElectricConductanceUnit.Microsiemens, "Microsiemens", BaseUnits.Undefined, "ElectricConductance"),
-                    new UnitInfo<ElectricConductanceUnit>(ElectricConductanceUnit.Millisiemens, "Millisiemens", BaseUnits.Undefined, "ElectricConductance"),
-                    new UnitInfo<ElectricConductanceUnit>(ElectricConductanceUnit.Nanosiemens, "Nanosiemens", BaseUnits.Undefined, "ElectricConductance"),
-                    new UnitInfo<ElectricConductanceUnit>(ElectricConductanceUnit.Siemens, "Siemens", BaseUnits.Undefined, "ElectricConductance"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = ElectricConductanceInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -85,10 +151,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricConductance(double value, ElectricConductanceUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -102,13 +167,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public ElectricConductance(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -119,30 +179,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<ElectricConductanceUnit> Info { get; }
+        public static QuantityInfo<ElectricConductance, ElectricConductanceUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of ElectricConductance, which is Siemens. All conversions go via this value.
         /// </summary>
-        public static ElectricConductanceUnit BaseUnit { get; }
+        public static ElectricConductanceUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the ElectricConductance quantity.
         /// </summary>
-        public static ElectricConductanceUnit[] Units { get; }
+        public static IReadOnlyCollection<ElectricConductanceUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit Siemens.
         /// </summary>
-        public static ElectricConductance Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static ElectricConductance AdditiveIdentity => Zero;
+        public static ElectricConductance Zero => Info.Zero;
 
         #endregion
 
@@ -154,27 +211,50 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public ElectricConductanceUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<ElectricConductanceUnit> QuantityInfo => Info;
+        public QuantityInfo<ElectricConductance, ElectricConductanceUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<ElectricConductance> IQuantityOfType<ElectricConductance>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<ElectricConductanceUnit> IQuantity<ElectricConductanceUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => ElectricConductance.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
         #region Conversion Properties
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Gigamho"/>
+        /// </summary>
+        public double Gigamhos => As(ElectricConductanceUnit.Gigamho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Gigasiemens"/>
+        /// </summary>
+        public double Gigasiemens => As(ElectricConductanceUnit.Gigasiemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Kilomho"/>
+        /// </summary>
+        public double Kilomhos => As(ElectricConductanceUnit.Kilomho);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Kilosiemens"/>
@@ -182,14 +262,44 @@ namespace UnitsNet
         public double Kilosiemens => As(ElectricConductanceUnit.Kilosiemens);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Megamho"/>
+        /// </summary>
+        public double Megamhos => As(ElectricConductanceUnit.Megamho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Megasiemens"/>
+        /// </summary>
+        public double Megasiemens => As(ElectricConductanceUnit.Megasiemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Mho"/>
+        /// </summary>
+        public double Mhos => As(ElectricConductanceUnit.Mho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Micromho"/>
+        /// </summary>
+        public double Micromhos => As(ElectricConductanceUnit.Micromho);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Microsiemens"/>
         /// </summary>
         public double Microsiemens => As(ElectricConductanceUnit.Microsiemens);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Millimho"/>
+        /// </summary>
+        public double Millimhos => As(ElectricConductanceUnit.Millimho);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Millisiemens"/>
         /// </summary>
         public double Millisiemens => As(ElectricConductanceUnit.Millisiemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Nanomho"/>
+        /// </summary>
+        public double Nanomhos => As(ElectricConductanceUnit.Nanomho);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Nanosiemens"/>
@@ -200,6 +310,16 @@ namespace UnitsNet
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Siemens"/>
         /// </summary>
         public double Siemens => As(ElectricConductanceUnit.Siemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Teramho"/>
+        /// </summary>
+        public double Teramhos => As(ElectricConductanceUnit.Teramho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricConductanceUnit.Terasiemens"/>
+        /// </summary>
+        public double Terasiemens => As(ElectricConductanceUnit.Terasiemens);
 
         #endregion
 
@@ -212,19 +332,41 @@ namespace UnitsNet
         internal static void RegisterDefaultConversions(UnitConverter unitConverter)
         {
             // Register in unit converter: ElectricConductanceUnit -> BaseUnit
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Gigamho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Gigasiemens, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Kilomho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Kilosiemens, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Megamho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Megasiemens, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Mho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Micromho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Microsiemens, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Millimho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Millisiemens, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Nanomho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Nanosiemens, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Teramho, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Terasiemens, ElectricConductanceUnit.Siemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Siemens));
 
             // Register in unit converter: BaseUnit <-> BaseUnit
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Siemens, quantity => quantity);
 
             // Register in unit converter: BaseUnit -> ElectricConductanceUnit
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Gigamho, quantity => quantity.ToUnit(ElectricConductanceUnit.Gigamho));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Gigasiemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Gigasiemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Kilomho, quantity => quantity.ToUnit(ElectricConductanceUnit.Kilomho));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Kilosiemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Kilosiemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Megamho, quantity => quantity.ToUnit(ElectricConductanceUnit.Megamho));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Megasiemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Megasiemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Mho, quantity => quantity.ToUnit(ElectricConductanceUnit.Mho));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Micromho, quantity => quantity.ToUnit(ElectricConductanceUnit.Micromho));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Microsiemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Microsiemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Millimho, quantity => quantity.ToUnit(ElectricConductanceUnit.Millimho));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Millisiemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Millisiemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Nanomho, quantity => quantity.ToUnit(ElectricConductanceUnit.Nanomho));
             unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Nanosiemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Nanosiemens));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Teramho, quantity => quantity.ToUnit(ElectricConductanceUnit.Teramho));
+            unitConverter.SetConversionFunction<ElectricConductance>(ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Terasiemens, quantity => quantity.ToUnit(ElectricConductanceUnit.Terasiemens));
         }
 
         /// <summary>
@@ -245,7 +387,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(ElectricConductanceUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -253,53 +395,131 @@ namespace UnitsNet
         #region Static Factory Methods
 
         /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Gigamho"/>.
+        /// </summary>
+        public static ElectricConductance FromGigamhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Gigamho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Gigasiemens"/>.
+        /// </summary>
+        public static ElectricConductance FromGigasiemens(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Gigasiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Kilomho"/>.
+        /// </summary>
+        public static ElectricConductance FromKilomhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Kilomho);
+        }
+
+        /// <summary>
         ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Kilosiemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductance FromKilosiemens(QuantityValue kilosiemens)
+        public static ElectricConductance FromKilosiemens(double value)
         {
-            double value = (double) kilosiemens;
             return new ElectricConductance(value, ElectricConductanceUnit.Kilosiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Megamho"/>.
+        /// </summary>
+        public static ElectricConductance FromMegamhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Megamho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Megasiemens"/>.
+        /// </summary>
+        public static ElectricConductance FromMegasiemens(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Megasiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Mho"/>.
+        /// </summary>
+        public static ElectricConductance FromMhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Mho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Micromho"/>.
+        /// </summary>
+        public static ElectricConductance FromMicromhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Micromho);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Microsiemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductance FromMicrosiemens(QuantityValue microsiemens)
+        public static ElectricConductance FromMicrosiemens(double value)
         {
-            double value = (double) microsiemens;
             return new ElectricConductance(value, ElectricConductanceUnit.Microsiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Millimho"/>.
+        /// </summary>
+        public static ElectricConductance FromMillimhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Millimho);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Millisiemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductance FromMillisiemens(QuantityValue millisiemens)
+        public static ElectricConductance FromMillisiemens(double value)
         {
-            double value = (double) millisiemens;
             return new ElectricConductance(value, ElectricConductanceUnit.Millisiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Nanomho"/>.
+        /// </summary>
+        public static ElectricConductance FromNanomhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Nanomho);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Nanosiemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductance FromNanosiemens(QuantityValue nanosiemens)
+        public static ElectricConductance FromNanosiemens(double value)
         {
-            double value = (double) nanosiemens;
             return new ElectricConductance(value, ElectricConductanceUnit.Nanosiemens);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Siemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricConductance FromSiemens(QuantityValue siemens)
+        public static ElectricConductance FromSiemens(double value)
         {
-            double value = (double) siemens;
             return new ElectricConductance(value, ElectricConductanceUnit.Siemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Teramho"/>.
+        /// </summary>
+        public static ElectricConductance FromTeramhos(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Teramho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricConductance"/> from <see cref="ElectricConductanceUnit.Terasiemens"/>.
+        /// </summary>
+        public static ElectricConductance FromTerasiemens(double value)
+        {
+            return new ElectricConductance(value, ElectricConductanceUnit.Terasiemens);
         }
 
         /// <summary>
@@ -308,9 +528,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>ElectricConductance unit value.</returns>
-        public static ElectricConductance From(QuantityValue value, ElectricConductanceUnit fromUnit)
+        public static ElectricConductance From(double value, ElectricConductanceUnit fromUnit)
         {
-            return new ElectricConductance((double)value, fromUnit);
+            return new ElectricConductance(value, fromUnit);
         }
 
         #endregion
@@ -369,7 +589,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static ElectricConductance Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<ElectricConductance, ElectricConductanceUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<ElectricConductance, ElectricConductanceUnit>(
                 str,
                 provider,
                 From);
@@ -383,7 +603,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out ElectricConductance result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out ElectricConductance result)
         {
             return TryParse(str, null, out result);
         }
@@ -398,9 +618,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out ElectricConductance result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricConductance result)
         {
-            return QuantityParser.Default.TryParse<ElectricConductance, ElectricConductanceUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<ElectricConductance, ElectricConductanceUnit>(
                 str,
                 provider,
                 From,
@@ -433,11 +653,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static ElectricConductanceUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<ElectricConductanceUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.ElectricConductanceUnit)"/>
-        public static bool TryParseUnit(string str, out ElectricConductanceUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out ElectricConductanceUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -452,9 +672,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out ElectricConductanceUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricConductanceUnit unit)
         {
-            return UnitParser.Default.TryParse<ElectricConductanceUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -570,6 +790,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current ElectricConductance.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="ElectricConductance"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -606,88 +835,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another ElectricConductance within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(ElectricConductance other, ElectricConductance tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(ElectricConductance other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is ElectricConductance otherTyped
-                   && (tolerance is ElectricConductance toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'ElectricConductance'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(ElectricConductance other, ElectricConductance tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current ElectricConductance.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -704,37 +851,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is ElectricConductanceUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductanceUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is ElectricConductanceUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductanceUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<ElectricConductanceUnit>());
         }
 
         /// <summary>
@@ -774,7 +894,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -795,16 +915,38 @@ namespace UnitsNet
             ElectricConductance? convertedOrNull = (Unit, unit) switch
             {
                 // ElectricConductanceUnit -> BaseUnit
+                (ElectricConductanceUnit.Gigamho, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e9d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Gigasiemens, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e9d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Kilomho, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e3d, ElectricConductanceUnit.Siemens),
                 (ElectricConductanceUnit.Kilosiemens, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e3d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Megamho, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e6d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Megasiemens, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e6d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Mho, ElectricConductanceUnit.Siemens) => new ElectricConductance(_value, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Micromho, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e-6d, ElectricConductanceUnit.Siemens),
                 (ElectricConductanceUnit.Microsiemens, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e-6d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Millimho, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e-3d, ElectricConductanceUnit.Siemens),
                 (ElectricConductanceUnit.Millisiemens, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e-3d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Nanomho, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e-9d, ElectricConductanceUnit.Siemens),
                 (ElectricConductanceUnit.Nanosiemens, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e-9d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Teramho, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e12d, ElectricConductanceUnit.Siemens),
+                (ElectricConductanceUnit.Terasiemens, ElectricConductanceUnit.Siemens) => new ElectricConductance((_value) * 1e12d, ElectricConductanceUnit.Siemens),
 
                 // BaseUnit -> ElectricConductanceUnit
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Gigamho) => new ElectricConductance((_value) / 1e9d, ElectricConductanceUnit.Gigamho),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Gigasiemens) => new ElectricConductance((_value) / 1e9d, ElectricConductanceUnit.Gigasiemens),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Kilomho) => new ElectricConductance((_value) / 1e3d, ElectricConductanceUnit.Kilomho),
                 (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Kilosiemens) => new ElectricConductance((_value) / 1e3d, ElectricConductanceUnit.Kilosiemens),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Megamho) => new ElectricConductance((_value) / 1e6d, ElectricConductanceUnit.Megamho),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Megasiemens) => new ElectricConductance((_value) / 1e6d, ElectricConductanceUnit.Megasiemens),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Mho) => new ElectricConductance(_value, ElectricConductanceUnit.Mho),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Micromho) => new ElectricConductance((_value) / 1e-6d, ElectricConductanceUnit.Micromho),
                 (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Microsiemens) => new ElectricConductance((_value) / 1e-6d, ElectricConductanceUnit.Microsiemens),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Millimho) => new ElectricConductance((_value) / 1e-3d, ElectricConductanceUnit.Millimho),
                 (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Millisiemens) => new ElectricConductance((_value) / 1e-3d, ElectricConductanceUnit.Millisiemens),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Nanomho) => new ElectricConductance((_value) / 1e-9d, ElectricConductanceUnit.Nanomho),
                 (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Nanosiemens) => new ElectricConductance((_value) / 1e-9d, ElectricConductanceUnit.Nanosiemens),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Teramho) => new ElectricConductance((_value) / 1e12d, ElectricConductanceUnit.Teramho),
+                (ElectricConductanceUnit.Siemens, ElectricConductanceUnit.Terasiemens) => new ElectricConductance((_value) / 1e12d, ElectricConductanceUnit.Terasiemens),
 
                 _ => null
             };
@@ -819,6 +961,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not ElectricConductanceUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductanceUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -828,41 +980,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public ElectricConductance ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<ElectricConductanceUnit> IQuantity<ElectricConductanceUnit>.ToUnit(ElectricConductanceUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<ElectricConductanceUnit> IQuantity<ElectricConductanceUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not ElectricConductanceUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricConductanceUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -874,140 +995,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<ElectricConductanceUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricConductance)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricConductance)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricConductance)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(ElectricConductance))
-                return this;
-            else if (conversionType == typeof(ElectricConductanceUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return ElectricConductance.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return ElectricConductance.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(ElectricConductance)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

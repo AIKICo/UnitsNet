@@ -1,12 +1,7 @@
 ﻿// Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using UnitsNet.Units;
-using Xunit;
 using static System.Globalization.CultureInfo;
 
 namespace UnitsNet.Tests
@@ -20,19 +15,34 @@ namespace UnitsNet.Tests
         [InlineData(double.NaN)]
         [InlineData(double.PositiveInfinity)]
         [InlineData(double.NegativeInfinity)]
-        public void From_GivenNaNOrInfinity_ThrowsArgumentException(double value)
+        public void From_GivenNaNOrInfinity_DoesNotThrowArgumentException(double value)
         {
-            Assert.Throws<ArgumentException>(() => Quantity.From(value, LengthUnit.Centimeter));
+            var exception = Record.Exception(() => Quantity.From(value, LengthUnit.Centimeter));
+
+            Assert.Null(exception);
         }
 
         [Theory]
         [InlineData(double.NaN)]
         [InlineData(double.PositiveInfinity)]
         [InlineData(double.NegativeInfinity)]
-        public void TryFrom_GivenNaNOrInfinity_ReturnsFalseAndNullQuantity(double value)
+        public void TryFrom_GivenNaNOrInfinity_ReturnsTrueAndQuantity(double value)
         {
-            Assert.False(Quantity.TryFrom(value, LengthUnit.Centimeter, out IQuantity? parsedLength));
-            Assert.Null(parsedLength);
+            Assert.True(Quantity.TryFrom(value, LengthUnit.Centimeter, out IQuantity? parsedLength));
+            Assert.NotNull(parsedLength);
+        }
+
+        [Fact]
+        public void TryFrom_GivenNullUnit_ReturnsFalse()
+        {
+            Enum? nullUnit = null;
+            Assert.False(Quantity.TryFrom(1, nullUnit, out IQuantity? _));
+        }
+
+        [Fact]
+        public void TryFrom_GivenUnknownUnitType_ReturnsFalse()
+        {
+            Assert.False(Quantity.TryFrom(1, ConsoleColor.Red, out IQuantity? _));
         }
 
         [Fact]
@@ -66,7 +76,7 @@ namespace UnitsNet.Tests
             var infos = Quantity.Infos;
 
             Assert.Superset(knownQuantityInfos.ToHashSet(), infos.ToHashSet());
-            Assert.Equal(QuantityCount, infos.Length);
+            Assert.Equal(QuantityCount, infos.Count);
         }
 
         [Fact]
@@ -89,9 +99,9 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void GetUnitInfo_ThrowsKeyNotFoundExceptionIfNotFound()
+        public void GetUnitInfo_ThrowsUnitNotFoundExceptionIfNotFound()
         {
-            Assert.Throws<KeyNotFoundException>(() => Quantity.GetUnitInfo(ConsoleColor.Red));
+            Assert.Throws<UnitNotFoundException>(() => Quantity.GetUnitInfo(ConsoleColor.Red));
         }
 
         [Fact]
@@ -110,6 +120,41 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
+        public void Parse_GivenInvalidType_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Quantity.Parse(typeof(bool), "3 cm"));
+        }
+
+        [Theory]
+        [InlineData(123.45, "G", LengthUnit.Centimeter)]
+        [InlineData(1.234e-8, "E", PressureUnit.Millibar)]
+        public void Parse_WithDefaultCulture_ReturnsQuantity(double value, string format, Enum unit)
+        {
+            IQuantity expectedQuantity = Quantity.From(value, unit);
+            var valueAsString = expectedQuantity.ToString(format, null);
+            Type targetType = expectedQuantity.QuantityInfo.QuantityType;
+
+            IQuantity parsedQuantity = Quantity.Parse(targetType, valueAsString);
+
+            Assert.Equal(expectedQuantity, parsedQuantity);
+        }
+
+        [Theory]
+        [InlineData(123.45, "G", LengthUnit.Centimeter)]
+        [InlineData(1.234e-8, "E", PressureUnit.Millibar)]
+        public void TryParse_WithDefaultCulture_ReturnsQuantity(double value, string format, Enum unit)
+        {
+            IQuantity expectedQuantity = Quantity.From(value, unit);
+            var valueAsString = expectedQuantity.ToString(format, null);
+            Type targetType = expectedQuantity.QuantityInfo.QuantityType;
+
+            var success = Quantity.TryParse(targetType, valueAsString, out IQuantity? parsedQuantity);
+
+            Assert.True(success);
+            Assert.Equal(expectedQuantity, parsedQuantity);
+        }
+
+        [Fact]
         public void QuantityNames_ReturnsKnownNames()
         {
             var knownNames = new[] {"Length", "Force", "Mass"};
@@ -117,7 +162,7 @@ namespace UnitsNet.Tests
             var names = Quantity.Names;
 
             Assert.Superset(knownNames.ToHashSet(), names.ToHashSet());
-            Assert.Equal(QuantityCount, names.Length);
+            Assert.Equal(QuantityCount, names.Count);
         }
 
         [Fact]
@@ -136,7 +181,7 @@ namespace UnitsNet.Tests
         [Fact]
         public void TryParse_GivenInvalidQuantityType_ReturnsFalseAndNullQuantity()
         {
-            Assert.False(Quantity.TryParse(InvariantCulture, typeof(DummyIQuantity), "3.0 cm", out IQuantity? parsedLength));
+            Assert.False(Quantity.TryParse(InvariantCulture, typeof(DateTime), "3.0 cm", out IQuantity? parsedLength));
             Assert.Null(parsedLength);
         }
 
@@ -171,9 +216,31 @@ namespace UnitsNet.Tests
         {
             var knownQuantities = new List<QuantityInfo> { Length.Info, Force.Info, Mass.Info };
 
-            ICollection<QuantityInfo> types = Quantity.ByName.Values;
+            IEnumerable<QuantityInfo> types = Quantity.ByName.Values;
 
             Assert.Superset(knownQuantities.ToHashSet(), types.ToHashSet());
+        }
+
+        [Theory]
+        [InlineData(1, 0, 0, 0, 0, 0, 0)]
+        [InlineData(0, 1, 0, 0, 0, 0, 0)]
+        [InlineData(0, 0, 1, 0, 0, 0, 0)]
+        [InlineData(0, 0, 0, 1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0, 1, 0, 0)]
+        [InlineData(0, 0, 0, 0, 0, 1, 0)]
+        [InlineData(0, 0, 0, 0, 0, 0, 1)]
+        [InlineData(0, 0, 0, 0, 0, 0, 0)]
+        public void GetQuantitiesWithBaseDimensions_ReturnsTheExpectedQuantityInfos(int length, int mass, int time, int current, int temperature, int amount, int luminousIntensity)
+        {
+            var baseDimensions = new BaseDimensions(length, mass, time, current, temperature, amount, luminousIntensity);
+            Assert.All(Quantity.GetQuantitiesWithBaseDimensions(baseDimensions), info => Assert.True(info.BaseDimensions == baseDimensions));
+            Assert.NotEmpty(Quantity.GetQuantitiesWithBaseDimensions(baseDimensions));
+        }
+
+        [Fact]
+        public void GetQuantitiesWithBaseDimensions_WithNull_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => Quantity.GetQuantitiesWithBaseDimensions(null!));
         }
     }
 }

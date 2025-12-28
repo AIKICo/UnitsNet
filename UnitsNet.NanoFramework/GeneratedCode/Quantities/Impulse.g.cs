@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Impulse(double value, ImpulseUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Impulse, which is Second. All conversions go via this value.
         /// </summary>
         public static ImpulseUnit BaseUnit { get; } = ImpulseUnit.NewtonSecond;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Impulse.
         /// </summary>
         public static Impulse MaxValue { get; } = new Impulse(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Impulse.
         /// </summary>
         public static Impulse MinValue { get; } = new Impulse(double.MinValue, BaseUnit);
 
@@ -151,79 +150,66 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.CentinewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromCentinewtonSeconds(double centinewtonseconds) => new Impulse(centinewtonseconds, ImpulseUnit.CentinewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.DecanewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromDecanewtonSeconds(double decanewtonseconds) => new Impulse(decanewtonseconds, ImpulseUnit.DecanewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.DecinewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromDecinewtonSeconds(double decinewtonseconds) => new Impulse(decinewtonseconds, ImpulseUnit.DecinewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.KilogramMeterPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromKilogramMetersPerSecond(double kilogrammeterspersecond) => new Impulse(kilogrammeterspersecond, ImpulseUnit.KilogramMeterPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.KilonewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromKilonewtonSeconds(double kilonewtonseconds) => new Impulse(kilonewtonseconds, ImpulseUnit.KilonewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.MeganewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromMeganewtonSeconds(double meganewtonseconds) => new Impulse(meganewtonseconds, ImpulseUnit.MeganewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.MicronewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromMicronewtonSeconds(double micronewtonseconds) => new Impulse(micronewtonseconds, ImpulseUnit.MicronewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.MillinewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromMillinewtonSeconds(double millinewtonseconds) => new Impulse(millinewtonseconds, ImpulseUnit.MillinewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.NanonewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromNanonewtonSeconds(double nanonewtonseconds) => new Impulse(nanonewtonseconds, ImpulseUnit.NanonewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.NewtonSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromNewtonSeconds(double newtonseconds) => new Impulse(newtonseconds, ImpulseUnit.NewtonSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.PoundFootPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromPoundFeetPerSecond(double poundfeetpersecond) => new Impulse(poundfeetpersecond, ImpulseUnit.PoundFootPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.PoundForceSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromPoundForceSeconds(double poundforceseconds) => new Impulse(poundforceseconds, ImpulseUnit.PoundForceSecond);
 
         /// <summary>
         ///     Creates a <see cref="Impulse"/> from <see cref="ImpulseUnit.SlugFootPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Impulse FromSlugFeetPerSecond(double slugfeetpersecond) => new Impulse(slugfeetpersecond, ImpulseUnit.SlugFootPerSecond);
 
         /// <summary>
@@ -248,9 +234,9 @@ namespace UnitsNet
                 public double As(ImpulseUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Impulse to another Impulse with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Impulse with the specified unit.</returns>
                 public Impulse ToUnit(ImpulseUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -276,10 +262,10 @@ namespace UnitsNet
                         ImpulseUnit.MillinewtonSecond => (_value) * 1e-3d,
                         ImpulseUnit.NanonewtonSecond => (_value) * 1e-9d,
                         ImpulseUnit.NewtonSecond => _value,
-                        ImpulseUnit.PoundFootPerSecond => _value / 7.230657989877,
-                        ImpulseUnit.PoundForceSecond => _value / 0.2248089430997,
-                        ImpulseUnit.SlugFootPerSecond => _value / 0.224735720691,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        ImpulseUnit.PoundFootPerSecond => _value * (0.45359237 * 0.3048),
+                        ImpulseUnit.PoundForceSecond => _value * 0.45359237 * 9.80665,
+                        ImpulseUnit.SlugFootPerSecond => _value * (0.45359237 * 9.80665),
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -302,10 +288,10 @@ namespace UnitsNet
                         ImpulseUnit.MillinewtonSecond => (baseUnitValue) / 1e-3d,
                         ImpulseUnit.NanonewtonSecond => (baseUnitValue) / 1e-9d,
                         ImpulseUnit.NewtonSecond => baseUnitValue,
-                        ImpulseUnit.PoundFootPerSecond => baseUnitValue * 7.230657989877,
-                        ImpulseUnit.PoundForceSecond => baseUnitValue * 0.2248089430997,
-                        ImpulseUnit.SlugFootPerSecond => baseUnitValue * 0.224735720691,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        ImpulseUnit.PoundFootPerSecond => baseUnitValue / (0.45359237 * 0.3048),
+                        ImpulseUnit.PoundForceSecond => baseUnitValue / (0.45359237 * 9.80665),
+                        ImpulseUnit.SlugFootPerSecond => baseUnitValue / (0.45359237 * 9.80665),
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

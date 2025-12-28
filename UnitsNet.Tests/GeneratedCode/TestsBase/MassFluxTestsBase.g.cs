@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -111,16 +113,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MassFlux(double.PositiveInfinity, MassFluxUnit.KilogramPerSecondPerSquareMeter));
-            Assert.Throws<ArgumentException>(() => new MassFlux(double.NegativeInfinity, MassFluxUnit.KilogramPerSecondPerSquareMeter));
+            var exception1 = Record.Exception(() => new MassFlux(double.PositiveInfinity, MassFluxUnit.KilogramPerSecondPerSquareMeter));
+            var exception2 = Record.Exception(() => new MassFlux(double.NegativeInfinity, MassFluxUnit.KilogramPerSecondPerSquareMeter));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MassFlux(double.NaN, MassFluxUnit.KilogramPerSecondPerSquareMeter));
+            var exception = Record.Exception(() => new MassFlux(double.NaN, MassFluxUnit.KilogramPerSecondPerSquareMeter));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -130,32 +137,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new MassFlux(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (MassFlux) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new MassFlux(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new MassFlux(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void MassFlux_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            MassFluxUnit[] unitsOrderedByName = EnumHelper.GetValues<MassFluxUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new MassFlux(1, MassFluxUnit.KilogramPerSecondPerSquareMeter);
 
-            QuantityInfo<MassFluxUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<MassFlux, MassFluxUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(MassFlux.Zero, quantityInfo.Zero);
             Assert.Equal("MassFlux", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<MassFluxUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(MassFlux.Zero, quantityInfo.Zero);
+            Assert.Equal(MassFlux.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(MassFlux.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<MassFluxUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -179,67 +190,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = MassFlux.From(1, MassFluxUnit.GramPerHourPerSquareCentimeter);
-            AssertEx.EqualTolerance(1, quantity00.GramsPerHourPerSquareCentimeter, GramsPerHourPerSquareCentimeterTolerance);
-            Assert.Equal(MassFluxUnit.GramPerHourPerSquareCentimeter, quantity00.Unit);
-
-            var quantity01 = MassFlux.From(1, MassFluxUnit.GramPerHourPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity01.GramsPerHourPerSquareMeter, GramsPerHourPerSquareMeterTolerance);
-            Assert.Equal(MassFluxUnit.GramPerHourPerSquareMeter, quantity01.Unit);
-
-            var quantity02 = MassFlux.From(1, MassFluxUnit.GramPerHourPerSquareMillimeter);
-            AssertEx.EqualTolerance(1, quantity02.GramsPerHourPerSquareMillimeter, GramsPerHourPerSquareMillimeterTolerance);
-            Assert.Equal(MassFluxUnit.GramPerHourPerSquareMillimeter, quantity02.Unit);
-
-            var quantity03 = MassFlux.From(1, MassFluxUnit.GramPerSecondPerSquareCentimeter);
-            AssertEx.EqualTolerance(1, quantity03.GramsPerSecondPerSquareCentimeter, GramsPerSecondPerSquareCentimeterTolerance);
-            Assert.Equal(MassFluxUnit.GramPerSecondPerSquareCentimeter, quantity03.Unit);
-
-            var quantity04 = MassFlux.From(1, MassFluxUnit.GramPerSecondPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity04.GramsPerSecondPerSquareMeter, GramsPerSecondPerSquareMeterTolerance);
-            Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMeter, quantity04.Unit);
-
-            var quantity05 = MassFlux.From(1, MassFluxUnit.GramPerSecondPerSquareMillimeter);
-            AssertEx.EqualTolerance(1, quantity05.GramsPerSecondPerSquareMillimeter, GramsPerSecondPerSquareMillimeterTolerance);
-            Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMillimeter, quantity05.Unit);
-
-            var quantity06 = MassFlux.From(1, MassFluxUnit.KilogramPerHourPerSquareCentimeter);
-            AssertEx.EqualTolerance(1, quantity06.KilogramsPerHourPerSquareCentimeter, KilogramsPerHourPerSquareCentimeterTolerance);
-            Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareCentimeter, quantity06.Unit);
-
-            var quantity07 = MassFlux.From(1, MassFluxUnit.KilogramPerHourPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity07.KilogramsPerHourPerSquareMeter, KilogramsPerHourPerSquareMeterTolerance);
-            Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMeter, quantity07.Unit);
-
-            var quantity08 = MassFlux.From(1, MassFluxUnit.KilogramPerHourPerSquareMillimeter);
-            AssertEx.EqualTolerance(1, quantity08.KilogramsPerHourPerSquareMillimeter, KilogramsPerHourPerSquareMillimeterTolerance);
-            Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMillimeter, quantity08.Unit);
-
-            var quantity09 = MassFlux.From(1, MassFluxUnit.KilogramPerSecondPerSquareCentimeter);
-            AssertEx.EqualTolerance(1, quantity09.KilogramsPerSecondPerSquareCentimeter, KilogramsPerSecondPerSquareCentimeterTolerance);
-            Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareCentimeter, quantity09.Unit);
-
-            var quantity10 = MassFlux.From(1, MassFluxUnit.KilogramPerSecondPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity10.KilogramsPerSecondPerSquareMeter, KilogramsPerSecondPerSquareMeterTolerance);
-            Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMeter, quantity10.Unit);
-
-            var quantity11 = MassFlux.From(1, MassFluxUnit.KilogramPerSecondPerSquareMillimeter);
-            AssertEx.EqualTolerance(1, quantity11.KilogramsPerSecondPerSquareMillimeter, KilogramsPerSecondPerSquareMillimeterTolerance);
-            Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMillimeter, quantity11.Unit);
-
+            Assert.All(EnumHelper.GetValues<MassFluxUnit>(), unit =>
+            {
+                var quantity = MassFlux.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromKilogramsPerSecondPerSquareMeter_WithInfinityValue_ThrowsArgumentException()
+        public void FromKilogramsPerSecondPerSquareMeter_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => MassFlux.FromKilogramsPerSecondPerSquareMeter(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => MassFlux.FromKilogramsPerSecondPerSquareMeter(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => MassFlux.FromKilogramsPerSecondPerSquareMeter(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => MassFlux.FromKilogramsPerSecondPerSquareMeter(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromKilogramsPerSecondPerSquareMeter_WithNanValue_ThrowsArgumentException()
+        public void FromKilogramsPerSecondPerSquareMeter_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => MassFlux.FromKilogramsPerSecondPerSquareMeter(double.NaN));
+            var exception = Record.Exception(() => MassFlux.FromKilogramsPerSecondPerSquareMeter(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -261,328 +235,302 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = MassFlux.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new MassFlux(value: 1, unit: MassFlux.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(MassFlux.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = MassFlux.Parse("1 g·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerHourPerSquareCentimeter, GramsPerHourPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 g·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerHourPerSquareMeter, GramsPerHourPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 g·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerHourPerSquareMillimeter, GramsPerHourPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 g·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerSecondPerSquareCentimeter, GramsPerSecondPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 g·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerSecondPerSquareMeter, GramsPerSecondPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 g·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerSecondPerSquareMillimeter, GramsPerSecondPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 kg·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerHourPerSquareCentimeter, KilogramsPerHourPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 kg·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerHourPerSquareMeter, KilogramsPerHourPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 kg·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerHourPerSquareMillimeter, KilogramsPerHourPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 kg·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerSecondPerSquareCentimeter, KilogramsPerSecondPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 kg·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerSecondPerSquareMeter, KilogramsPerSecondPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFlux.Parse("1 kg·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerSecondPerSquareMillimeter, KilogramsPerSecondPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMillimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new MassFlux(value: 1, unit: MassFlux.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(MassFlux.TryParse("1 g·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerHourPerSquareCentimeter, GramsPerHourPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 g·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerHourPerSquareMeter, GramsPerHourPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 g·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerHourPerSquareMillimeter, GramsPerHourPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 g·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerSecondPerSquareCentimeter, GramsPerSecondPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 g·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerSecondPerSquareMeter, GramsPerSecondPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 g·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerSecondPerSquareMillimeter, GramsPerSecondPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 kg·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerHourPerSquareCentimeter, KilogramsPerHourPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 kg·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerHourPerSquareMeter, KilogramsPerHourPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 kg·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerHourPerSquareMillimeter, KilogramsPerHourPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMillimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 kg·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerSecondPerSquareCentimeter, KilogramsPerSecondPerSquareCentimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 kg·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerSecondPerSquareMeter, KilogramsPerSecondPerSquareMeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFlux.TryParse("1 kg·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerSecondPerSquareMillimeter, KilogramsPerSecondPerSquareMillimeterTolerance);
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMillimeter, parsed.Unit);
-            }
-
+            var quantity = new MassFlux(value: 1, unit: MassFlux.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("g·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new MassFlux(value: 1, unit: MassFlux.BaseUnit);
+            var expectedUnit = MassFlux.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("g·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            MassFlux convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("g·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("g·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("g·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("g·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("kg·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("kg·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("kg·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("kg·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("kg·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFlux.ParseUnit("kg·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMillimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(MassFlux.TryParseUnit("g·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareCentimeter, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new MassFlux(value: 1, unit: MassFlux.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("g·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMeter, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new MassFlux(value: 1, unit: MassFlux.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("g·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.GramPerHourPerSquareMillimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter, 4.2)]
+        public void Parse(string culture, string quantityString, MassFluxUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = MassFlux.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("g·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter, 4.2)]
+        public void TryParse(string culture, string quantityString, MassFluxUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(MassFlux.TryParse(quantityString, out MassFlux parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("g·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MassFluxUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            MassFluxUnit parsedUnit = MassFlux.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("g·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.GramPerSecondPerSquareMillimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MassFluxUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            MassFluxUnit parsedUnit = MassFlux.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("kg·h⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("en-US", "g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("en-US", "kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("en-US", "kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, MassFluxUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            MassFluxUnit parsedUnit = MassFlux.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("kg·h⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("en-US", "g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("en-US", "kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("en-US", "kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, MassFluxUnit expectedUnit)
+        {
+            MassFluxUnit parsedUnit = MassFlux.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("kg·h⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.KilogramPerHourPerSquareMillimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MassFluxUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(MassFlux.TryParseUnit(abbreviation, out MassFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("kg·s⁻¹·cm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MassFluxUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(MassFlux.TryParseUnit(abbreviation, out MassFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("kg·s⁻¹·m⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("en-US", "g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("en-US", "kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("en-US", "kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, MassFluxUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(MassFlux.TryParseUnit(abbreviation, out MassFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFlux.TryParseUnit("kg·s⁻¹·mm⁻²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFluxUnit.KilogramPerSecondPerSquareMillimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "g·h⁻¹·cm⁻²", MassFluxUnit.GramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "g·h⁻¹·m⁻²", MassFluxUnit.GramPerHourPerSquareMeter)]
+        [InlineData("en-US", "g·h⁻¹·mm⁻²", MassFluxUnit.GramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "g·s⁻¹·cm⁻²", MassFluxUnit.GramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "g·s⁻¹·m⁻²", MassFluxUnit.GramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "g·s⁻¹·mm⁻²", MassFluxUnit.GramPerSecondPerSquareMillimeter)]
+        [InlineData("en-US", "kg·h⁻¹·cm⁻²", MassFluxUnit.KilogramPerHourPerSquareCentimeter)]
+        [InlineData("en-US", "kg·h⁻¹·m⁻²", MassFluxUnit.KilogramPerHourPerSquareMeter)]
+        [InlineData("en-US", "kg·h⁻¹·mm⁻²", MassFluxUnit.KilogramPerHourPerSquareMillimeter)]
+        [InlineData("en-US", "kg·s⁻¹·cm⁻²", MassFluxUnit.KilogramPerSecondPerSquareCentimeter)]
+        [InlineData("en-US", "kg·s⁻¹·m⁻²", MassFluxUnit.KilogramPerSecondPerSquareMeter)]
+        [InlineData("en-US", "kg·s⁻¹·mm⁻²", MassFluxUnit.KilogramPerSecondPerSquareMillimeter)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, MassFluxUnit expectedUnit)
+        {
+            Assert.True(MassFlux.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out MassFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
+        [Theory]
+        [InlineData("en-US", MassFluxUnit.GramPerHourPerSquareCentimeter, "g·h⁻¹·cm⁻²")]
+        [InlineData("en-US", MassFluxUnit.GramPerHourPerSquareMeter, "g·h⁻¹·m⁻²")]
+        [InlineData("en-US", MassFluxUnit.GramPerHourPerSquareMillimeter, "g·h⁻¹·mm⁻²")]
+        [InlineData("en-US", MassFluxUnit.GramPerSecondPerSquareCentimeter, "g·s⁻¹·cm⁻²")]
+        [InlineData("en-US", MassFluxUnit.GramPerSecondPerSquareMeter, "g·s⁻¹·m⁻²")]
+        [InlineData("en-US", MassFluxUnit.GramPerSecondPerSquareMillimeter, "g·s⁻¹·mm⁻²")]
+        [InlineData("en-US", MassFluxUnit.KilogramPerHourPerSquareCentimeter, "kg·h⁻¹·cm⁻²")]
+        [InlineData("en-US", MassFluxUnit.KilogramPerHourPerSquareMeter, "kg·h⁻¹·m⁻²")]
+        [InlineData("en-US", MassFluxUnit.KilogramPerHourPerSquareMillimeter, "kg·h⁻¹·mm⁻²")]
+        [InlineData("en-US", MassFluxUnit.KilogramPerSecondPerSquareCentimeter, "kg·s⁻¹·cm⁻²")]
+        [InlineData("en-US", MassFluxUnit.KilogramPerSecondPerSquareMeter, "kg·s⁻¹·m⁻²")]
+        [InlineData("en-US", MassFluxUnit.KilogramPerSecondPerSquareMillimeter, "kg·s⁻¹·mm⁻²")]
+        public void GetAbbreviationForCulture(string culture, MassFluxUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = MassFlux.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(MassFlux.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = MassFlux.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -610,12 +558,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(MassFluxUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = MassFlux.Units.First(u => u != MassFlux.BaseUnit);
-
-            var quantity = MassFlux.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(MassFlux.Units.Where(u => u != MassFlux.BaseUnit), fromUnit =>
+            {
+                var quantity = MassFlux.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -625,6 +573,25 @@ namespace UnitsNet.Tests
             var quantity = default(MassFlux);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(MassFluxUnit unit)
+        {
+            var quantity = MassFlux.From(3, MassFlux.BaseUnit);
+            MassFlux expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<MassFluxUnit> quantityToConvert = quantity;
+                IQuantity<MassFluxUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -740,21 +707,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = MassFlux.FromKilogramsPerSecondPerSquareMeter(1);
-            Assert.True(v.Equals(MassFlux.FromKilogramsPerSecondPerSquareMeter(1), KilogramsPerSecondPerSquareMeterTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(MassFlux.Zero, KilogramsPerSecondPerSquareMeterTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = MassFlux.FromKilogramsPerSecondPerSquareMeter(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(MassFlux.FromKilogramsPerSecondPerSquareMeter(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             MassFlux kilogrampersecondpersquaremeter = MassFlux.FromKilogramsPerSecondPerSquareMeter(1);
@@ -768,13 +720,39 @@ namespace UnitsNet.Tests
             Assert.False(kilogrampersecondpersquaremeter.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(firstValue);
+            var otherQuantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(secondValue);
+            MassFlux maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, MassFlux.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1);
+            var negativeTolerance = MassFlux.FromKilogramsPerSecondPerSquareMeter(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(MassFluxUnit)).Cast<MassFluxUnit>();
+            var units = Enum.GetValues<MassFluxUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -787,26 +765,19 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 g·h⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.GramPerHourPerSquareCentimeter).ToString());
-                Assert.Equal("1 g·h⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.GramPerHourPerSquareMeter).ToString());
-                Assert.Equal("1 g·h⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.GramPerHourPerSquareMillimeter).ToString());
-                Assert.Equal("1 g·s⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.GramPerSecondPerSquareCentimeter).ToString());
-                Assert.Equal("1 g·s⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.GramPerSecondPerSquareMeter).ToString());
-                Assert.Equal("1 g·s⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.GramPerSecondPerSquareMillimeter).ToString());
-                Assert.Equal("1 kg·h⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerHourPerSquareCentimeter).ToString());
-                Assert.Equal("1 kg·h⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.KilogramPerHourPerSquareMeter).ToString());
-                Assert.Equal("1 kg·h⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerHourPerSquareMillimeter).ToString());
-                Assert.Equal("1 kg·s⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerSecondPerSquareCentimeter).ToString());
-                Assert.Equal("1 kg·s⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString());
-                Assert.Equal("1 kg·s⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerSecondPerSquareMillimeter).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 g·h⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.GramPerHourPerSquareCentimeter).ToString());
+            Assert.Equal("1 g·h⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.GramPerHourPerSquareMeter).ToString());
+            Assert.Equal("1 g·h⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.GramPerHourPerSquareMillimeter).ToString());
+            Assert.Equal("1 g·s⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.GramPerSecondPerSquareCentimeter).ToString());
+            Assert.Equal("1 g·s⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.GramPerSecondPerSquareMeter).ToString());
+            Assert.Equal("1 g·s⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.GramPerSecondPerSquareMillimeter).ToString());
+            Assert.Equal("1 kg·h⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerHourPerSquareCentimeter).ToString());
+            Assert.Equal("1 kg·h⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.KilogramPerHourPerSquareMeter).ToString());
+            Assert.Equal("1 kg·h⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerHourPerSquareMillimeter).ToString());
+            Assert.Equal("1 kg·s⁻¹·cm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerSecondPerSquareCentimeter).ToString());
+            Assert.Equal("1 kg·s⁻¹·m⁻²", new MassFlux(1, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString());
+            Assert.Equal("1 kg·s⁻¹·mm⁻²", new MassFlux(1, MassFluxUnit.KilogramPerSecondPerSquareMillimeter).ToString());
         }
 
         [Fact]
@@ -832,19 +803,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s1"));
-                Assert.Equal("0.12 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s2"));
-                Assert.Equal("0.123 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s3"));
-                Assert.Equal("0.1235 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s1"));
+            Assert.Equal("0.12 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s2"));
+            Assert.Equal("0.123 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s3"));
+            Assert.Equal("0.1235 kg·s⁻¹·m⁻²", new MassFlux(0.123456, MassFluxUnit.KilogramPerSecondPerSquareMeter).ToString("s4"));
         }
 
         [Fact]
@@ -867,7 +830,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -880,150 +843,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(MassFlux)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(MassFluxUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal(MassFlux.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal(MassFlux.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = MassFlux.FromKilogramsPerSecondPerSquareMeter(1.0);
-            Assert.Equal(new {MassFlux.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

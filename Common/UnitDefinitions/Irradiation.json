@@ -11,6 +11,10 @@
     {
       "SingularName": "JoulePerSquareMeter",
       "PluralName": "JoulesPerSquareMeter",
+      "BaseUnits": {
+        "M": "Kilogram",
+        "T": "Second"
+      },
       "FromUnitToBaseFunc": "{x}",
       "FromBaseToUnitFunc": "{x}",
       "Prefixes": [ "Kilo" ],
@@ -56,6 +60,19 @@
         {
           "Culture": "en-US",
           "Abbreviations": [ "Wh/m²" ]
+        }
+      ]
+    },
+    {
+      "SingularName": "BtuPerSquareFoot",
+      "PluralName": "BtusPerSquareFoot",
+      "FromUnitToBaseFunc": "{x} * 1055.05585262 / 9.290304e-2",
+      "FromBaseToUnitFunc": "{x} * 9.290304e-2 / 1055.05585262",
+      "Prefixes": [ "Kilo" ],
+      "Localization": [
+        {
+          "Culture": "en-US",
+          "Abbreviations": [ "Btu/ft²" ]
         }
       ]
     }

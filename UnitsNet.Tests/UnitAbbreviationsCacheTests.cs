@@ -3,211 +3,92 @@
 
 using System;
 using System.Globalization;
+using System.Linq;
 using UnitsNet.Tests.CustomQuantities;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Units;
 using Xunit;
 
 namespace UnitsNet.Tests
 {
-    [Collection(nameof(UnitAbbreviationsCacheFixture))]
+    // Disable parallelization due to manipulating global state, like UnitsNetSetup.Default.UnitAbbreviations.MapUnitToDefaultAbbreviation().
+    [Collection(nameof(DisableParallelizationCollectionFixture))]
     public class UnitAbbreviationsCacheTests
     {
-        private const string AmericanCultureName = "en-US";
-        private const string RussianCultureName = "ru-RU";
-        private const string NorwegianCultureName = "nb-NO";
-
-        private static readonly IFormatProvider AmericanCulture = CultureInfo.GetCultureInfo(AmericanCultureName);
-        private static readonly IFormatProvider NorwegianCulture = CultureInfo.GetCultureInfo(NorwegianCultureName);
-        private static readonly IFormatProvider RussianCulture = CultureInfo.GetCultureInfo(RussianCultureName);
-
-        // The default, parameterless ToString() method uses 2 sigifnificant digits after the radix point.
-        [Theory]
-        [InlineData(0, "0 m")]
-        [InlineData(0.1, "0.1 m")]
-        [InlineData(0.11, "0.11 m")]
-        [InlineData(0.111234, "0.11 m")]
-        [InlineData(0.115, "0.12 m")]
-        public void DefaultToStringFormatting(double value, string expected)
-        {
-            string actual = Length.FromMeters(value).ToUnit(LengthUnit.Meter).ToString(AmericanCulture);
-            Assert.Equal(expected, actual);
-        }
-
-        private enum CustomUnit
-        {
-            // ReSharper disable UnusedMember.Local
-            Undefined = 0,
-            Unit1,
-            Unit2
-            // ReSharper restore UnusedMember.Local
-        }
-
-        [Theory]
-        [InlineData("de-DE")]
-        [InlineData("da-DK")]
-        [InlineData("es-AR")]
-        [InlineData("es-ES")]
-        [InlineData("it-IT")]
-        [InlineData("en-CA")]
-        [InlineData("en-US")]
-        [InlineData("ar-EG")]
-        [InlineData("en-GB")]
-        [InlineData("es-MX")]
-        public void RadixPointCultureFormatting(string cultureName)
-        {
-            CultureInfo culture = GetCulture(cultureName);
-            string ds = culture.NumberFormat.NumberDecimalSeparator;
-            Assert.Equal($"0{ds}12 m", Length.FromMeters(0.12).ToUnit(LengthUnit.Meter).ToString(culture));
-        }
-
-        [Theory]
-        [InlineData("en-CA")]
-        [InlineData("en-GB")]
-        [InlineData("en-US")]
-        [InlineData("ar-EG")]
-        [InlineData("es-MX")]
-        [InlineData("nn-NO")]
-        [InlineData("fr-FR")]
-        [InlineData("de-DE")]
-        [InlineData("da-DK")]
-        [InlineData("es-AR")]
-        [InlineData("es-ES")]
-        [InlineData("it-IT")]
-        public void DigitGroupingCultureFormatting(string cultureName)
-        {
-            CultureInfo culture = GetCulture(cultureName);
-            string gs = culture.NumberFormat.NumberGroupSeparator;
-
-            Assert.Equal($"1{gs}111 m", Length.FromMeters(1111).ToUnit(LengthUnit.Meter).ToString(culture));
-
-            // Feet/Inch and Stone/Pound combinations are only used (customarily) in the US, UK and maybe Ireland - all English speaking countries.
-            // FeetInches returns a whole number of feet, with the remainder expressed (rounded) in inches. Same for StonePounds.
-            Assert.Equal($"2{gs}222 ft 3 in",
-                Length.FromFeetInches(2222, 3).FeetInches.ToString(culture));
-            Assert.Equal($"3{gs}333 st 7 lb",
-                Mass.FromStonePounds(3333, 7).StonePounds.ToString(culture));
-        }
-
-        // Due to rounding, the values will result in the same string representation regardless of the number of significant digits (up to a certain point)
-        [Theory]
-        [InlineData(0.819999999999, "s2", "0.82 m")]
-        [InlineData(0.819999999999, "s4", "0.82 m")]
-        [InlineData(0.00299999999, "s2", "0.003 m")]
-        [InlineData(0.00299999999, "s4", "0.003 m")]
-        [InlineData(0.0003000001, "s2", "3e-04 m")]
-        [InlineData(0.0003000001, "s4", "3e-04 m")]
-        public void RoundingErrorsWithSignificantDigitsAfterRadixFormatting(double value,
-            string significantDigitsAfterRadixFormatString, string expected)
-        {
-            string actual = Length.FromMeters(value).ToUnit(LengthUnit.Meter).ToString(significantDigitsAfterRadixFormatString, AmericanCulture);
-            Assert.Equal(expected, actual);
-        }
-
-        // Any value in the interval (-inf ≤ x < 1e-03] is formatted in scientific notation
-        [Theory]
-        [InlineData(double.MinValue, "-1.8e+308 m")]
-        [InlineData(1.23e-120, "1.23e-120 m")]
-        [InlineData(0.0000111, "1.11e-05 m")]
-        [InlineData(1.99e-4, "1.99e-04 m")]
-        public void ScientificNotationLowerInterval(double value, string expected)
-        {
-            string actual = Length.FromMeters(value).ToUnit(LengthUnit.Meter).ToString(AmericanCulture);
-            Assert.Equal(expected, actual);
-        }
-
-        // Any value in the interval [1e-03 ≤ x < 1e+03] is formatted in fixed point notation.
-        [Theory]
-        [InlineData(1e-3, "0.001 m")]
-        [InlineData(1.1, "1.1 m")]
-        [InlineData(999.99, "999.99 m")]
-        public void FixedPointNotationIntervalFormatting(double value, string expected)
-        {
-            string actual = Length.FromMeters(value).ToUnit(LengthUnit.Meter).ToString(AmericanCulture);
-            Assert.Equal(expected, actual);
-        }
-
-        // Any value in the interval [1e+03 ≤ x < 1e+06] is formatted in fixed point notation with digit grouping.
-        [Theory]
-        [InlineData(1000, "1,000 m")]
-        [InlineData(11000, "11,000 m")]
-        [InlineData(111000, "111,000 m")]
-        [InlineData(999999.99, "999,999.99 m")]
-        public void FixedPointNotationWithDigitGroupingIntervalFormatting(double value, string expected)
-        {
-            string actual = Length.FromMeters(value).ToUnit(LengthUnit.Meter).ToString(AmericanCulture);
-            Assert.Equal(expected, actual);
-        }
-
-        // Any value in the interval [1e+06 ≤ x ≤ +inf) is formatted in scientific notation.
-        [Theory]
-        [InlineData(1e6, "1e+06 m")]
-        [InlineData(11100000, "1.11e+07 m")]
-        [InlineData(double.MaxValue, "1.8e+308 m")]
-        public void ScientificNotationUpperIntervalFormatting(double value, string expected)
-        {
-            string actual = Length.FromMeters(value).ToUnit(LengthUnit.Meter).ToString(AmericanCulture);
-            Assert.Equal(expected, actual);
-        }
+        private static readonly CultureInfo AmericanCulture = CultureInfo.GetCultureInfo("en-US");
+        private static readonly CultureInfo NorwegianCulture = CultureInfo.GetCultureInfo("nb-NO");
 
         [Fact]
-        public void AllUnitsImplementToStringForInvariantCulture()
-        {
-            Assert.Equal("1 °", Angle.FromDegrees(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 m²", Area.FromSquareMeters(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 V", ElectricPotential.FromVolts(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 N", Force.FromNewtons(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 m", Length.FromMeters(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 kg", Mass.FromKilograms(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 Pa", Pressure.FromPascals(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 rad/s", RotationalSpeed.FromRadiansPerSecond(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 K", Temperature.FromKelvins(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 N·m", Torque.FromNewtonMeters(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 m³", Volume.FromCubicMeters(1).ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("1 m³/s", VolumeFlow.FromCubicMetersPerSecond(1).ToString(CultureInfo.InvariantCulture));
-
-            Assert.Equal("2 ft 3 in", Length.FromFeetInches(2, 3).FeetInches.ToString(CultureInfo.InvariantCulture));
-            Assert.Equal("3 st 7 lb", Mass.FromStonePounds(3, 7).StonePounds.ToString(CultureInfo.InvariantCulture));
-        }
-
-        [Fact]
-        public void ToString_WithNorwegianCulture()
-        {
-            Assert.Equal("1 °", Angle.FromDegrees(1).ToUnit(AngleUnit.Degree).ToString(NorwegianCulture));
-            Assert.Equal("1 m²", Area.FromSquareMeters(1).ToUnit(AreaUnit.SquareMeter).ToString(NorwegianCulture));
-            Assert.Equal("1 V", ElectricPotential.FromVolts(1).ToUnit(ElectricPotentialUnit.Volt).ToString(NorwegianCulture));
-            Assert.Equal("1 m³/s", VolumeFlow.FromCubicMetersPerSecond(1).ToUnit(VolumeFlowUnit.CubicMeterPerSecond).ToString(NorwegianCulture));
-            Assert.Equal("1 N", Force.FromNewtons(1).ToUnit(ForceUnit.Newton).ToString(NorwegianCulture));
-            Assert.Equal("1 m", Length.FromMeters(1).ToUnit(LengthUnit.Meter).ToString(NorwegianCulture));
-            Assert.Equal("1 kg", Mass.FromKilograms(1).ToUnit(MassUnit.Kilogram).ToString(NorwegianCulture));
-            Assert.Equal("1 Pa", Pressure.FromPascals(1).ToUnit(PressureUnit.Pascal).ToString(NorwegianCulture));
-            Assert.Equal("1 rad/s", RotationalSpeed.FromRadiansPerSecond(1).ToUnit(RotationalSpeedUnit.RadianPerSecond).ToString(NorwegianCulture));
-            Assert.Equal("1 K", Temperature.FromKelvins(1).ToUnit(TemperatureUnit.Kelvin).ToString(NorwegianCulture));
-            Assert.Equal("1 N·m", Torque.FromNewtonMeters(1).ToUnit(TorqueUnit.NewtonMeter).ToString(NorwegianCulture));
-            Assert.Equal("1 m³", Volume.FromCubicMeters(1).ToUnit(VolumeUnit.CubicMeter).ToString(NorwegianCulture));
-        }
-
-        [Fact]
-        public void ToString_WithRussianCulture()
-        {
-            Assert.Equal("1 °", Angle.FromDegrees(1).ToUnit(AngleUnit.Degree).ToString(RussianCulture));
-            Assert.Equal("1 м²", Area.FromSquareMeters(1).ToUnit(AreaUnit.SquareMeter).ToString(RussianCulture));
-            Assert.Equal("1 В", ElectricPotential.FromVolts(1).ToUnit(ElectricPotentialUnit.Volt).ToString(RussianCulture));
-            Assert.Equal("1 м³/с", VolumeFlow.FromCubicMetersPerSecond(1).ToUnit(VolumeFlowUnit.CubicMeterPerSecond).ToString(RussianCulture));
-            Assert.Equal("1 Н", Force.FromNewtons(1).ToUnit(ForceUnit.Newton).ToString(RussianCulture));
-            Assert.Equal("1 м", Length.FromMeters(1).ToUnit(LengthUnit.Meter).ToString(RussianCulture));
-            Assert.Equal("1 кг", Mass.FromKilograms(1).ToUnit(MassUnit.Kilogram).ToString(RussianCulture));
-            Assert.Equal("1 Па", Pressure.FromPascals(1).ToUnit(PressureUnit.Pascal).ToString(RussianCulture));
-            Assert.Equal("1 рад/с", RotationalSpeed.FromRadiansPerSecond(1).ToUnit(RotationalSpeedUnit.RadianPerSecond).ToString(RussianCulture));
-            Assert.Equal("1 K", Temperature.FromKelvins(1).ToUnit(TemperatureUnit.Kelvin).ToString(RussianCulture));
-            Assert.Equal("1 Н·м", Torque.FromNewtonMeters(1).ToUnit(TorqueUnit.NewtonMeter).ToString(RussianCulture));
-            Assert.Equal("1 м³", Volume.FromCubicMeters(1).ToUnit(VolumeUnit.CubicMeter).ToString(RussianCulture));
-        }
-
-        [Fact]
-        public void GetDefaultAbbreviationThrowsNotImplementedExceptionIfNoneExist()
+        public void EmptyConstructor_ReturnsAnAbbreviationCacheWithDefaultQuantityInfoLookup()
         {
             var unitAbbreviationCache = new UnitAbbreviationsCache();
-            Assert.Throws<NotImplementedException>(() => unitAbbreviationCache.GetDefaultAbbreviation(CustomUnit.Unit1));
+
+            Assert.Equal(UnitsNetSetup.Default.Quantities, unitAbbreviationCache.Quantities);
+            Assert.Equal("g", unitAbbreviationCache.GetUnitAbbreviations(MassUnit.Gram, AmericanCulture)[0]);
+            Assert.Throws<UnitNotFoundException>(() => unitAbbreviationCache.GetUnitAbbreviations(HowMuchUnit.Some));
+        }
+        
+        [Fact]
+        public void Constructor_WithQuantities_ReturnsAnAbbreviationCacheWithNewQuantityInfoLookup()
+        {
+            var unitAbbreviationCache = new UnitAbbreviationsCache([Mass.Info, HowMuch.Info]);
+
+            Assert.NotEqual(UnitsNetSetup.Default.Quantities, unitAbbreviationCache.Quantities);
+            Assert.Equal("g", unitAbbreviationCache.GetUnitAbbreviations(MassUnit.Gram, AmericanCulture)[0]);
+            Assert.Empty(unitAbbreviationCache.GetUnitAbbreviations(HowMuchUnit.Some, AmericanCulture));
+            Assert.Throws<UnitNotFoundException>(() => unitAbbreviationCache.GetUnitAbbreviations(LengthUnit.Meter));
+        }
+        
+        [Fact]
+        public void CreateDefault_ReturnsAnAbbreviationCacheWithDefaultQuantityInfoLookup()
+        {
+            var unitAbbreviationCache = UnitAbbreviationsCache.CreateDefault();
+
+            Assert.Equal(UnitsNetSetup.Default.Quantities, unitAbbreviationCache.Quantities);
+            Assert.Equal("g", unitAbbreviationCache.GetUnitAbbreviations(MassUnit.Gram, AmericanCulture)[0]);
+            Assert.Throws<UnitNotFoundException>(() => unitAbbreviationCache.GetUnitAbbreviations(HowMuchUnit.Some));
+        }
+
+        [Fact]
+        public void UnitAbbreviationsCache_Default_ReturnsInstanceFromUnitsNetSetup()
+        {
+            Assert.Equal(UnitsNetSetup.Default.UnitAbbreviations, UnitAbbreviationsCache.Default);
+        }
+
+        [Fact]
+        public void GetUnitAbbreviationsThrowsUnitNotFoundExceptionIfNoneExist()
+        {
+            Assert.Multiple(checks: [
+                () => Assert.Throws<UnitNotFoundException>(() => new UnitAbbreviationsCache().GetUnitAbbreviations(HowMuchUnit.AShitTon)),
+                () => Assert.Throws<UnitNotFoundException>(() => new UnitAbbreviationsCache().GetUnitAbbreviations(typeof(HowMuchUnit), (int)HowMuchUnit.AShitTon))
+            ]);
+        }
+
+        [Fact]
+        public void GetUnitAbbreviationReturnsTheExpectedAbbreviationWhenConstructedWithTheSpecificQuantityInfo()
+        {
+            Assert.Multiple(checks:
+            [
+                () => { Assert.Equal("g", new UnitAbbreviationsCache([Mass.Info]).GetUnitAbbreviations(MassUnit.Gram, AmericanCulture)[0]); },
+                () => { Assert.Equal("g", new UnitAbbreviationsCache([Mass.Info]).GetUnitAbbreviations(typeof(MassUnit), (int)MassUnit.Gram, AmericanCulture)[0]); }
+            ]);
+        }
+
+        [Fact]
+        public void GetUnitAbbreviationsReturnsTheExpectedAbbreviationWhenConstructedWithTheSpecificQuantityInfo()
+        {
+            var unitAbbreviationCache = new UnitAbbreviationsCache([Mass.Info]);
+            Assert.Equal("g", unitAbbreviationCache.GetUnitAbbreviations(MassUnit.Gram, AmericanCulture)[0]);
+        }
+
+        [Fact]
+        public void GetDefaultAbbreviationReturnsTheExpectedAbbreviationWhenConstructedWithTheSpecificQuantityInfo()
+        {
+            Assert.Multiple(checks:
+            [
+                () => { Assert.Equal("g", new UnitAbbreviationsCache([Mass.Info]).GetDefaultAbbreviation(MassUnit.Gram, AmericanCulture)); },
+                () => { Assert.Equal("g", new UnitAbbreviationsCache([Mass.Info]).GetDefaultAbbreviation(typeof(MassUnit), (int)MassUnit.Gram, AmericanCulture)); }
+            ]);
         }
 
         [Fact]
@@ -217,16 +98,79 @@ namespace UnitsNet.Tests
             // CurrentCulture also affects localization of unit abbreviations.
             // Zulu (South Africa)
             var zuluCulture = CultureInfo.GetCultureInfo("zu-ZA");
-            // CultureInfo.CurrentCulture = zuluCulture;
 
-            var abbreviationsCache = new UnitAbbreviationsCache();
-            abbreviationsCache.MapUnitToAbbreviation(CustomUnit.Unit1, AmericanCulture, "US english abbreviation for Unit1");
+            var abbreviationsCache = new UnitAbbreviationsCache([HowMuch.Info]);
+            abbreviationsCache.MapUnitToAbbreviation(HowMuchUnit.AShitTon, AmericanCulture, "US english abbreviation for Unit1");
 
             // Act
-            string abbreviation = abbreviationsCache.GetDefaultAbbreviation(CustomUnit.Unit1, zuluCulture);
+            string abbreviation = abbreviationsCache.GetDefaultAbbreviation(HowMuchUnit.AShitTon, zuluCulture);
 
             // Assert
             Assert.Equal("US english abbreviation for Unit1", abbreviation);
+        }
+
+        [Fact]
+        public void GetDefaultAbbreviationFallsBackToInvariantCulture()
+        {
+            // CurrentCulture affects number formatting, such as comma or dot as decimal separator.
+            // CurrentCulture also affects localization of unit abbreviations.
+            // Zulu (South Africa)
+            var zuluCulture = CultureInfo.GetCultureInfo("zu-ZA");
+
+            var abbreviationsCache = new UnitAbbreviationsCache([HowMuch.Info]);
+            abbreviationsCache.MapUnitToAbbreviation(HowMuchUnit.AShitTon, CultureInfo.InvariantCulture, "Invariant abbreviation for Unit1");
+
+            // Act
+            string abbreviation = abbreviationsCache.GetDefaultAbbreviation(HowMuchUnit.AShitTon, zuluCulture);
+
+            // Assert
+            Assert.Equal("Invariant abbreviation for Unit1", abbreviation);
+        }
+        
+        [Fact]
+        public void GetDefaultAbbreviation_WithNullUnitType_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => UnitAbbreviationsCache.Default.GetDefaultAbbreviation(null!, 1));
+        }
+
+        [Fact]
+        public void GetDefaultAbbreviationThrowsUnitNotFoundExceptionIfNoneExist()
+        {
+            Assert.Multiple(checks: [
+                () => Assert.Throws<UnitNotFoundException>(() => new UnitAbbreviationsCache().GetDefaultAbbreviation(HowMuchUnit.AShitTon)),
+                () => Assert.Throws<UnitNotFoundException>(() => new UnitAbbreviationsCache().GetDefaultAbbreviation(typeof(HowMuchUnit), (int)HowMuchUnit.AShitTon))
+            ]);
+        }
+
+        [Fact]
+        public void GetDefaultAbbreviation_ForUnitWithoutAbbreviations_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => new UnitAbbreviationsCache([HowMuch.Info]).GetDefaultAbbreviation(HowMuchUnit.AShitTon));
+        }
+
+        [Fact]
+        public void GetAllUnitAbbreviationsForQuantity_WithQuantityWithoutAbbreviations_ReturnsEmpty()
+        {
+            var unitAbbreviationsCache = new UnitAbbreviationsCache([HowMuch.Info]);
+            Assert.Empty(unitAbbreviationsCache.GetAllUnitAbbreviationsForQuantity(typeof(HowMuchUnit)));
+        }
+
+        [Fact]
+        public void GetAllUnitAbbreviationsForQuantity_WithNullUnitType_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => UnitAbbreviationsCache.Default.GetAllUnitAbbreviationsForQuantity(null!));
+        }
+
+        [Fact]
+        public void GetAllUnitAbbreviationsForQuantity_WithInvalidUnitType_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => UnitAbbreviationsCache.Default.GetAllUnitAbbreviationsForQuantity(typeof(DateTime)));
+        }
+
+        [Fact]
+        public void GetAllUnitAbbreviationsForQuantity_WithUnknownUnitType_ThrowsUnitNotFoundException()
+        {
+            Assert.Throws<UnitNotFoundException>(() => UnitAbbreviationsCache.Default.GetAllUnitAbbreviationsForQuantity(typeof(HowMuchUnit)));
         }
 
         [Fact]
@@ -235,10 +179,10 @@ namespace UnitsNet.Tests
             var culture = AmericanCulture;
             var unit = AreaUnit.SquareMeter;
 
-            var cache1 = new UnitAbbreviationsCache();
+            var cache1 = UnitAbbreviationsCache.CreateDefault();
             cache1.MapUnitToAbbreviation(unit, culture, "m^2");
 
-            var cache2 = new UnitAbbreviationsCache();
+            var cache2 = UnitAbbreviationsCache.CreateDefault();
             cache2.MapUnitToAbbreviation(unit, culture, "m2");
 
             Assert.Equal(new[] { "m²", "m^2" }, cache1.GetUnitAbbreviations(unit, culture));
@@ -250,17 +194,38 @@ namespace UnitsNet.Tests
         [Fact]
         public void MapUnitToAbbreviation_AddCustomUnit_DoesNotOverrideDefaultAbbreviationForAlreadyMappedUnits()
         {
-            var cache = new UnitAbbreviationsCache();
+            var cache = UnitAbbreviationsCache.CreateDefault();
             cache.MapUnitToAbbreviation(AreaUnit.SquareMeter, AmericanCulture, "m^2");
 
             Assert.Equal("m²", cache.GetDefaultAbbreviation(AreaUnit.SquareMeter, AmericanCulture));
         }
 
         [Fact]
+        public void MapUnitToDefaultAbbreviation_GivenUnitAndNoCulture_SetsDefaultAbbreviationForUnitForCurrentCulture()
+        {
+            using var cultureScope = new CultureScope(NorwegianCulture);
+            var cache = new UnitAbbreviationsCache([Mass.Info]);
+
+            cache.MapUnitToDefaultAbbreviation(MassUnit.Gram, "zz");
+
+            Assert.Equal("zz", cache.GetDefaultAbbreviation(MassUnit.Gram));
+            Assert.Equal("g", cache.GetDefaultAbbreviation(MassUnit.Gram, AmericanCulture));
+        }
+
+        [Fact]
         public void MapUnitToDefaultAbbreviation_GivenUnitAndCulture_SetsDefaultAbbreviationForUnitAndCulture()
         {
-            var cache = new UnitAbbreviationsCache();
+            var cache = new UnitAbbreviationsCache([Area.Info]);
             cache.MapUnitToDefaultAbbreviation(AreaUnit.SquareMeter, AmericanCulture, "m^2");
+
+            Assert.Equal("m^2", cache.GetDefaultAbbreviation(AreaUnit.SquareMeter, AmericanCulture));
+        }
+
+        [Fact]
+        public void MapUnitToDefaultAbbreviation_GivenUnitTypeValueAndCulture_SetsDefaultAbbreviationForUnitAndCulture()
+        {
+            var cache = new UnitAbbreviationsCache([Area.Info]);
+            cache.MapUnitToDefaultAbbreviation(typeof(AreaUnit), (int)AreaUnit.SquareMeter, AmericanCulture, "m^2");
 
             Assert.Equal("m^2", cache.GetDefaultAbbreviation(AreaUnit.SquareMeter, AmericanCulture));
         }
@@ -269,45 +234,98 @@ namespace UnitsNet.Tests
         public void MapUnitToDefaultAbbreviation_GivenCustomAbbreviation_SetsAbbreviationUsedByQuantityToString()
         {
             // Use a distinct culture here so that we don't mess up other tests that may rely on the default cache.
-            var newZealandCulture = GetCulture("en-NZ");
-            UnitAbbreviationsCache.Default.MapUnitToDefaultAbbreviation(AreaUnit.SquareMeter, newZealandCulture, "m^2");
+            var newZealandCulture = CultureInfo.GetCultureInfo("en-NZ");
+            UnitsNetSetup.Default.UnitAbbreviations.MapUnitToDefaultAbbreviation(AreaUnit.SquareMeter, newZealandCulture, "m^2");
 
             Assert.Equal("1 m^2", Area.FromSquareMeters(1).ToString(newZealandCulture));
         }
 
         [Fact]
+        public void MapUnitToAbbreviation_GivenUnitTypeAndValue_AddsTheAbbreviationForUnitForCurrentCulture()
+        {
+            using var cultureScope = new CultureScope(NorwegianCulture);
+            var cache = new UnitAbbreviationsCache([Mass.Info]);
+
+            cache.MapUnitToAbbreviation(typeof(MassUnit), (int)MassUnit.Gram, null, "zz");
+
+            Assert.Equal("zz", cache.GetUnitAbbreviations(MassUnit.Gram).Last());
+            Assert.Equal("g", cache.GetDefaultAbbreviation(MassUnit.Gram, AmericanCulture));
+            Assert.DoesNotContain("zz", cache.GetUnitAbbreviations(MassUnit.Gram, AmericanCulture));
+        }
+
+        [Fact]
         public void MapUnitToAbbreviation_DoesNotInsertDuplicates()
         {
-            var cache = new UnitAbbreviationsCache();
+            var cache = new UnitAbbreviationsCache([HowMuch.Info]);
 
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
 
-            Assert.Equal("soome", cache.GetDefaultAbbreviation(HowMuchUnit.Some));
-            Assert.Equal(new[] { "soome" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
-            Assert.Equal(new[] { "soome" }, cache.GetAllUnitAbbreviationsForQuantity(typeof(HowMuchUnit)));
+            Assert.Equal("sm", cache.GetDefaultAbbreviation(HowMuchUnit.Some));
+            Assert.Equal(new[] { "sm" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
+            Assert.Equal(new[] { "sm" }, cache.GetAllUnitAbbreviationsForQuantity(typeof(HowMuchUnit)));
         }
 
         [Fact]
         public void MapUnitToDefaultAbbreviation_Twice_SetsNewDefaultAndKeepsOrderOfExistingAbbreviations()
         {
-            var cache = new UnitAbbreviationsCache();
+            var cache = new UnitAbbreviationsCache([HowMuch.Info]);
 
-            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "soome");
+            cache.MapUnitToAbbreviation(HowMuchUnit.Some, "sm");
             cache.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "1st default");
             cache.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "2nd default");
 
             Assert.Equal("2nd default", cache.GetDefaultAbbreviation(HowMuchUnit.Some));
-            Assert.Equal(new[] { "2nd default", "1st default", "soome" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
+            Assert.Equal(new[] { "2nd default", "1st default", "sm" }, cache.GetUnitAbbreviations(HowMuchUnit.Some));
         }
 
         /// <summary>
-        ///     Convenience method to the proper culture parameter type.
+        /// Test that lookup works when specifying unit enum value both as cast to <see cref="Enum"/> and as specific enum value type.
+        /// We have had subtle bugs when <see cref="Enum"/> is passed to generic methods with constraint TUnitEnum : Enum,
+        /// which the Enum type satisfies, but trying to use typeof(TUnitEnum) no longer represent the actual enum type so unitEnumValue.GetType() should be used.
         /// </summary>
-        private static CultureInfo GetCulture(string cultureName)
+        [Fact]
+        public void MapAndLookup_WithSpecificEnumType()
         {
-            return CultureInfo.GetCultureInfo(cultureName);
+            var unitAbbreviationsCache = new UnitAbbreviationsCache([HowMuch.Info]);
+            unitAbbreviationsCache.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "sm");
+            Assert.Equal("sm", unitAbbreviationsCache.GetDefaultAbbreviation(HowMuchUnit.Some));
+        }
+
+        /// <inheritdoc cref="MapAndLookup_WithSpecificEnumType"/>
+        [Fact]
+        public void MapAndLookup_WithEnumType()
+        {
+            Enum valueAsEnumType = HowMuchUnit.Some;
+            var unitAbbreviationsCache = new UnitAbbreviationsCache([HowMuch.Info]);
+            unitAbbreviationsCache.MapUnitToDefaultAbbreviation(valueAsEnumType, "sm");
+            Assert.Equal("sm", unitAbbreviationsCache.GetDefaultAbbreviation(valueAsEnumType));
+        }
+
+        /// <inheritdoc cref="MapAndLookup_WithSpecificEnumType"/>
+        [Fact]
+        public void MapAndLookup_MapWithSpecificEnumType_LookupWithEnumType()
+        {
+            var unitAbbreviationsCache = new UnitAbbreviationsCache([HowMuch.Info]);
+            unitAbbreviationsCache.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "sm");
+            Assert.Equal("sm", unitAbbreviationsCache.GetDefaultAbbreviation((Enum)HowMuchUnit.Some));
+        }
+        
+        [Fact]
+        public void MapUnitToAbbreviation_WithUnknownUnit_ThrowsUnitNotFoundException()
+        {
+            var unitAbbreviationCache = new UnitAbbreviationsCache([Mass.Info]);
+            Assert.Throws<UnitNotFoundException>(() => unitAbbreviationCache.MapUnitToAbbreviation(HowMuchUnit.Some, "nothing"));
+            Assert.Throws<UnitNotFoundException>(() => unitAbbreviationCache.MapUnitToAbbreviation(LengthUnit.Centimeter, "nothing"));
+        }
+
+        [Fact]
+        public void MapUnitToDefaultAbbreviation_WithUnknownUnit_ThrowsUnitNotFoundException()
+        {
+            var unitAbbreviationCache = new UnitAbbreviationsCache([Mass.Info]);
+            Assert.Throws<UnitNotFoundException>(() => unitAbbreviationCache.MapUnitToDefaultAbbreviation(HowMuchUnit.Some, "nothing"));
+            Assert.Throws<UnitNotFoundException>(() => unitAbbreviationCache.MapUnitToDefaultAbbreviation(LengthUnit.AstronomicalUnit, "nothing"));
         }
     }
 }

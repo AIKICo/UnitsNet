@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -67,51 +69,39 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Scalar(double.PositiveInfinity, ScalarUnit.Amount));
-            Assert.Throws<ArgumentException>(() => new Scalar(double.NegativeInfinity, ScalarUnit.Amount));
+            var exception1 = Record.Exception(() => new Scalar(double.PositiveInfinity, ScalarUnit.Amount));
+            var exception2 = Record.Exception(() => new Scalar(double.NegativeInfinity, ScalarUnit.Amount));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Scalar(double.NaN, ScalarUnit.Amount));
-        }
+            var exception = Record.Exception(() => new Scalar(double.NaN, ScalarUnit.Amount));
 
-        [Fact]
-        public void Ctor_NullAsUnitSystem_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Scalar(value: 1, unitSystem: null));
-        }
-
-        [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
-        {
-            Func<object> TestCode = () => new Scalar(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Scalar) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            Assert.Null(exception);
         }
 
         [Fact]
         public void Scalar_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            ScalarUnit[] unitsOrderedByName = EnumHelper.GetValues<ScalarUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Scalar(1, ScalarUnit.Amount);
 
-            QuantityInfo<ScalarUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Scalar, ScalarUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Scalar.Zero, quantityInfo.Zero);
             Assert.Equal("Scalar", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<ScalarUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Scalar.Zero, quantityInfo.Zero);
+            Assert.Equal(Scalar.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Scalar.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<ScalarUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -124,23 +114,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Scalar.From(1, ScalarUnit.Amount);
-            AssertEx.EqualTolerance(1, quantity00.Amount, AmountTolerance);
-            Assert.Equal(ScalarUnit.Amount, quantity00.Unit);
-
+            Assert.All(EnumHelper.GetValues<ScalarUnit>(), unit =>
+            {
+                var quantity = Scalar.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromAmount_WithInfinityValue_ThrowsArgumentException()
+        public void FromAmount_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Scalar.FromAmount(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Scalar.FromAmount(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Scalar.FromAmount(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Scalar.FromAmount(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromAmount_WithNanValue_ThrowsArgumentException()
+        public void FromAmount_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Scalar.FromAmount(double.NaN));
+            var exception = Record.Exception(() => Scalar.FromAmount(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -151,64 +148,166 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public void As_UnitSystem_ReturnsValueInDimensionlessUnit()
+        {
+            var quantity = new Scalar(value: 1, unit: ScalarUnit.Amount);
+
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(quantity.Value, convertedValue);
+        }
+
+        [Fact]
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
             var quantity = new Scalar(value: 1, unit: Scalar.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
-
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void Parse()
+        public void ToUnit_UnitSystem_ReturnsValueInDimensionlessUnit()
         {
-            try
-            {
-                var parsed = Scalar.Parse("1 ", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Amount, AmountTolerance);
-                Assert.Equal(ScalarUnit.Amount, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Scalar(value: 1, unit: ScalarUnit.Amount);
 
+            Scalar convertedQuantity = quantity.ToUnit(UnitSystem.SI);
+
+            Assert.Equal(ScalarUnit.Amount, convertedQuantity.Unit);
+            Assert.Equal(quantity.Value, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParse()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
+            UnitSystem nullUnitSystem = null!;
+            Assert.Multiple(() =>
             {
-                Assert.True(Scalar.TryParse("1 ", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Amount, AmountTolerance);
-                Assert.Equal(ScalarUnit.Amount, parsed.Unit);
-            }
+                var quantity = new Scalar(value: 1, unit: Scalar.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
+            {
+                IQuantity<ScalarUnit> quantity = new Scalar(value: 1, unit: Scalar.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
+            {
+                IQuantity quantity = new Scalar(value: 1, unit: Scalar.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            });
+        }
 
+        [Theory]
+        [InlineData("en-US", "4.2 ", ScalarUnit.Amount, 4.2)]
+        public void Parse(string culture, string quantityString, ScalarUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Scalar.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 ", ScalarUnit.Amount, 4.2)]
+        public void TryParse(string culture, string quantityString, ScalarUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Scalar.TryParse(quantityString, out Scalar parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("", ScalarUnit.Amount)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, ScalarUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            ScalarUnit parsedUnit = Scalar.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("", ScalarUnit.Amount)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, ScalarUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            ScalarUnit parsedUnit = Scalar.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "", ScalarUnit.Amount)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, ScalarUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            ScalarUnit parsedUnit = Scalar.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "", ScalarUnit.Amount)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, ScalarUnit expectedUnit)
+        {
+            ScalarUnit parsedUnit = Scalar.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("", ScalarUnit.Amount)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, ScalarUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Scalar.TryParseUnit(abbreviation, out ScalarUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("", ScalarUnit.Amount)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, ScalarUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Scalar.TryParseUnit(abbreviation, out ScalarUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "", ScalarUnit.Amount)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, ScalarUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Scalar.TryParseUnit(abbreviation, out ScalarUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "", ScalarUnit.Amount)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, ScalarUnit expectedUnit)
+        {
+            Assert.True(Scalar.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out ScalarUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", ScalarUnit.Amount, "")]
+        public void GetAbbreviationForCulture(string culture, ScalarUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Scalar.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
         }
 
         [Fact]
-        public void ParseUnit()
+        public void GetAbbreviationWithDefaultCulture()
         {
-            try
+            Assert.All(Scalar.Units, unit =>
             {
-                var parsedUnit = Scalar.ParseUnit("", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(ScalarUnit.Amount, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-        }
+                var defaultAbbreviation = Scalar.GetAbbreviation(unit);
 
-        [Fact]
-        public void TryParseUnit()
-        {
-            {
-                Assert.True(Scalar.TryParseUnit("", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(ScalarUnit.Amount, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -232,16 +331,16 @@ namespace UnitsNet.Tests
             Assert.Equal(quantity, toUnitWithSameUnit);
         }
 
-        [Theory(Skip = "Multiple units required")]
+        [Theory]
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(ScalarUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Scalar.Units.First(u => u != Scalar.BaseUnit);
-
-            var quantity = Scalar.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Scalar.Units.Where(u => u != Scalar.BaseUnit), fromUnit =>
+            {
+                var quantity = Scalar.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -251,6 +350,25 @@ namespace UnitsNet.Tests
             var quantity = default(Scalar);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(ScalarUnit unit)
+        {
+            var quantity = Scalar.From(3, Scalar.BaseUnit);
+            Scalar expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<ScalarUnit> quantityToConvert = quantity;
+                IQuantity<ScalarUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -354,21 +472,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Scalar.FromAmount(1);
-            Assert.True(v.Equals(Scalar.FromAmount(1), AmountTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Scalar.Zero, AmountTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Scalar.FromAmount(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Scalar.FromAmount(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Scalar amount = Scalar.FromAmount(1);
@@ -382,13 +485,39 @@ namespace UnitsNet.Tests
             Assert.False(amount.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Scalar.FromAmount(firstValue);
+            var otherQuantity = Scalar.FromAmount(secondValue);
+            Scalar maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Scalar.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Scalar.FromAmount(1);
+            var negativeTolerance = Scalar.FromAmount(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(ScalarUnit)).Cast<ScalarUnit>();
+            var units = Enum.GetValues<ScalarUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -401,15 +530,8 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1", new Scalar(1, ScalarUnit.Amount).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1", new Scalar(1, ScalarUnit.Amount).ToString());
         }
 
         [Fact]
@@ -424,19 +546,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1", new Scalar(0.123456, ScalarUnit.Amount).ToString("s1"));
-                Assert.Equal("0.12", new Scalar(0.123456, ScalarUnit.Amount).ToString("s2"));
-                Assert.Equal("0.123", new Scalar(0.123456, ScalarUnit.Amount).ToString("s3"));
-                Assert.Equal("0.1235", new Scalar(0.123456, ScalarUnit.Amount).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1", new Scalar(0.123456, ScalarUnit.Amount).ToString("s1"));
+            Assert.Equal("0.12", new Scalar(0.123456, ScalarUnit.Amount).ToString("s2"));
+            Assert.Equal("0.123", new Scalar(0.123456, ScalarUnit.Amount).ToString("s3"));
+            Assert.Equal("0.1235", new Scalar(0.123456, ScalarUnit.Amount).ToString("s4"));
         }
 
         [Fact]
@@ -459,7 +573,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -472,150 +586,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Scalar)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(ScalarUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal(Scalar.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal(Scalar.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Scalar.FromAmount(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Scalar.FromAmount(1.0);
-            Assert.Equal(new {Scalar.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricSurfaceChargeDensity(double value, ElectricSurfaceChargeDensityUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricSurfaceChargeDensity, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricSurfaceChargeDensityUnit BaseUnit { get; } = ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricSurfaceChargeDensity.
         /// </summary>
         public static ElectricSurfaceChargeDensity MaxValue { get; } = new ElectricSurfaceChargeDensity(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricSurfaceChargeDensity.
         /// </summary>
         public static ElectricSurfaceChargeDensity MinValue { get; } = new ElectricSurfaceChargeDensity(double.MinValue, BaseUnit);
 
@@ -104,19 +103,16 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricSurfaceChargeDensity"/> from <see cref="ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricSurfaceChargeDensity FromCoulombsPerSquareCentimeter(double coulombspersquarecentimeter) => new ElectricSurfaceChargeDensity(coulombspersquarecentimeter, ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="ElectricSurfaceChargeDensity"/> from <see cref="ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricSurfaceChargeDensity FromCoulombsPerSquareInch(double coulombspersquareinch) => new ElectricSurfaceChargeDensity(coulombspersquareinch, ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch);
 
         /// <summary>
         ///     Creates a <see cref="ElectricSurfaceChargeDensity"/> from <see cref="ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricSurfaceChargeDensity FromCoulombsPerSquareMeter(double coulombspersquaremeter) => new ElectricSurfaceChargeDensity(coulombspersquaremeter, ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter);
 
         /// <summary>
@@ -141,9 +137,9 @@ namespace UnitsNet
                 public double As(ElectricSurfaceChargeDensityUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricSurfaceChargeDensity to another ElectricSurfaceChargeDensity with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricSurfaceChargeDensity with the specified unit.</returns>
                 public ElectricSurfaceChargeDensity ToUnit(ElectricSurfaceChargeDensityUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -160,9 +156,9 @@ namespace UnitsNet
                     return Unit switch
                     {
                         ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter => _value * 1.0e4,
-                        ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch => _value * 1.5500031000062000e3,
+                        ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch => _value / 0.00064516,
                         ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -176,9 +172,9 @@ namespace UnitsNet
                     return unit switch
                     {
                         ElectricSurfaceChargeDensityUnit.CoulombPerSquareCentimeter => baseUnitValue / 1.0e4,
-                        ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch => baseUnitValue / 1.5500031000062000e3,
+                        ElectricSurfaceChargeDensityUnit.CoulombPerSquareInch => baseUnitValue * 0.00064516,
                         ElectricSurfaceChargeDensityUnit.CoulombPerSquareMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

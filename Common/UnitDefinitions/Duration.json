@@ -128,7 +128,7 @@
       },
       "FromUnitToBaseFunc": "{x}",
       "FromBaseToUnitFunc": "{x}",
-      "Prefixes": [ "Nano", "Micro", "Milli" ],
+      "Prefixes": [ "Pico", "Nano", "Micro", "Milli" ],
       "Localization": [
         {
           "Culture": "en-US",
@@ -152,6 +152,21 @@
         {
           "Culture": "en-US",
           "Abbreviations": [ "jyr", "jyear", "jyears" ]
+        }
+      ]
+    },
+    {
+      "SingularName": "Sol",
+      "PluralName": "Sols",
+      "BaseUnits": {
+        "T": "Sol"
+      },
+      "FromUnitToBaseFunc": "{x} * 88775.244",
+      "FromBaseToUnitFunc": "{x} / 88775.244",
+      "Localization": [
+        {
+          "Culture": "en-US",
+          "Abbreviations": [ "sol" ]
         }
       ]
     }

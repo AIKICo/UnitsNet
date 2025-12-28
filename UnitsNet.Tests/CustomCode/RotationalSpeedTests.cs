@@ -8,7 +8,6 @@ namespace UnitsNet.Tests
 {
     public class RotationalSpeedTests : RotationalSpeedTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
         protected override double RadiansPerSecondInOneRadianPerSecond => 1;
 
         protected override double DeciradiansPerSecondInOneRadianPerSecond => 1E1;
@@ -53,13 +52,6 @@ namespace UnitsNet.Tests
         public void RotationalSpeedTimesTimeSpanEqualsAngle()
         {
             Angle angle = RotationalSpeed.FromRadiansPerSecond(10.0)*TimeSpan.FromSeconds(9.0);
-            Assert.Equal(angle, Angle.FromRadians(90.0));
-        }
-
-        [Fact]
-        public void TimeSpanTimesRotationalSpeedEqualsAngle()
-        {
-            Angle angle = TimeSpan.FromSeconds(9.0)*RotationalSpeed.FromRadiansPerSecond(10.0);
             Assert.Equal(angle, Angle.FromRadians(90.0));
         }
     }

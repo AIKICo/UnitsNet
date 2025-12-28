@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -36,47 +35,107 @@ namespace UnitsNet
     ///     Molar flow is the ratio of the amount of substance change to the time during which the change occurred (value of amount of substance changes per unit time).
     /// </summary>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct MolarFlow :
-        IArithmeticQuantity<MolarFlow, MolarFlowUnit, double>,
+        IArithmeticQuantity<MolarFlow, MolarFlowUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<MolarFlow, MolarFlow, double>,
+        IMultiplyOperators<MolarFlow, Duration, AmountOfSubstance>,
+        IMultiplyOperators<MolarFlow, MolarMass, MassFlow>,
+        IDivisionOperators<MolarFlow, VolumeFlow, Molarity>,
+        IDivisionOperators<MolarFlow, Molarity, VolumeFlow>,
+        IComparisonOperators<MolarFlow, MolarFlow, bool>,
+        IParsable<MolarFlow>,
+#endif
         IComparable,
         IComparable<MolarFlow>,
-        IConvertible,
         IEquatable<MolarFlow>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly MolarFlowUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="MolarFlow"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class MolarFlowInfo: QuantityInfo<MolarFlow, MolarFlowUnit>
+        {
+            /// <inheritdoc />
+            public MolarFlowInfo(string name, MolarFlowUnit baseUnit, IEnumerable<IUnitDefinition<MolarFlowUnit>> unitMappings, MolarFlow zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<MolarFlow, MolarFlowUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public MolarFlowInfo(string name, MolarFlowUnit baseUnit, IEnumerable<IUnitDefinition<MolarFlowUnit>> unitMappings, MolarFlow zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, MolarFlow.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.MolarFlow", typeof(MolarFlow).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="MolarFlowInfo"/> class with the default settings for the MolarFlow quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="MolarFlowInfo"/> class with the default settings.</returns>
+            public static MolarFlowInfo CreateDefault()
+            {
+                return new MolarFlowInfo(nameof(MolarFlow), DefaultBaseUnit, GetDefaultMappings(), new MolarFlow(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="MolarFlowInfo"/> class with the default settings for the MolarFlow quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="MolarFlowInfo"/> class with the default settings.
+            /// </returns>
+            public static MolarFlowInfo CreateDefault(Func<IEnumerable<UnitDefinition<MolarFlowUnit>>, IEnumerable<IUnitDefinition<MolarFlowUnit>>> customizeUnits)
+            {
+                return new MolarFlowInfo(nameof(MolarFlow), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new MolarFlow(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="MolarFlow"/> is [T^-1][N].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(0, 0, -1, 0, 0, 1, 0);
+
+            /// <summary>
+            ///     The default base unit of MolarFlow is MolePerSecond. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static MolarFlowUnit DefaultBaseUnit { get; } = MolarFlowUnit.MolePerSecond;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="MolarFlowUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{MolarFlowUnit}"/> representing the default unit mappings for MolarFlow.</returns>
+            public static IEnumerable<UnitDefinition<MolarFlowUnit>> GetDefaultMappings()
+            {
+                yield return new (MolarFlowUnit.KilomolePerHour, "KilomolePerHour", "KilomolesPerHour", new BaseUnits(time: DurationUnit.Hour, amount: AmountOfSubstanceUnit.Kilomole));
+                yield return new (MolarFlowUnit.KilomolePerMinute, "KilomolePerMinute", "KilomolesPerMinute", new BaseUnits(time: DurationUnit.Minute, amount: AmountOfSubstanceUnit.Kilomole));
+                yield return new (MolarFlowUnit.KilomolePerSecond, "KilomolePerSecond", "KilomolesPerSecond", new BaseUnits(time: DurationUnit.Second, amount: AmountOfSubstanceUnit.Kilomole));
+                yield return new (MolarFlowUnit.MolePerHour, "MolePerHour", "MolesPerHour", new BaseUnits(time: DurationUnit.Hour, amount: AmountOfSubstanceUnit.Mole));
+                yield return new (MolarFlowUnit.MolePerMinute, "MolePerMinute", "MolesPerMinute", new BaseUnits(time: DurationUnit.Minute, amount: AmountOfSubstanceUnit.Mole));
+                yield return new (MolarFlowUnit.MolePerSecond, "MolePerSecond", "MolesPerSecond", new BaseUnits(time: DurationUnit.Second, amount: AmountOfSubstanceUnit.Mole));
+                yield return new (MolarFlowUnit.PoundMolePerHour, "PoundMolePerHour", "PoundMolesPerHour", new BaseUnits(time: DurationUnit.Hour, amount: AmountOfSubstanceUnit.PoundMole));
+                yield return new (MolarFlowUnit.PoundMolePerMinute, "PoundMolePerMinute", "PoundMolesPerMinute", new BaseUnits(time: DurationUnit.Minute, amount: AmountOfSubstanceUnit.PoundMole));
+                yield return new (MolarFlowUnit.PoundMolePerSecond, "PoundMolePerSecond", "PoundMolesPerSecond", new BaseUnits(time: DurationUnit.Second, amount: AmountOfSubstanceUnit.PoundMole));
+            }
+        }
 
         static MolarFlow()
         {
-            BaseDimensions = new BaseDimensions(0, 0, -1, 0, 0, 1, 0);
-            BaseUnit = MolarFlowUnit.MolePerSecond;
-            Units = Enum.GetValues(typeof(MolarFlowUnit)).Cast<MolarFlowUnit>().ToArray();
-            Zero = new MolarFlow(0, BaseUnit);
-            Info = new QuantityInfo<MolarFlowUnit>("MolarFlow",
-                new UnitInfo<MolarFlowUnit>[]
-                {
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.KilomolePerHour, "KilomolesPerHour", BaseUnits.Undefined, "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.KilomolePerMinute, "KilomolesPerMinute", BaseUnits.Undefined, "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.KilomolePerSecond, "KilomolesPerSecond", BaseUnits.Undefined, "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.MolePerHour, "MolesPerHour", new BaseUnits(time: DurationUnit.Hour, amount: AmountOfSubstanceUnit.Mole), "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.MolePerMinute, "MolesPerMinute", new BaseUnits(time: DurationUnit.Minute, amount: AmountOfSubstanceUnit.Mole), "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.MolePerSecond, "MolesPerSecond", new BaseUnits(time: DurationUnit.Second, amount: AmountOfSubstanceUnit.Mole), "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.PoundMolePerHour, "PoundMolesPerHour", new BaseUnits(time: DurationUnit.Hour, amount: AmountOfSubstanceUnit.PoundMole), "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.PoundMolePerMinute, "PoundMolesPerMinute", new BaseUnits(time: DurationUnit.Minute, amount: AmountOfSubstanceUnit.PoundMole), "MolarFlow"),
-                    new UnitInfo<MolarFlowUnit>(MolarFlowUnit.PoundMolePerSecond, "PoundMolesPerSecond", new BaseUnits(time: DurationUnit.Second, amount: AmountOfSubstanceUnit.PoundMole), "MolarFlow"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = MolarFlowInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -86,10 +145,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public MolarFlow(double value, MolarFlowUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -103,13 +161,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public MolarFlow(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -120,30 +173,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<MolarFlowUnit> Info { get; }
+        public static QuantityInfo<MolarFlow, MolarFlowUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of MolarFlow, which is MolePerSecond. All conversions go via this value.
         /// </summary>
-        public static MolarFlowUnit BaseUnit { get; }
+        public static MolarFlowUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the MolarFlow quantity.
         /// </summary>
-        public static MolarFlowUnit[] Units { get; }
+        public static IReadOnlyCollection<MolarFlowUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit MolePerSecond.
         /// </summary>
-        public static MolarFlow Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static MolarFlow AdditiveIdentity => Zero;
+        public static MolarFlow Zero => Info.Zero;
 
         #endregion
 
@@ -155,23 +205,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public MolarFlowUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<MolarFlowUnit> QuantityInfo => Info;
+        public QuantityInfo<MolarFlow, MolarFlowUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<MolarFlow> IQuantityOfType<MolarFlow>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<MolarFlowUnit> IQuantity<MolarFlowUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => MolarFlow.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -274,7 +332,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(MolarFlowUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -284,90 +342,72 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.KilomolePerHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromKilomolesPerHour(QuantityValue kilomolesperhour)
+        public static MolarFlow FromKilomolesPerHour(double value)
         {
-            double value = (double) kilomolesperhour;
             return new MolarFlow(value, MolarFlowUnit.KilomolePerHour);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.KilomolePerMinute"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromKilomolesPerMinute(QuantityValue kilomolesperminute)
+        public static MolarFlow FromKilomolesPerMinute(double value)
         {
-            double value = (double) kilomolesperminute;
             return new MolarFlow(value, MolarFlowUnit.KilomolePerMinute);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.KilomolePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromKilomolesPerSecond(QuantityValue kilomolespersecond)
+        public static MolarFlow FromKilomolesPerSecond(double value)
         {
-            double value = (double) kilomolespersecond;
             return new MolarFlow(value, MolarFlowUnit.KilomolePerSecond);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.MolePerHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromMolesPerHour(QuantityValue molesperhour)
+        public static MolarFlow FromMolesPerHour(double value)
         {
-            double value = (double) molesperhour;
             return new MolarFlow(value, MolarFlowUnit.MolePerHour);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.MolePerMinute"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromMolesPerMinute(QuantityValue molesperminute)
+        public static MolarFlow FromMolesPerMinute(double value)
         {
-            double value = (double) molesperminute;
             return new MolarFlow(value, MolarFlowUnit.MolePerMinute);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.MolePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromMolesPerSecond(QuantityValue molespersecond)
+        public static MolarFlow FromMolesPerSecond(double value)
         {
-            double value = (double) molespersecond;
             return new MolarFlow(value, MolarFlowUnit.MolePerSecond);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.PoundMolePerHour"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromPoundMolesPerHour(QuantityValue poundmolesperhour)
+        public static MolarFlow FromPoundMolesPerHour(double value)
         {
-            double value = (double) poundmolesperhour;
             return new MolarFlow(value, MolarFlowUnit.PoundMolePerHour);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.PoundMolePerMinute"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromPoundMolesPerMinute(QuantityValue poundmolesperminute)
+        public static MolarFlow FromPoundMolesPerMinute(double value)
         {
-            double value = (double) poundmolesperminute;
             return new MolarFlow(value, MolarFlowUnit.PoundMolePerMinute);
         }
 
         /// <summary>
         ///     Creates a <see cref="MolarFlow"/> from <see cref="MolarFlowUnit.PoundMolePerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static MolarFlow FromPoundMolesPerSecond(QuantityValue poundmolespersecond)
+        public static MolarFlow FromPoundMolesPerSecond(double value)
         {
-            double value = (double) poundmolespersecond;
             return new MolarFlow(value, MolarFlowUnit.PoundMolePerSecond);
         }
 
@@ -377,9 +417,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>MolarFlow unit value.</returns>
-        public static MolarFlow From(QuantityValue value, MolarFlowUnit fromUnit)
+        public static MolarFlow From(double value, MolarFlowUnit fromUnit)
         {
-            return new MolarFlow((double)value, fromUnit);
+            return new MolarFlow(value, fromUnit);
         }
 
         #endregion
@@ -438,7 +478,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static MolarFlow Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<MolarFlow, MolarFlowUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<MolarFlow, MolarFlowUnit>(
                 str,
                 provider,
                 From);
@@ -452,7 +492,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out MolarFlow result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out MolarFlow result)
         {
             return TryParse(str, null, out result);
         }
@@ -467,9 +507,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out MolarFlow result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out MolarFlow result)
         {
-            return QuantityParser.Default.TryParse<MolarFlow, MolarFlowUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<MolarFlow, MolarFlowUnit>(
                 str,
                 provider,
                 From,
@@ -502,11 +542,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static MolarFlowUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<MolarFlowUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.MolarFlowUnit)"/>
-        public static bool TryParseUnit(string str, out MolarFlowUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out MolarFlowUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -521,9 +561,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out MolarFlowUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out MolarFlowUnit unit)
         {
-            return UnitParser.Default.TryParse<MolarFlowUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -570,6 +610,34 @@ namespace UnitsNet
         public static double operator /(MolarFlow left, MolarFlow right)
         {
             return left.MolesPerSecond / right.MolesPerSecond;
+        }
+
+        #endregion
+
+        #region Relational Operators
+
+        /// <summary>Get <see cref="AmountOfSubstance"/> from <see cref="MolarFlow"/> * <see cref="Duration"/>.</summary>
+        public static AmountOfSubstance operator *(MolarFlow molarFlow, Duration duration)
+        {
+            return AmountOfSubstance.FromMoles(molarFlow.MolesPerSecond * duration.Seconds);
+        }
+
+        /// <summary>Get <see cref="MassFlow"/> from <see cref="MolarFlow"/> * <see cref="MolarMass"/>.</summary>
+        public static MassFlow operator *(MolarFlow molarFlow, MolarMass molarMass)
+        {
+            return MassFlow.FromKilogramsPerSecond(molarFlow.KilomolesPerSecond * molarMass.KilogramsPerKilomole);
+        }
+
+        /// <summary>Get <see cref="Molarity"/> from <see cref="MolarFlow"/> / <see cref="VolumeFlow"/>.</summary>
+        public static Molarity operator /(MolarFlow molarFlow, VolumeFlow volumeFlow)
+        {
+            return Molarity.FromMolesPerCubicMeter(molarFlow.MolesPerSecond / volumeFlow.CubicMetersPerSecond);
+        }
+
+        /// <summary>Get <see cref="VolumeFlow"/> from <see cref="MolarFlow"/> / <see cref="Molarity"/>.</summary>
+        public static VolumeFlow operator /(MolarFlow molarFlow, Molarity molarity)
+        {
+            return VolumeFlow.FromCubicMetersPerSecond(molarFlow.MolesPerSecond / molarity.MolesPerCubicMeter);
         }
 
         #endregion
@@ -639,6 +707,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current MolarFlow.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="MolarFlow"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -675,88 +752,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another MolarFlow within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(MolarFlow other, MolarFlow tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(MolarFlow other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is MolarFlow otherTyped
-                   && (tolerance is MolarFlow toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'MolarFlow'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(MolarFlow other, MolarFlow tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current MolarFlow.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -773,37 +768,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is MolarFlowUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(MolarFlowUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is MolarFlowUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(MolarFlowUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<MolarFlowUnit>());
         }
 
         /// <summary>
@@ -843,7 +811,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -896,6 +864,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not MolarFlowUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(MolarFlowUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -905,41 +883,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public MolarFlow ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<MolarFlowUnit> IQuantity<MolarFlowUnit>.ToUnit(MolarFlowUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<MolarFlowUnit> IQuantity<MolarFlowUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not MolarFlowUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(MolarFlowUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -951,140 +898,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<MolarFlowUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(MolarFlow)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(MolarFlow)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(MolarFlow)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(MolarFlow))
-                return this;
-            else if (conversionType == typeof(MolarFlowUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return MolarFlow.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return MolarFlow.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(MolarFlow)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

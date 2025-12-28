@@ -9,8 +9,6 @@ namespace UnitsNet.Tests
 {
     public class ElectricCurrentTests : ElectricCurrentTestsBase
     {
-        protected override bool SupportsSIUnitSystem => true;
-
         protected override double FemtoamperesInOneAmpere => 1e15;
 
         protected override double PicoamperesInOneAmpere => 1e12;
@@ -28,6 +26,12 @@ namespace UnitsNet.Tests
         protected override double KiloamperesInOneAmpere => 1e-3;
 
         protected override double MegaamperesInOneAmpere => 1e-6;
+        
+        [Fact]
+        public void AllBaseQuantityUnitsAreBaseUnits()
+        {
+            Assert.All(ElectricCurrent.Info.UnitInfos, unitInfo => Assert.Equal(new BaseUnits(current: unitInfo.Value), unitInfo.BaseUnits));
+        }
 
         [Theory]
         [InlineData(1, 1, 1)]

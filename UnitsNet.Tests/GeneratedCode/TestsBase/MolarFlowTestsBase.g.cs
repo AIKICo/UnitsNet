@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -99,16 +101,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MolarFlow(double.PositiveInfinity, MolarFlowUnit.MolePerSecond));
-            Assert.Throws<ArgumentException>(() => new MolarFlow(double.NegativeInfinity, MolarFlowUnit.MolePerSecond));
+            var exception1 = Record.Exception(() => new MolarFlow(double.PositiveInfinity, MolarFlowUnit.MolePerSecond));
+            var exception2 = Record.Exception(() => new MolarFlow(double.NegativeInfinity, MolarFlowUnit.MolePerSecond));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MolarFlow(double.NaN, MolarFlowUnit.MolePerSecond));
+            var exception = Record.Exception(() => new MolarFlow(double.NaN, MolarFlowUnit.MolePerSecond));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -118,32 +125,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new MolarFlow(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (MolarFlow) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new MolarFlow(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new MolarFlow(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void MolarFlow_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            MolarFlowUnit[] unitsOrderedByName = EnumHelper.GetValues<MolarFlowUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new MolarFlow(1, MolarFlowUnit.MolePerSecond);
 
-            QuantityInfo<MolarFlowUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<MolarFlow, MolarFlowUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(MolarFlow.Zero, quantityInfo.Zero);
             Assert.Equal("MolarFlow", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<MolarFlowUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(MolarFlow.Zero, quantityInfo.Zero);
+            Assert.Equal(MolarFlow.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(MolarFlow.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<MolarFlowUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -164,55 +175,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = MolarFlow.From(1, MolarFlowUnit.KilomolePerHour);
-            AssertEx.EqualTolerance(1, quantity00.KilomolesPerHour, KilomolesPerHourTolerance);
-            Assert.Equal(MolarFlowUnit.KilomolePerHour, quantity00.Unit);
-
-            var quantity01 = MolarFlow.From(1, MolarFlowUnit.KilomolePerMinute);
-            AssertEx.EqualTolerance(1, quantity01.KilomolesPerMinute, KilomolesPerMinuteTolerance);
-            Assert.Equal(MolarFlowUnit.KilomolePerMinute, quantity01.Unit);
-
-            var quantity02 = MolarFlow.From(1, MolarFlowUnit.KilomolePerSecond);
-            AssertEx.EqualTolerance(1, quantity02.KilomolesPerSecond, KilomolesPerSecondTolerance);
-            Assert.Equal(MolarFlowUnit.KilomolePerSecond, quantity02.Unit);
-
-            var quantity03 = MolarFlow.From(1, MolarFlowUnit.MolePerHour);
-            AssertEx.EqualTolerance(1, quantity03.MolesPerHour, MolesPerHourTolerance);
-            Assert.Equal(MolarFlowUnit.MolePerHour, quantity03.Unit);
-
-            var quantity04 = MolarFlow.From(1, MolarFlowUnit.MolePerMinute);
-            AssertEx.EqualTolerance(1, quantity04.MolesPerMinute, MolesPerMinuteTolerance);
-            Assert.Equal(MolarFlowUnit.MolePerMinute, quantity04.Unit);
-
-            var quantity05 = MolarFlow.From(1, MolarFlowUnit.MolePerSecond);
-            AssertEx.EqualTolerance(1, quantity05.MolesPerSecond, MolesPerSecondTolerance);
-            Assert.Equal(MolarFlowUnit.MolePerSecond, quantity05.Unit);
-
-            var quantity06 = MolarFlow.From(1, MolarFlowUnit.PoundMolePerHour);
-            AssertEx.EqualTolerance(1, quantity06.PoundMolesPerHour, PoundMolesPerHourTolerance);
-            Assert.Equal(MolarFlowUnit.PoundMolePerHour, quantity06.Unit);
-
-            var quantity07 = MolarFlow.From(1, MolarFlowUnit.PoundMolePerMinute);
-            AssertEx.EqualTolerance(1, quantity07.PoundMolesPerMinute, PoundMolesPerMinuteTolerance);
-            Assert.Equal(MolarFlowUnit.PoundMolePerMinute, quantity07.Unit);
-
-            var quantity08 = MolarFlow.From(1, MolarFlowUnit.PoundMolePerSecond);
-            AssertEx.EqualTolerance(1, quantity08.PoundMolesPerSecond, PoundMolesPerSecondTolerance);
-            Assert.Equal(MolarFlowUnit.PoundMolePerSecond, quantity08.Unit);
-
+            Assert.All(EnumHelper.GetValues<MolarFlowUnit>(), unit =>
+            {
+                var quantity = MolarFlow.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromMolesPerSecond_WithInfinityValue_ThrowsArgumentException()
+        public void FromMolesPerSecond_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => MolarFlow.FromMolesPerSecond(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => MolarFlow.FromMolesPerSecond(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => MolarFlow.FromMolesPerSecond(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => MolarFlow.FromMolesPerSecond(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromMolesPerSecond_WithNanValue_ThrowsArgumentException()
+        public void FromMolesPerSecond_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => MolarFlow.FromMolesPerSecond(double.NaN));
+            var exception = Record.Exception(() => MolarFlow.FromMolesPerSecond(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -231,256 +217,269 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = MolarFlow.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new MolarFlow(value: 1, unit: MolarFlow.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(MolarFlow.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = MolarFlow.Parse("1 kkmol/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilomolesPerHour, KilomolesPerHourTolerance);
-                Assert.Equal(MolarFlowUnit.KilomolePerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 kmol/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilomolesPerMinute, KilomolesPerMinuteTolerance);
-                Assert.Equal(MolarFlowUnit.KilomolePerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 kmol/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilomolesPerSecond, KilomolesPerSecondTolerance);
-                Assert.Equal(MolarFlowUnit.KilomolePerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 kmol/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MolesPerHour, MolesPerHourTolerance);
-                Assert.Equal(MolarFlowUnit.MolePerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 mol/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MolesPerMinute, MolesPerMinuteTolerance);
-                Assert.Equal(MolarFlowUnit.MolePerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 mol/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MolesPerSecond, MolesPerSecondTolerance);
-                Assert.Equal(MolarFlowUnit.MolePerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 lbmol/h", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundMolesPerHour, PoundMolesPerHourTolerance);
-                Assert.Equal(MolarFlowUnit.PoundMolePerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 lbmol/min", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundMolesPerMinute, PoundMolesPerMinuteTolerance);
-                Assert.Equal(MolarFlowUnit.PoundMolePerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MolarFlow.Parse("1 lbmol/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundMolesPerSecond, PoundMolesPerSecondTolerance);
-                Assert.Equal(MolarFlowUnit.PoundMolePerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new MolarFlow(value: 1, unit: MolarFlow.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(MolarFlow.TryParse("1 kkmol/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilomolesPerHour, KilomolesPerHourTolerance);
-                Assert.Equal(MolarFlowUnit.KilomolePerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 kmol/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilomolesPerMinute, KilomolesPerMinuteTolerance);
-                Assert.Equal(MolarFlowUnit.KilomolePerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 kmol/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilomolesPerSecond, KilomolesPerSecondTolerance);
-                Assert.Equal(MolarFlowUnit.KilomolePerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 kmol/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MolesPerHour, MolesPerHourTolerance);
-                Assert.Equal(MolarFlowUnit.MolePerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 mol/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MolesPerMinute, MolesPerMinuteTolerance);
-                Assert.Equal(MolarFlowUnit.MolePerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 mol/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MolesPerSecond, MolesPerSecondTolerance);
-                Assert.Equal(MolarFlowUnit.MolePerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 lbmol/h", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundMolesPerHour, PoundMolesPerHourTolerance);
-                Assert.Equal(MolarFlowUnit.PoundMolePerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 lbmol/min", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundMolesPerMinute, PoundMolesPerMinuteTolerance);
-                Assert.Equal(MolarFlowUnit.PoundMolePerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(MolarFlow.TryParse("1 lbmol/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundMolesPerSecond, PoundMolesPerSecondTolerance);
-                Assert.Equal(MolarFlowUnit.PoundMolePerSecond, parsed.Unit);
-            }
-
+            var quantity = new MolarFlow(value: 1, unit: MolarFlow.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("kkmol/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.KilomolePerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new MolarFlow(value: 1, unit: MolarFlow.BaseUnit);
+            var expectedUnit = MolarFlow.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("kmol/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.KilomolePerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            MolarFlow convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("kmol/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.KilomolePerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("kmol/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.MolePerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("mol/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.MolePerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("mol/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.MolePerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("lbmol/h", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.PoundMolePerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("lbmol/min", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.PoundMolePerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MolarFlow.ParseUnit("lbmol/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MolarFlowUnit.PoundMolePerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(MolarFlow.TryParseUnit("kkmol/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.KilomolePerHour, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new MolarFlow(value: 1, unit: MolarFlow.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("kmol/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.KilomolePerMinute, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new MolarFlow(value: 1, unit: MolarFlow.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("kmol/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.KilomolePerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 kkmol/h", MolarFlowUnit.KilomolePerHour, 4.2)]
+        [InlineData("en-US", "4.2 kmol/min", MolarFlowUnit.KilomolePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 kmol/s", MolarFlowUnit.KilomolePerSecond, 4.2)]
+        [InlineData("en-US", "4.2 kmol/h", MolarFlowUnit.MolePerHour, 4.2)]
+        [InlineData("en-US", "4.2 mol/min", MolarFlowUnit.MolePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 mol/s", MolarFlowUnit.MolePerSecond, 4.2)]
+        [InlineData("en-US", "4.2 lbmol/h", MolarFlowUnit.PoundMolePerHour, 4.2)]
+        [InlineData("en-US", "4.2 lbmol/min", MolarFlowUnit.PoundMolePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 lbmol/s", MolarFlowUnit.PoundMolePerSecond, 4.2)]
+        public void Parse(string culture, string quantityString, MolarFlowUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = MolarFlow.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("kmol/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.MolePerHour, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 kkmol/h", MolarFlowUnit.KilomolePerHour, 4.2)]
+        [InlineData("en-US", "4.2 kmol/min", MolarFlowUnit.KilomolePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 kmol/s", MolarFlowUnit.KilomolePerSecond, 4.2)]
+        [InlineData("en-US", "4.2 kmol/h", MolarFlowUnit.MolePerHour, 4.2)]
+        [InlineData("en-US", "4.2 mol/min", MolarFlowUnit.MolePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 mol/s", MolarFlowUnit.MolePerSecond, 4.2)]
+        [InlineData("en-US", "4.2 lbmol/h", MolarFlowUnit.PoundMolePerHour, 4.2)]
+        [InlineData("en-US", "4.2 lbmol/min", MolarFlowUnit.PoundMolePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 lbmol/s", MolarFlowUnit.PoundMolePerSecond, 4.2)]
+        public void TryParse(string culture, string quantityString, MolarFlowUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(MolarFlow.TryParse(quantityString, out MolarFlow parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("mol/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.MolePerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            MolarFlowUnit parsedUnit = MolarFlow.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("mol/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.MolePerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            MolarFlowUnit parsedUnit = MolarFlow.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("lbmol/h", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.PoundMolePerHour, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("en-US", "kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("en-US", "kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("en-US", "kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("en-US", "mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("en-US", "mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("en-US", "lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("en-US", "lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("en-US", "lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            MolarFlowUnit parsedUnit = MolarFlow.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("lbmol/min", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.PoundMolePerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("en-US", "kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("en-US", "kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("en-US", "kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("en-US", "mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("en-US", "mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("en-US", "lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("en-US", "lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("en-US", "lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            MolarFlowUnit parsedUnit = MolarFlow.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MolarFlow.TryParseUnit("lbmol/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MolarFlowUnit.PoundMolePerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(MolarFlow.TryParseUnit(abbreviation, out MolarFlowUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
+        [Theory]
+        [InlineData("kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(MolarFlow.TryParseUnit(abbreviation, out MolarFlowUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("en-US", "kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("en-US", "kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("en-US", "kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("en-US", "mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("en-US", "mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("en-US", "lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("en-US", "lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("en-US", "lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(MolarFlow.TryParseUnit(abbreviation, out MolarFlowUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "kkmol/h", MolarFlowUnit.KilomolePerHour)]
+        [InlineData("en-US", "kmol/min", MolarFlowUnit.KilomolePerMinute)]
+        [InlineData("en-US", "kmol/s", MolarFlowUnit.KilomolePerSecond)]
+        [InlineData("en-US", "kmol/h", MolarFlowUnit.MolePerHour)]
+        [InlineData("en-US", "mol/min", MolarFlowUnit.MolePerMinute)]
+        [InlineData("en-US", "mol/s", MolarFlowUnit.MolePerSecond)]
+        [InlineData("en-US", "lbmol/h", MolarFlowUnit.PoundMolePerHour)]
+        [InlineData("en-US", "lbmol/min", MolarFlowUnit.PoundMolePerMinute)]
+        [InlineData("en-US", "lbmol/s", MolarFlowUnit.PoundMolePerSecond)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, MolarFlowUnit expectedUnit)
+        {
+            Assert.True(MolarFlow.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out MolarFlowUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", MolarFlowUnit.KilomolePerHour, "kkmol/h")]
+        [InlineData("en-US", MolarFlowUnit.KilomolePerMinute, "kmol/min")]
+        [InlineData("en-US", MolarFlowUnit.KilomolePerSecond, "kmol/s")]
+        [InlineData("en-US", MolarFlowUnit.MolePerHour, "kmol/h")]
+        [InlineData("en-US", MolarFlowUnit.MolePerMinute, "mol/min")]
+        [InlineData("en-US", MolarFlowUnit.MolePerSecond, "mol/s")]
+        [InlineData("en-US", MolarFlowUnit.PoundMolePerHour, "lbmol/h")]
+        [InlineData("en-US", MolarFlowUnit.PoundMolePerMinute, "lbmol/min")]
+        [InlineData("en-US", MolarFlowUnit.PoundMolePerSecond, "lbmol/s")]
+        public void GetAbbreviationForCulture(string culture, MolarFlowUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = MolarFlow.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(MolarFlow.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = MolarFlow.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -508,12 +507,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(MolarFlowUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = MolarFlow.Units.First(u => u != MolarFlow.BaseUnit);
-
-            var quantity = MolarFlow.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(MolarFlow.Units.Where(u => u != MolarFlow.BaseUnit), fromUnit =>
+            {
+                var quantity = MolarFlow.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -523,6 +522,25 @@ namespace UnitsNet.Tests
             var quantity = default(MolarFlow);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(MolarFlowUnit unit)
+        {
+            var quantity = MolarFlow.From(3, MolarFlow.BaseUnit);
+            MolarFlow expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<MolarFlowUnit> quantityToConvert = quantity;
+                IQuantity<MolarFlowUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -635,21 +653,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = MolarFlow.FromMolesPerSecond(1);
-            Assert.True(v.Equals(MolarFlow.FromMolesPerSecond(1), MolesPerSecondTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(MolarFlow.Zero, MolesPerSecondTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = MolarFlow.FromMolesPerSecond(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(MolarFlow.FromMolesPerSecond(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             MolarFlow molepersecond = MolarFlow.FromMolesPerSecond(1);
@@ -663,13 +666,39 @@ namespace UnitsNet.Tests
             Assert.False(molepersecond.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = MolarFlow.FromMolesPerSecond(firstValue);
+            var otherQuantity = MolarFlow.FromMolesPerSecond(secondValue);
+            MolarFlow maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, MolarFlow.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = MolarFlow.FromMolesPerSecond(1);
+            var negativeTolerance = MolarFlow.FromMolesPerSecond(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(MolarFlowUnit)).Cast<MolarFlowUnit>();
+            var units = Enum.GetValues<MolarFlowUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -682,23 +711,16 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 kkmol/h", new MolarFlow(1, MolarFlowUnit.KilomolePerHour).ToString());
-                Assert.Equal("1 kmol/min", new MolarFlow(1, MolarFlowUnit.KilomolePerMinute).ToString());
-                Assert.Equal("1 kmol/s", new MolarFlow(1, MolarFlowUnit.KilomolePerSecond).ToString());
-                Assert.Equal("1 kmol/h", new MolarFlow(1, MolarFlowUnit.MolePerHour).ToString());
-                Assert.Equal("1 mol/min", new MolarFlow(1, MolarFlowUnit.MolePerMinute).ToString());
-                Assert.Equal("1 mol/s", new MolarFlow(1, MolarFlowUnit.MolePerSecond).ToString());
-                Assert.Equal("1 lbmol/h", new MolarFlow(1, MolarFlowUnit.PoundMolePerHour).ToString());
-                Assert.Equal("1 lbmol/min", new MolarFlow(1, MolarFlowUnit.PoundMolePerMinute).ToString());
-                Assert.Equal("1 lbmol/s", new MolarFlow(1, MolarFlowUnit.PoundMolePerSecond).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 kkmol/h", new MolarFlow(1, MolarFlowUnit.KilomolePerHour).ToString());
+            Assert.Equal("1 kmol/min", new MolarFlow(1, MolarFlowUnit.KilomolePerMinute).ToString());
+            Assert.Equal("1 kmol/s", new MolarFlow(1, MolarFlowUnit.KilomolePerSecond).ToString());
+            Assert.Equal("1 kmol/h", new MolarFlow(1, MolarFlowUnit.MolePerHour).ToString());
+            Assert.Equal("1 mol/min", new MolarFlow(1, MolarFlowUnit.MolePerMinute).ToString());
+            Assert.Equal("1 mol/s", new MolarFlow(1, MolarFlowUnit.MolePerSecond).ToString());
+            Assert.Equal("1 lbmol/h", new MolarFlow(1, MolarFlowUnit.PoundMolePerHour).ToString());
+            Assert.Equal("1 lbmol/min", new MolarFlow(1, MolarFlowUnit.PoundMolePerMinute).ToString());
+            Assert.Equal("1 lbmol/s", new MolarFlow(1, MolarFlowUnit.PoundMolePerSecond).ToString());
         }
 
         [Fact]
@@ -721,19 +743,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s1"));
-                Assert.Equal("0.12 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s2"));
-                Assert.Equal("0.123 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s3"));
-                Assert.Equal("0.1235 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s1"));
+            Assert.Equal("0.12 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s2"));
+            Assert.Equal("0.123 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s3"));
+            Assert.Equal("0.1235 mol/s", new MolarFlow(0.123456, MolarFlowUnit.MolePerSecond).ToString("s4"));
         }
 
         [Fact]
@@ -756,7 +770,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -769,150 +783,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(MolarFlow)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(MolarFlowUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal(MolarFlow.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal(MolarFlow.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = MolarFlow.FromMolesPerSecond(1.0);
-            Assert.Equal(new {MolarFlow.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

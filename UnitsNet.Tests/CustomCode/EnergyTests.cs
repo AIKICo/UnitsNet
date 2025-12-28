@@ -9,7 +9,6 @@ namespace UnitsNet.Tests
 {
     public class EnergyTests : EnergyTestsBase
     {
-        protected override bool SupportsSIUnitSystem => true;
         protected override double ThermsImperialInOneJoule => 9.478171203551087813109937767482e-9;
 
         protected override double JoulesInOneJoule => 1;
@@ -41,6 +40,10 @@ namespace UnitsNet.Tests
         protected override double ErgsInOneJoule => 10000000;
 
         protected override double MillijoulesInOneJoule => 1000;
+
+        protected override double MicrojoulesInOneJoule => 1E6;
+
+        protected override double NanojoulesInOneJoule => 1E9;
 
         protected override double TerawattHoursInOneJoule => 2.77777778e-16;
 
@@ -186,6 +189,34 @@ namespace UnitsNet.Tests
         {
             Mass m = Energy.FromJoules(24) / SpecificEnergy.FromJoulesPerKilogram(8);
             Assert.Equal(Mass.FromKilograms(3), m);
+        }
+
+        [Fact]
+        public void EnergyDividedByMolarEnergyEqualsAmountOfSubstance()
+        {
+            AmountOfSubstance m = Energy.FromJoules(24) / MolarEnergy.FromJoulesPerMole(8);
+            Assert.Equal(AmountOfSubstance.FromMoles(3), m);
+        }
+
+        [Fact]
+        public void EnergyDividedByAmountOfSubstanceEqualsMolarEnergy()
+        {
+            MolarEnergy m = Energy.FromJoules(24) / AmountOfSubstance.FromMoles(8);
+            Assert.Equal(MolarEnergy.FromJoulesPerMole(3), m);
+        }
+
+        [Fact]
+        public void EnergyDividedByVolumeEqualsEnergyDensity()
+        {
+            EnergyDensity m = Energy.FromJoules(24) / Volume.FromCubicMeters(8);
+            Assert.Equal(EnergyDensity.FromJoulesPerCubicMeter(3), m);
+        }
+
+        [Fact]
+        public void EnergyDividedByEnergyDensityEqualsVolume()
+        {
+            Volume m = Energy.FromJoules(24) / EnergyDensity.FromJoulesPerCubicMeter(8);
+            Assert.Equal(Volume.FromCubicMeters(3), m);
         }
     }
 }

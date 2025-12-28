@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Illuminance(double value, IlluminanceUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Illuminance, which is Second. All conversions go via this value.
         /// </summary>
         public static IlluminanceUnit BaseUnit { get; } = IlluminanceUnit.Lux;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Illuminance.
         /// </summary>
         public static Illuminance MaxValue { get; } = new Illuminance(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Illuminance.
         /// </summary>
         public static Illuminance MinValue { get; } = new Illuminance(double.MinValue, BaseUnit);
 
@@ -109,25 +108,21 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Illuminance"/> from <see cref="IlluminanceUnit.Kilolux"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Illuminance FromKilolux(double kilolux) => new Illuminance(kilolux, IlluminanceUnit.Kilolux);
 
         /// <summary>
         ///     Creates a <see cref="Illuminance"/> from <see cref="IlluminanceUnit.Lux"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Illuminance FromLux(double lux) => new Illuminance(lux, IlluminanceUnit.Lux);
 
         /// <summary>
         ///     Creates a <see cref="Illuminance"/> from <see cref="IlluminanceUnit.Megalux"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Illuminance FromMegalux(double megalux) => new Illuminance(megalux, IlluminanceUnit.Megalux);
 
         /// <summary>
         ///     Creates a <see cref="Illuminance"/> from <see cref="IlluminanceUnit.Millilux"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Illuminance FromMillilux(double millilux) => new Illuminance(millilux, IlluminanceUnit.Millilux);
 
         /// <summary>
@@ -152,9 +147,9 @@ namespace UnitsNet
                 public double As(IlluminanceUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Illuminance to another Illuminance with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Illuminance with the specified unit.</returns>
                 public Illuminance ToUnit(IlluminanceUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -174,7 +169,7 @@ namespace UnitsNet
                         IlluminanceUnit.Lux => _value,
                         IlluminanceUnit.Megalux => (_value) * 1e6d,
                         IlluminanceUnit.Millilux => (_value) * 1e-3d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -191,7 +186,7 @@ namespace UnitsNet
                         IlluminanceUnit.Lux => baseUnitValue,
                         IlluminanceUnit.Megalux => (baseUnitValue) / 1e6d,
                         IlluminanceUnit.Millilux => (baseUnitValue) / 1e-3d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

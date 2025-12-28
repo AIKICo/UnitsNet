@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -91,16 +93,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Compressibility(double.PositiveInfinity, CompressibilityUnit.InversePascal));
-            Assert.Throws<ArgumentException>(() => new Compressibility(double.NegativeInfinity, CompressibilityUnit.InversePascal));
+            var exception1 = Record.Exception(() => new Compressibility(double.PositiveInfinity, CompressibilityUnit.InversePascal));
+            var exception2 = Record.Exception(() => new Compressibility(double.NegativeInfinity, CompressibilityUnit.InversePascal));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Compressibility(double.NaN, CompressibilityUnit.InversePascal));
+            var exception = Record.Exception(() => new Compressibility(double.NaN, CompressibilityUnit.InversePascal));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -110,32 +117,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new Compressibility(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Compressibility) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new Compressibility(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new Compressibility(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void Compressibility_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            CompressibilityUnit[] unitsOrderedByName = EnumHelper.GetValues<CompressibilityUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Compressibility(1, CompressibilityUnit.InversePascal);
 
-            QuantityInfo<CompressibilityUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Compressibility, CompressibilityUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Compressibility.Zero, quantityInfo.Zero);
             Assert.Equal("Compressibility", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<CompressibilityUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Compressibility.Zero, quantityInfo.Zero);
+            Assert.Equal(Compressibility.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Compressibility.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<CompressibilityUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -154,47 +165,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Compressibility.From(1, CompressibilityUnit.InverseAtmosphere);
-            AssertEx.EqualTolerance(1, quantity00.InverseAtmospheres, InverseAtmospheresTolerance);
-            Assert.Equal(CompressibilityUnit.InverseAtmosphere, quantity00.Unit);
-
-            var quantity01 = Compressibility.From(1, CompressibilityUnit.InverseBar);
-            AssertEx.EqualTolerance(1, quantity01.InverseBars, InverseBarsTolerance);
-            Assert.Equal(CompressibilityUnit.InverseBar, quantity01.Unit);
-
-            var quantity02 = Compressibility.From(1, CompressibilityUnit.InverseKilopascal);
-            AssertEx.EqualTolerance(1, quantity02.InverseKilopascals, InverseKilopascalsTolerance);
-            Assert.Equal(CompressibilityUnit.InverseKilopascal, quantity02.Unit);
-
-            var quantity03 = Compressibility.From(1, CompressibilityUnit.InverseMegapascal);
-            AssertEx.EqualTolerance(1, quantity03.InverseMegapascals, InverseMegapascalsTolerance);
-            Assert.Equal(CompressibilityUnit.InverseMegapascal, quantity03.Unit);
-
-            var quantity04 = Compressibility.From(1, CompressibilityUnit.InverseMillibar);
-            AssertEx.EqualTolerance(1, quantity04.InverseMillibars, InverseMillibarsTolerance);
-            Assert.Equal(CompressibilityUnit.InverseMillibar, quantity04.Unit);
-
-            var quantity05 = Compressibility.From(1, CompressibilityUnit.InversePascal);
-            AssertEx.EqualTolerance(1, quantity05.InversePascals, InversePascalsTolerance);
-            Assert.Equal(CompressibilityUnit.InversePascal, quantity05.Unit);
-
-            var quantity06 = Compressibility.From(1, CompressibilityUnit.InversePoundForcePerSquareInch);
-            AssertEx.EqualTolerance(1, quantity06.InversePoundsForcePerSquareInch, InversePoundsForcePerSquareInchTolerance);
-            Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, quantity06.Unit);
-
+            Assert.All(EnumHelper.GetValues<CompressibilityUnit>(), unit =>
+            {
+                var quantity = Compressibility.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromInversePascals_WithInfinityValue_ThrowsArgumentException()
+        public void FromInversePascals_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Compressibility.FromInversePascals(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Compressibility.FromInversePascals(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Compressibility.FromInversePascals(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Compressibility.FromInversePascals(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromInversePascals_WithNanValue_ThrowsArgumentException()
+        public void FromInversePascals_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Compressibility.FromInversePascals(double.NaN));
+            var exception = Record.Exception(() => Compressibility.FromInversePascals(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -211,376 +205,317 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = Compressibility.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new Compressibility(value: 1, unit: Compressibility.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(Compressibility.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = Compressibility.Parse("1 atm⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseAtmospheres, InverseAtmospheresTolerance);
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 1/atm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseAtmospheres, InverseAtmospheresTolerance);
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 bar⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseBars, InverseBarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseBar, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 1/bar", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseBars, InverseBarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseBar, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 kPa⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseKilopascals, InverseKilopascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 1/kPa", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseKilopascals, InverseKilopascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 MPa⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseMegapascals, InverseMegapascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 1/MPa", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseMegapascals, InverseMegapascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 mbar⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseMillibars, InverseMillibarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 1/mbar", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InverseMillibars, InverseMillibarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 Pa⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InversePascals, InversePascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InversePascal, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 1/Pa", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InversePascals, InversePascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InversePascal, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 psi⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InversePoundsForcePerSquareInch, InversePoundsForcePerSquareInchTolerance);
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Compressibility.Parse("1 1/psi", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.InversePoundsForcePerSquareInch, InversePoundsForcePerSquareInchTolerance);
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new Compressibility(value: 1, unit: Compressibility.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(Compressibility.TryParse("1 atm⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseAtmospheres, InverseAtmospheresTolerance);
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 1/atm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseAtmospheres, InverseAtmospheresTolerance);
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 bar⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseBars, InverseBarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseBar, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 1/bar", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseBars, InverseBarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseBar, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 kPa⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseKilopascals, InverseKilopascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 1/kPa", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseKilopascals, InverseKilopascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 MPa⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseMegapascals, InverseMegapascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 1/MPa", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseMegapascals, InverseMegapascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 mbar⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseMillibars, InverseMillibarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 1/mbar", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InverseMillibars, InverseMillibarsTolerance);
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 Pa⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InversePascals, InversePascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InversePascal, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 1/Pa", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InversePascals, InversePascalsTolerance);
-                Assert.Equal(CompressibilityUnit.InversePascal, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 psi⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InversePoundsForcePerSquareInch, InversePoundsForcePerSquareInchTolerance);
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(Compressibility.TryParse("1 1/psi", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.InversePoundsForcePerSquareInch, InversePoundsForcePerSquareInchTolerance);
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsed.Unit);
-            }
-
+            var quantity = new Compressibility(value: 1, unit: Compressibility.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("atm⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Compressibility(value: 1, unit: Compressibility.BaseUnit);
+            var expectedUnit = Compressibility.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("1/atm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            Compressibility convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("bar⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseBar, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("1/bar", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseBar, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("kPa⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("1/kPa", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("MPa⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("1/MPa", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("mbar⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("1/mbar", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("Pa⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InversePascal, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("1/Pa", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InversePascal, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("psi⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Compressibility.ParseUnit("1/psi", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(Compressibility.TryParseUnit("atm⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new Compressibility(value: 1, unit: Compressibility.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("1/atm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseAtmosphere, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new Compressibility(value: 1, unit: Compressibility.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("bar⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseBar, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 atm⁻¹", CompressibilityUnit.InverseAtmosphere, 4.2)]
+        [InlineData("en-US", "4.2 1/atm", CompressibilityUnit.InverseAtmosphere, 4.2)]
+        [InlineData("en-US", "4.2 bar⁻¹", CompressibilityUnit.InverseBar, 4.2)]
+        [InlineData("en-US", "4.2 1/bar", CompressibilityUnit.InverseBar, 4.2)]
+        [InlineData("en-US", "4.2 kPa⁻¹", CompressibilityUnit.InverseKilopascal, 4.2)]
+        [InlineData("en-US", "4.2 1/kPa", CompressibilityUnit.InverseKilopascal, 4.2)]
+        [InlineData("en-US", "4.2 MPa⁻¹", CompressibilityUnit.InverseMegapascal, 4.2)]
+        [InlineData("en-US", "4.2 1/MPa", CompressibilityUnit.InverseMegapascal, 4.2)]
+        [InlineData("en-US", "4.2 mbar⁻¹", CompressibilityUnit.InverseMillibar, 4.2)]
+        [InlineData("en-US", "4.2 1/mbar", CompressibilityUnit.InverseMillibar, 4.2)]
+        [InlineData("en-US", "4.2 Pa⁻¹", CompressibilityUnit.InversePascal, 4.2)]
+        [InlineData("en-US", "4.2 1/Pa", CompressibilityUnit.InversePascal, 4.2)]
+        [InlineData("en-US", "4.2 psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch, 4.2)]
+        [InlineData("en-US", "4.2 1/psi", CompressibilityUnit.InversePoundForcePerSquareInch, 4.2)]
+        public void Parse(string culture, string quantityString, CompressibilityUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Compressibility.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("1/bar", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseBar, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 atm⁻¹", CompressibilityUnit.InverseAtmosphere, 4.2)]
+        [InlineData("en-US", "4.2 1/atm", CompressibilityUnit.InverseAtmosphere, 4.2)]
+        [InlineData("en-US", "4.2 bar⁻¹", CompressibilityUnit.InverseBar, 4.2)]
+        [InlineData("en-US", "4.2 1/bar", CompressibilityUnit.InverseBar, 4.2)]
+        [InlineData("en-US", "4.2 kPa⁻¹", CompressibilityUnit.InverseKilopascal, 4.2)]
+        [InlineData("en-US", "4.2 1/kPa", CompressibilityUnit.InverseKilopascal, 4.2)]
+        [InlineData("en-US", "4.2 MPa⁻¹", CompressibilityUnit.InverseMegapascal, 4.2)]
+        [InlineData("en-US", "4.2 1/MPa", CompressibilityUnit.InverseMegapascal, 4.2)]
+        [InlineData("en-US", "4.2 mbar⁻¹", CompressibilityUnit.InverseMillibar, 4.2)]
+        [InlineData("en-US", "4.2 1/mbar", CompressibilityUnit.InverseMillibar, 4.2)]
+        [InlineData("en-US", "4.2 Pa⁻¹", CompressibilityUnit.InversePascal, 4.2)]
+        [InlineData("en-US", "4.2 1/Pa", CompressibilityUnit.InversePascal, 4.2)]
+        [InlineData("en-US", "4.2 psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch, 4.2)]
+        [InlineData("en-US", "4.2 1/psi", CompressibilityUnit.InversePoundForcePerSquareInch, 4.2)]
+        public void TryParse(string culture, string quantityString, CompressibilityUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Compressibility.TryParse(quantityString, out Compressibility parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("kPa⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsedUnit);
-            }
+        [Theory]
+        [InlineData("atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            CompressibilityUnit parsedUnit = Compressibility.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("1/kPa", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseKilopascal, parsedUnit);
-            }
+        [Theory]
+        [InlineData("atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            CompressibilityUnit parsedUnit = Compressibility.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("MPa⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("en-US", "1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            CompressibilityUnit parsedUnit = Compressibility.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("1/MPa", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseMegapascal, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("en-US", "1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            CompressibilityUnit parsedUnit = Compressibility.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("mbar⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsedUnit);
-            }
+        [Theory]
+        [InlineData("atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Compressibility.TryParseUnit(abbreviation, out CompressibilityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("1/mbar", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InverseMillibar, parsedUnit);
-            }
+        [Theory]
+        [InlineData("atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Compressibility.TryParseUnit(abbreviation, out CompressibilityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("Pa⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InversePascal, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("en-US", "1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Compressibility.TryParseUnit(abbreviation, out CompressibilityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("1/Pa", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InversePascal, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "atm⁻¹", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "1/atm", CompressibilityUnit.InverseAtmosphere)]
+        [InlineData("en-US", "bar⁻¹", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "1/bar", CompressibilityUnit.InverseBar)]
+        [InlineData("en-US", "kPa⁻¹", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "1/kPa", CompressibilityUnit.InverseKilopascal)]
+        [InlineData("en-US", "MPa⁻¹", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "1/MPa", CompressibilityUnit.InverseMegapascal)]
+        [InlineData("en-US", "mbar⁻¹", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "1/mbar", CompressibilityUnit.InverseMillibar)]
+        [InlineData("en-US", "Pa⁻¹", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "1/Pa", CompressibilityUnit.InversePascal)]
+        [InlineData("en-US", "psi⁻¹", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        [InlineData("en-US", "1/psi", CompressibilityUnit.InversePoundForcePerSquareInch)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, CompressibilityUnit expectedUnit)
+        {
+            Assert.True(Compressibility.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out CompressibilityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Compressibility.TryParseUnit("psi⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", CompressibilityUnit.InverseAtmosphere, "atm⁻¹")]
+        [InlineData("en-US", CompressibilityUnit.InverseBar, "bar⁻¹")]
+        [InlineData("en-US", CompressibilityUnit.InverseKilopascal, "kPa⁻¹")]
+        [InlineData("en-US", CompressibilityUnit.InverseMegapascal, "MPa⁻¹")]
+        [InlineData("en-US", CompressibilityUnit.InverseMillibar, "mbar⁻¹")]
+        [InlineData("en-US", CompressibilityUnit.InversePascal, "Pa⁻¹")]
+        [InlineData("en-US", CompressibilityUnit.InversePoundForcePerSquareInch, "psi⁻¹")]
+        public void GetAbbreviationForCulture(string culture, CompressibilityUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Compressibility.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
 
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(Compressibility.Units, unit =>
             {
-                Assert.True(Compressibility.TryParseUnit("1/psi", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(CompressibilityUnit.InversePoundForcePerSquareInch, parsedUnit);
-            }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
+                var defaultAbbreviation = Compressibility.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -608,12 +543,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(CompressibilityUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Compressibility.Units.First(u => u != Compressibility.BaseUnit);
-
-            var quantity = Compressibility.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Compressibility.Units.Where(u => u != Compressibility.BaseUnit), fromUnit =>
+            {
+                var quantity = Compressibility.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -623,6 +558,25 @@ namespace UnitsNet.Tests
             var quantity = default(Compressibility);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(CompressibilityUnit unit)
+        {
+            var quantity = Compressibility.From(3, Compressibility.BaseUnit);
+            Compressibility expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<CompressibilityUnit> quantityToConvert = quantity;
+                IQuantity<CompressibilityUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -733,21 +687,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Compressibility.FromInversePascals(1);
-            Assert.True(v.Equals(Compressibility.FromInversePascals(1), InversePascalsTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Compressibility.Zero, InversePascalsTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Compressibility.FromInversePascals(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Compressibility.FromInversePascals(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Compressibility inversepascal = Compressibility.FromInversePascals(1);
@@ -761,13 +700,39 @@ namespace UnitsNet.Tests
             Assert.False(inversepascal.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Compressibility.FromInversePascals(firstValue);
+            var otherQuantity = Compressibility.FromInversePascals(secondValue);
+            Compressibility maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Compressibility.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Compressibility.FromInversePascals(1);
+            var negativeTolerance = Compressibility.FromInversePascals(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(CompressibilityUnit)).Cast<CompressibilityUnit>();
+            var units = Enum.GetValues<CompressibilityUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -780,21 +745,14 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 atm⁻¹", new Compressibility(1, CompressibilityUnit.InverseAtmosphere).ToString());
-                Assert.Equal("1 bar⁻¹", new Compressibility(1, CompressibilityUnit.InverseBar).ToString());
-                Assert.Equal("1 kPa⁻¹", new Compressibility(1, CompressibilityUnit.InverseKilopascal).ToString());
-                Assert.Equal("1 MPa⁻¹", new Compressibility(1, CompressibilityUnit.InverseMegapascal).ToString());
-                Assert.Equal("1 mbar⁻¹", new Compressibility(1, CompressibilityUnit.InverseMillibar).ToString());
-                Assert.Equal("1 Pa⁻¹", new Compressibility(1, CompressibilityUnit.InversePascal).ToString());
-                Assert.Equal("1 psi⁻¹", new Compressibility(1, CompressibilityUnit.InversePoundForcePerSquareInch).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 atm⁻¹", new Compressibility(1, CompressibilityUnit.InverseAtmosphere).ToString());
+            Assert.Equal("1 bar⁻¹", new Compressibility(1, CompressibilityUnit.InverseBar).ToString());
+            Assert.Equal("1 kPa⁻¹", new Compressibility(1, CompressibilityUnit.InverseKilopascal).ToString());
+            Assert.Equal("1 MPa⁻¹", new Compressibility(1, CompressibilityUnit.InverseMegapascal).ToString());
+            Assert.Equal("1 mbar⁻¹", new Compressibility(1, CompressibilityUnit.InverseMillibar).ToString());
+            Assert.Equal("1 Pa⁻¹", new Compressibility(1, CompressibilityUnit.InversePascal).ToString());
+            Assert.Equal("1 psi⁻¹", new Compressibility(1, CompressibilityUnit.InversePoundForcePerSquareInch).ToString());
         }
 
         [Fact]
@@ -815,19 +773,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s1"));
-                Assert.Equal("0.12 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s2"));
-                Assert.Equal("0.123 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s3"));
-                Assert.Equal("0.1235 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s1"));
+            Assert.Equal("0.12 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s2"));
+            Assert.Equal("0.123 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s3"));
+            Assert.Equal("0.1235 Pa⁻¹", new Compressibility(0.123456, CompressibilityUnit.InversePascal).ToString("s4"));
         }
 
         [Fact]
@@ -850,7 +800,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -863,150 +813,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Compressibility)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(CompressibilityUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal(Compressibility.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal(Compressibility.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Compressibility.FromInversePascals(1.0);
-            Assert.Equal(new {Compressibility.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

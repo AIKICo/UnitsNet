@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public TemperatureGradient(double value, TemperatureGradientUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of TemperatureGradient, which is Second. All conversions go via this value.
         /// </summary>
         public static TemperatureGradientUnit BaseUnit { get; } = TemperatureGradientUnit.KelvinPerMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of TemperatureGradient.
         /// </summary>
         public static TemperatureGradient MaxValue { get; } = new TemperatureGradient(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of TemperatureGradient.
         /// </summary>
         public static TemperatureGradient MinValue { get; } = new TemperatureGradient(double.MinValue, BaseUnit);
 
@@ -82,12 +81,12 @@ namespace UnitsNet
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureGradientUnit.DegreeCelsiusPerKilometer"/>
         /// </summary>
-        public double DegreesCelciusPerKilometer => As(TemperatureGradientUnit.DegreeCelsiusPerKilometer);
+        public double DegreesCelsiusPerKilometer => As(TemperatureGradientUnit.DegreeCelsiusPerKilometer);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureGradientUnit.DegreeCelsiusPerMeter"/>
         /// </summary>
-        public double DegreesCelciusPerMeter => As(TemperatureGradientUnit.DegreeCelsiusPerMeter);
+        public double DegreesCelsiusPerMeter => As(TemperatureGradientUnit.DegreeCelsiusPerMeter);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="TemperatureGradientUnit.DegreeFahrenheitPerFoot"/>
@@ -106,25 +105,21 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="TemperatureGradient"/> from <see cref="TemperatureGradientUnit.DegreeCelsiusPerKilometer"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static TemperatureGradient FromDegreesCelciusPerKilometer(double degreescelciusperkilometer) => new TemperatureGradient(degreescelciusperkilometer, TemperatureGradientUnit.DegreeCelsiusPerKilometer);
+        public static TemperatureGradient FromDegreesCelsiusPerKilometer(double degreescelsiusperkilometer) => new TemperatureGradient(degreescelsiusperkilometer, TemperatureGradientUnit.DegreeCelsiusPerKilometer);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureGradient"/> from <see cref="TemperatureGradientUnit.DegreeCelsiusPerMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static TemperatureGradient FromDegreesCelciusPerMeter(double degreescelciuspermeter) => new TemperatureGradient(degreescelciuspermeter, TemperatureGradientUnit.DegreeCelsiusPerMeter);
+        public static TemperatureGradient FromDegreesCelsiusPerMeter(double degreescelsiuspermeter) => new TemperatureGradient(degreescelsiuspermeter, TemperatureGradientUnit.DegreeCelsiusPerMeter);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureGradient"/> from <see cref="TemperatureGradientUnit.DegreeFahrenheitPerFoot"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureGradient FromDegreesFahrenheitPerFoot(double degreesfahrenheitperfoot) => new TemperatureGradient(degreesfahrenheitperfoot, TemperatureGradientUnit.DegreeFahrenheitPerFoot);
 
         /// <summary>
         ///     Creates a <see cref="TemperatureGradient"/> from <see cref="TemperatureGradientUnit.KelvinPerMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static TemperatureGradient FromKelvinsPerMeter(double kelvinspermeter) => new TemperatureGradient(kelvinspermeter, TemperatureGradientUnit.KelvinPerMeter);
 
         /// <summary>
@@ -149,9 +144,9 @@ namespace UnitsNet
                 public double As(TemperatureGradientUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this TemperatureGradient to another TemperatureGradient with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A TemperatureGradient with the specified unit.</returns>
                 public TemperatureGradient ToUnit(TemperatureGradientUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -171,7 +166,7 @@ namespace UnitsNet
                         TemperatureGradientUnit.DegreeCelsiusPerMeter => _value,
                         TemperatureGradientUnit.DegreeFahrenheitPerFoot => (_value / 0.3048) * 5 / 9,
                         TemperatureGradientUnit.KelvinPerMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -188,7 +183,7 @@ namespace UnitsNet
                         TemperatureGradientUnit.DegreeCelsiusPerMeter => baseUnitValue,
                         TemperatureGradientUnit.DegreeFahrenheitPerFoot => (baseUnitValue * 0.3048) * 9 / 5,
                         TemperatureGradientUnit.KelvinPerMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

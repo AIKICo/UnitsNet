@@ -25,28 +25,12 @@ namespace UnitsNet.Tests
     public class NumberToThermalResistanceExtensionsTests
     {
         [Fact]
-        public void NumberToHourSquareFeetDegreesFahrenheitPerBtuTest() =>
-            Assert.Equal(ThermalResistance.FromHourSquareFeetDegreesFahrenheitPerBtu(2), 2.HourSquareFeetDegreesFahrenheitPerBtu());
+        public void NumberToDegreesCelsiusPerWattTest() =>
+            Assert.Equal(ThermalResistance.FromDegreesCelsiusPerWatt(2), 2.DegreesCelsiusPerWatt());
 
         [Fact]
-        public void NumberToSquareCentimeterHourDegreesCelsiusPerKilocalorieTest() =>
-            Assert.Equal(ThermalResistance.FromSquareCentimeterHourDegreesCelsiusPerKilocalorie(2), 2.SquareCentimeterHourDegreesCelsiusPerKilocalorie());
-
-        [Fact]
-        public void NumberToSquareCentimeterKelvinsPerWattTest() =>
-            Assert.Equal(ThermalResistance.FromSquareCentimeterKelvinsPerWatt(2), 2.SquareCentimeterKelvinsPerWatt());
-
-        [Fact]
-        public void NumberToSquareMeterDegreesCelsiusPerWattTest() =>
-            Assert.Equal(ThermalResistance.FromSquareMeterDegreesCelsiusPerWatt(2), 2.SquareMeterDegreesCelsiusPerWatt());
-
-        [Fact]
-        public void NumberToSquareMeterKelvinsPerKilowattTest() =>
-            Assert.Equal(ThermalResistance.FromSquareMeterKelvinsPerKilowatt(2), 2.SquareMeterKelvinsPerKilowatt());
-
-        [Fact]
-        public void NumberToSquareMeterKelvinsPerWattTest() =>
-            Assert.Equal(ThermalResistance.FromSquareMeterKelvinsPerWatt(2), 2.SquareMeterKelvinsPerWatt());
+        public void NumberToKelvinsPerWattTest() =>
+            Assert.Equal(ThermalResistance.FromKelvinsPerWatt(2), 2.KelvinsPerWatt());
 
     }
 }

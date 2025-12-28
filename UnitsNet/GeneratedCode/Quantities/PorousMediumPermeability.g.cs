@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -39,43 +38,99 @@ namespace UnitsNet
     ///     https://en.wikipedia.org/wiki/Permeability_(Earth_sciences)
     /// </remarks>
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct PorousMediumPermeability :
-        IArithmeticQuantity<PorousMediumPermeability, PorousMediumPermeabilityUnit, double>,
+        IArithmeticQuantity<PorousMediumPermeability, PorousMediumPermeabilityUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<PorousMediumPermeability, PorousMediumPermeability, double>,
+        IComparisonOperators<PorousMediumPermeability, PorousMediumPermeability, bool>,
+        IParsable<PorousMediumPermeability>,
+#endif
         IComparable,
         IComparable<PorousMediumPermeability>,
-        IConvertible,
         IEquatable<PorousMediumPermeability>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly PorousMediumPermeabilityUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="PorousMediumPermeability"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class PorousMediumPermeabilityInfo: QuantityInfo<PorousMediumPermeability, PorousMediumPermeabilityUnit>
+        {
+            /// <inheritdoc />
+            public PorousMediumPermeabilityInfo(string name, PorousMediumPermeabilityUnit baseUnit, IEnumerable<IUnitDefinition<PorousMediumPermeabilityUnit>> unitMappings, PorousMediumPermeability zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<PorousMediumPermeability, PorousMediumPermeabilityUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public PorousMediumPermeabilityInfo(string name, PorousMediumPermeabilityUnit baseUnit, IEnumerable<IUnitDefinition<PorousMediumPermeabilityUnit>> unitMappings, PorousMediumPermeability zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, PorousMediumPermeability.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.PorousMediumPermeability", typeof(PorousMediumPermeability).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="PorousMediumPermeabilityInfo"/> class with the default settings for the PorousMediumPermeability quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="PorousMediumPermeabilityInfo"/> class with the default settings.</returns>
+            public static PorousMediumPermeabilityInfo CreateDefault()
+            {
+                return new PorousMediumPermeabilityInfo(nameof(PorousMediumPermeability), DefaultBaseUnit, GetDefaultMappings(), new PorousMediumPermeability(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="PorousMediumPermeabilityInfo"/> class with the default settings for the PorousMediumPermeability quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="PorousMediumPermeabilityInfo"/> class with the default settings.
+            /// </returns>
+            public static PorousMediumPermeabilityInfo CreateDefault(Func<IEnumerable<UnitDefinition<PorousMediumPermeabilityUnit>>, IEnumerable<IUnitDefinition<PorousMediumPermeabilityUnit>>> customizeUnits)
+            {
+                return new PorousMediumPermeabilityInfo(nameof(PorousMediumPermeability), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new PorousMediumPermeability(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="PorousMediumPermeability"/> is [L^2].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(2, 0, 0, 0, 0, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of PorousMediumPermeability is SquareMeter. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static PorousMediumPermeabilityUnit DefaultBaseUnit { get; } = PorousMediumPermeabilityUnit.SquareMeter;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="PorousMediumPermeabilityUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{PorousMediumPermeabilityUnit}"/> representing the default unit mappings for PorousMediumPermeability.</returns>
+            public static IEnumerable<UnitDefinition<PorousMediumPermeabilityUnit>> GetDefaultMappings()
+            {
+                yield return new (PorousMediumPermeabilityUnit.Darcy, "Darcy", "Darcys", BaseUnits.Undefined);
+                yield return new (PorousMediumPermeabilityUnit.Microdarcy, "Microdarcy", "Microdarcys", BaseUnits.Undefined);
+                yield return new (PorousMediumPermeabilityUnit.Millidarcy, "Millidarcy", "Millidarcys", BaseUnits.Undefined);
+                yield return new (PorousMediumPermeabilityUnit.SquareCentimeter, "SquareCentimeter", "SquareCentimeters", new BaseUnits(length: LengthUnit.Centimeter));
+                yield return new (PorousMediumPermeabilityUnit.SquareMeter, "SquareMeter", "SquareMeters", new BaseUnits(length: LengthUnit.Meter));
+            }
+        }
 
         static PorousMediumPermeability()
         {
-            BaseDimensions = new BaseDimensions(2, 0, 0, 0, 0, 0, 0);
-            BaseUnit = PorousMediumPermeabilityUnit.SquareMeter;
-            Units = Enum.GetValues(typeof(PorousMediumPermeabilityUnit)).Cast<PorousMediumPermeabilityUnit>().ToArray();
-            Zero = new PorousMediumPermeability(0, BaseUnit);
-            Info = new QuantityInfo<PorousMediumPermeabilityUnit>("PorousMediumPermeability",
-                new UnitInfo<PorousMediumPermeabilityUnit>[]
-                {
-                    new UnitInfo<PorousMediumPermeabilityUnit>(PorousMediumPermeabilityUnit.Darcy, "Darcys", BaseUnits.Undefined, "PorousMediumPermeability"),
-                    new UnitInfo<PorousMediumPermeabilityUnit>(PorousMediumPermeabilityUnit.Microdarcy, "Microdarcys", BaseUnits.Undefined, "PorousMediumPermeability"),
-                    new UnitInfo<PorousMediumPermeabilityUnit>(PorousMediumPermeabilityUnit.Millidarcy, "Millidarcys", BaseUnits.Undefined, "PorousMediumPermeability"),
-                    new UnitInfo<PorousMediumPermeabilityUnit>(PorousMediumPermeabilityUnit.SquareCentimeter, "SquareCentimeters", new BaseUnits(length: LengthUnit.Centimeter), "PorousMediumPermeability"),
-                    new UnitInfo<PorousMediumPermeabilityUnit>(PorousMediumPermeabilityUnit.SquareMeter, "SquareMeters", new BaseUnits(length: LengthUnit.Meter), "PorousMediumPermeability"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = PorousMediumPermeabilityInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -85,10 +140,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public PorousMediumPermeability(double value, PorousMediumPermeabilityUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -102,13 +156,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public PorousMediumPermeability(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -119,30 +168,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<PorousMediumPermeabilityUnit> Info { get; }
+        public static QuantityInfo<PorousMediumPermeability, PorousMediumPermeabilityUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of PorousMediumPermeability, which is SquareMeter. All conversions go via this value.
         /// </summary>
-        public static PorousMediumPermeabilityUnit BaseUnit { get; }
+        public static PorousMediumPermeabilityUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the PorousMediumPermeability quantity.
         /// </summary>
-        public static PorousMediumPermeabilityUnit[] Units { get; }
+        public static IReadOnlyCollection<PorousMediumPermeabilityUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit SquareMeter.
         /// </summary>
-        public static PorousMediumPermeability Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static PorousMediumPermeability AdditiveIdentity => Zero;
+        public static PorousMediumPermeability Zero => Info.Zero;
 
         #endregion
 
@@ -154,23 +200,31 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public PorousMediumPermeabilityUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<PorousMediumPermeabilityUnit> QuantityInfo => Info;
+        public QuantityInfo<PorousMediumPermeability, PorousMediumPermeabilityUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<PorousMediumPermeability> IQuantityOfType<PorousMediumPermeability>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<PorousMediumPermeabilityUnit> IQuantity<PorousMediumPermeabilityUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => PorousMediumPermeability.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
@@ -245,7 +299,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(PorousMediumPermeabilityUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -255,50 +309,40 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.Darcy"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static PorousMediumPermeability FromDarcys(QuantityValue darcys)
+        public static PorousMediumPermeability FromDarcys(double value)
         {
-            double value = (double) darcys;
             return new PorousMediumPermeability(value, PorousMediumPermeabilityUnit.Darcy);
         }
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.Microdarcy"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static PorousMediumPermeability FromMicrodarcys(QuantityValue microdarcys)
+        public static PorousMediumPermeability FromMicrodarcys(double value)
         {
-            double value = (double) microdarcys;
             return new PorousMediumPermeability(value, PorousMediumPermeabilityUnit.Microdarcy);
         }
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.Millidarcy"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static PorousMediumPermeability FromMillidarcys(QuantityValue millidarcys)
+        public static PorousMediumPermeability FromMillidarcys(double value)
         {
-            double value = (double) millidarcys;
             return new PorousMediumPermeability(value, PorousMediumPermeabilityUnit.Millidarcy);
         }
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.SquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static PorousMediumPermeability FromSquareCentimeters(QuantityValue squarecentimeters)
+        public static PorousMediumPermeability FromSquareCentimeters(double value)
         {
-            double value = (double) squarecentimeters;
             return new PorousMediumPermeability(value, PorousMediumPermeabilityUnit.SquareCentimeter);
         }
 
         /// <summary>
         ///     Creates a <see cref="PorousMediumPermeability"/> from <see cref="PorousMediumPermeabilityUnit.SquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static PorousMediumPermeability FromSquareMeters(QuantityValue squaremeters)
+        public static PorousMediumPermeability FromSquareMeters(double value)
         {
-            double value = (double) squaremeters;
             return new PorousMediumPermeability(value, PorousMediumPermeabilityUnit.SquareMeter);
         }
 
@@ -308,9 +352,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>PorousMediumPermeability unit value.</returns>
-        public static PorousMediumPermeability From(QuantityValue value, PorousMediumPermeabilityUnit fromUnit)
+        public static PorousMediumPermeability From(double value, PorousMediumPermeabilityUnit fromUnit)
         {
-            return new PorousMediumPermeability((double)value, fromUnit);
+            return new PorousMediumPermeability(value, fromUnit);
         }
 
         #endregion
@@ -369,7 +413,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static PorousMediumPermeability Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<PorousMediumPermeability, PorousMediumPermeabilityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<PorousMediumPermeability, PorousMediumPermeabilityUnit>(
                 str,
                 provider,
                 From);
@@ -383,7 +427,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out PorousMediumPermeability result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out PorousMediumPermeability result)
         {
             return TryParse(str, null, out result);
         }
@@ -398,9 +442,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out PorousMediumPermeability result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out PorousMediumPermeability result)
         {
-            return QuantityParser.Default.TryParse<PorousMediumPermeability, PorousMediumPermeabilityUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<PorousMediumPermeability, PorousMediumPermeabilityUnit>(
                 str,
                 provider,
                 From,
@@ -433,11 +477,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static PorousMediumPermeabilityUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<PorousMediumPermeabilityUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.PorousMediumPermeabilityUnit)"/>
-        public static bool TryParseUnit(string str, out PorousMediumPermeabilityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out PorousMediumPermeabilityUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -452,9 +496,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out PorousMediumPermeabilityUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out PorousMediumPermeabilityUnit unit)
         {
-            return UnitParser.Default.TryParse<PorousMediumPermeabilityUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -570,6 +614,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current PorousMediumPermeability.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="PorousMediumPermeability"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -606,88 +659,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another PorousMediumPermeability within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(PorousMediumPermeability other, PorousMediumPermeability tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(PorousMediumPermeability other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is PorousMediumPermeability otherTyped
-                   && (tolerance is PorousMediumPermeability toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'PorousMediumPermeability'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(PorousMediumPermeability other, PorousMediumPermeability tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current PorousMediumPermeability.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -704,37 +675,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is PorousMediumPermeabilityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(PorousMediumPermeabilityUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is PorousMediumPermeabilityUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(PorousMediumPermeabilityUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<PorousMediumPermeabilityUnit>());
         }
 
         /// <summary>
@@ -774,7 +718,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -819,6 +763,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not PorousMediumPermeabilityUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(PorousMediumPermeabilityUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -828,41 +782,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public PorousMediumPermeability ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<PorousMediumPermeabilityUnit> IQuantity<PorousMediumPermeabilityUnit>.ToUnit(PorousMediumPermeabilityUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<PorousMediumPermeabilityUnit> IQuantity<PorousMediumPermeabilityUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not PorousMediumPermeabilityUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(PorousMediumPermeabilityUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -874,140 +797,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<PorousMediumPermeabilityUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(PorousMediumPermeability)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(PorousMediumPermeability)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(PorousMediumPermeability)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(PorousMediumPermeability))
-                return this;
-            else if (conversionType == typeof(PorousMediumPermeabilityUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return PorousMediumPermeability.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return PorousMediumPermeability.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(PorousMediumPermeability)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

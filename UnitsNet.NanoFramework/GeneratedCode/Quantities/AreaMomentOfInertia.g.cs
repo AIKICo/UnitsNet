@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public AreaMomentOfInertia(double value, AreaMomentOfInertiaUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of AreaMomentOfInertia, which is Second. All conversions go via this value.
         /// </summary>
         public static AreaMomentOfInertiaUnit BaseUnit { get; } = AreaMomentOfInertiaUnit.MeterToTheFourth;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of AreaMomentOfInertia.
         /// </summary>
         public static AreaMomentOfInertia MaxValue { get; } = new AreaMomentOfInertia(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of AreaMomentOfInertia.
         /// </summary>
         public static AreaMomentOfInertia MinValue { get; } = new AreaMomentOfInertia(double.MinValue, BaseUnit);
 
@@ -116,37 +115,31 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="AreaMomentOfInertia"/> from <see cref="AreaMomentOfInertiaUnit.CentimeterToTheFourth"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaMomentOfInertia FromCentimetersToTheFourth(double centimeterstothefourth) => new AreaMomentOfInertia(centimeterstothefourth, AreaMomentOfInertiaUnit.CentimeterToTheFourth);
 
         /// <summary>
         ///     Creates a <see cref="AreaMomentOfInertia"/> from <see cref="AreaMomentOfInertiaUnit.DecimeterToTheFourth"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaMomentOfInertia FromDecimetersToTheFourth(double decimeterstothefourth) => new AreaMomentOfInertia(decimeterstothefourth, AreaMomentOfInertiaUnit.DecimeterToTheFourth);
 
         /// <summary>
         ///     Creates a <see cref="AreaMomentOfInertia"/> from <see cref="AreaMomentOfInertiaUnit.FootToTheFourth"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaMomentOfInertia FromFeetToTheFourth(double feettothefourth) => new AreaMomentOfInertia(feettothefourth, AreaMomentOfInertiaUnit.FootToTheFourth);
 
         /// <summary>
         ///     Creates a <see cref="AreaMomentOfInertia"/> from <see cref="AreaMomentOfInertiaUnit.InchToTheFourth"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaMomentOfInertia FromInchesToTheFourth(double inchestothefourth) => new AreaMomentOfInertia(inchestothefourth, AreaMomentOfInertiaUnit.InchToTheFourth);
 
         /// <summary>
         ///     Creates a <see cref="AreaMomentOfInertia"/> from <see cref="AreaMomentOfInertiaUnit.MeterToTheFourth"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaMomentOfInertia FromMetersToTheFourth(double meterstothefourth) => new AreaMomentOfInertia(meterstothefourth, AreaMomentOfInertiaUnit.MeterToTheFourth);
 
         /// <summary>
         ///     Creates a <see cref="AreaMomentOfInertia"/> from <see cref="AreaMomentOfInertiaUnit.MillimeterToTheFourth"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static AreaMomentOfInertia FromMillimetersToTheFourth(double millimeterstothefourth) => new AreaMomentOfInertia(millimeterstothefourth, AreaMomentOfInertiaUnit.MillimeterToTheFourth);
 
         /// <summary>
@@ -171,9 +164,9 @@ namespace UnitsNet
                 public double As(AreaMomentOfInertiaUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this AreaMomentOfInertia to another AreaMomentOfInertia with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A AreaMomentOfInertia with the specified unit.</returns>
                 public AreaMomentOfInertia ToUnit(AreaMomentOfInertiaUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -195,7 +188,7 @@ namespace UnitsNet
                         AreaMomentOfInertiaUnit.InchToTheFourth => _value * 0.0000004162314256,
                         AreaMomentOfInertiaUnit.MeterToTheFourth => _value,
                         AreaMomentOfInertiaUnit.MillimeterToTheFourth => _value / 1e12,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -214,7 +207,7 @@ namespace UnitsNet
                         AreaMomentOfInertiaUnit.InchToTheFourth => baseUnitValue / 0.0000004162314256,
                         AreaMomentOfInertiaUnit.MeterToTheFourth => baseUnitValue,
                         AreaMomentOfInertiaUnit.MillimeterToTheFourth => baseUnitValue * 1e12,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

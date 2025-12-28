@@ -1,13 +1,6 @@
 ﻿// Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Globalization;
-#if NET7_0_OR_GREATER
-using System.Numerics;
-#endif
-using UnitsNet.Units;
-
 namespace UnitsNet
 {
     /// <summary>
@@ -15,11 +8,6 @@ namespace UnitsNet
     /// </summary>
     public interface IQuantity : IFormattable
     {
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        BaseDimensions Dimensions { get; }
-
         /// <summary>
         ///     Information about the quantity type, such as unit values and names.
         /// </summary>
@@ -34,35 +22,12 @@ namespace UnitsNet
         double As(Enum unit);
 
         /// <summary>
-        ///     Gets the value in the unit determined by the given <see cref="UnitSystem"/>. If multiple units were found for the given <see cref="UnitSystem"/>,
-        ///     the first match will be used.
+        ///     Gets the value in the given unit key.
         /// </summary>
-        /// <param name="unitSystem">The <see cref="UnitSystem"/> to convert the quantity value to.</param>
-        /// <returns>The converted value.</returns>
-        double As(UnitSystem unitSystem);
-
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to <paramref name="other"/> given a <paramref name="tolerance"/> for the maximum allowed +/- difference.
-        ///     </para>
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromMeters(2.1);
-        ///     var tolerance = Length.FromCentimeters(10);
-        ///     a.Equals(b, tolerance); // true, 2m equals 2.1m +/- 0.1m
-        ///     </code>
-        ///     </example>
-        ///     <para>
-        ///     It is generally advised against specifying "zero" tolerance, due to the nature of floating-point operations.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to. Not equal if the quantity types are different.</param>
-        /// <param name="tolerance">The absolute tolerance value. Must be greater than or equal to zero. Must be same quantity type as <paramref name="other"/>.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified tolerance.</returns>
-        /// <exception cref="ArgumentException">Tolerance must be of the same quantity type.</exception>
-        bool Equals(IQuantity? other, IQuantity tolerance);
+        /// <param name="unitKey">The unit key. The unit type must be compatible, so for <see cref="Length"/> you should provide a <see cref="LengthUnit"/> value.</param>
+        /// <returns>Value converted to the specified unit.</returns>
+        /// <exception cref="InvalidCastException">Wrong unit enum type was given.</exception>
+        double As(UnitKey unitKey);
 
         /// <summary>
         ///     The unit this quantity was constructed with -or- BaseUnit if default ctor was used.
@@ -72,7 +37,7 @@ namespace UnitsNet
         /// <summary>
         ///     The value this quantity was constructed with. See also <see cref="Unit"/>.
         /// </summary>
-        QuantityValue Value { get; }
+        double Value { get; }
 
         /// <summary>
         ///     Converts this <see cref="IQuantity"/> to an <see cref="IQuantity"/> in the given <paramref name="unit"/>.
@@ -86,19 +51,13 @@ namespace UnitsNet
         IQuantity ToUnit(Enum unit);
 
         /// <summary>
-        ///     Converts to a quantity with a unit determined by the given <see cref="UnitSystem"/>, which affects things like <see cref="IQuantity.ToString(System.IFormatProvider)"/>.
-        ///     If multiple units were found for the given <see cref="UnitSystem"/>, the first match will be used.
+        ///     Gets the unique key for the unit type and its corresponding value.
         /// </summary>
-        /// <param name="unitSystem">The <see cref="UnitSystem"/> to convert the quantity to.</param>
-        /// <returns>A new quantity with the determined unit.</returns>
-        IQuantity ToUnit(UnitSystem unitSystem);
-
-        /// <summary>
-        ///     Gets the string representation of value and unit. Uses two significant digits after radix.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        string ToString(IFormatProvider? provider);
+        /// <remarks>
+        ///     This property is particularly useful when using an enum-based unit in a hash-based collection,
+        ///     as it avoids the boxing that would normally occur when casting the enum to <see cref="Enum" />.
+        /// </remarks>
+        UnitKey UnitKey { get; }
     }
 
     /// <summary>
@@ -111,7 +70,7 @@ namespace UnitsNet
     /// </example>
     /// <typeparam name="TUnitType">The unit type of the quantity.</typeparam>
     public interface IQuantity<TUnitType> : IQuantity
-        where TUnitType : Enum
+        where TUnitType : struct, Enum
     {
         /// <summary>
         ///     Convert to a unit representation <typeparamref name="TUnitType"/>.
@@ -133,79 +92,81 @@ namespace UnitsNet
         /// <returns>A new <see cref="IQuantity{TUnitType}"/> in the given <paramref name="unit"/>.</returns>
         IQuantity<TUnitType> ToUnit(TUnitType unit);
 
-        /// <summary>
-        ///     Converts to a quantity with a unit determined by the given <see cref="UnitSystem"/>, which affects things like <see cref="IQuantity.ToString(System.IFormatProvider)"/>.
-        ///     If multiple units were found for the given <see cref="UnitSystem"/>, the first match will be used.
-        /// </summary>
-        /// <param name="unitSystem">The <see cref="UnitSystem"/> to convert the quantity to.</param>
-        /// <returns>A new quantity with the determined unit.</returns>
-        new IQuantity<TUnitType> ToUnit(UnitSystem unitSystem);
-    }
+#if NET
 
-    /// <summary>
-    ///     A quantity backed by a particular value type with a stronger typed interface where the unit enum type is known, to avoid passing in the
-    ///     wrong unit enum type and not having to cast from <see cref="Enum"/>.
-    /// </summary>
-    /// <typeparam name="TUnitType">The unit type of the quantity.</typeparam>
-    /// <typeparam name="TValueType">The value type of the quantity.</typeparam>
-    public interface IQuantity<TUnitType, out TValueType> : IQuantity<TUnitType>, IValueQuantity<TValueType>
-        where TUnitType : Enum
-#if NET7_0_OR_GREATER
-        where TValueType : INumber<TValueType>
-#else
-        where TValueType : struct
+        #region Implementation of IQuantity
+
+        QuantityInfo IQuantity.QuantityInfo
+        {
+            get => QuantityInfo;
+        }
+
+        Enum IQuantity.Unit
+        {
+            get => Unit;
+        }
+
+        #endregion
+
 #endif
+    }
+
+    /// <inheritdoc cref="IQuantity" />
+    /// <remarks>
+    ///     This is a specialization of <see cref="IQuantity" /> that is used (internally) for constraining certain
+    ///     methods, without having to include the unit type as additional generic parameter.
+    /// </remarks>
+    /// <typeparam name="TQuantity"></typeparam>
+    public interface IQuantityOfType<out TQuantity> : IQuantity
+        where TQuantity : IQuantity
     {
+#if NET
         /// <summary>
-        ///     Convert to a unit representation <typeparamref name="TUnitType"/>.
+        ///     Creates an instance of the quantity from a specified value and unit.
         /// </summary>
-        /// <returns>Value converted to the specified unit.</returns>
-        new TValueType As(TUnitType unit);
+        /// <param name="value">The numerical value of the quantity.</param>
+        /// <param name="unit">The unit of the quantity.</param>
+        /// <returns>An instance of the quantity with the specified value and unit.</returns>
+        public static abstract TQuantity Create(double value, UnitKey unit);
+#else
+        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        new IQuantityInstanceInfo<TQuantity> QuantityInfo { get; }
+#endif
     }
 
     /// <summary>
-    ///     An <see cref="IQuantity{TUnitType}"/> that (in .NET 7+) implements generic math interfaces for equality, comparison and parsing.
+    ///     An <see cref="IQuantity{TUnitType}"/> that supports generic equality comparison with tolerance.
     /// </summary>
     /// <typeparam name="TSelf">The type itself, for the CRT pattern.</typeparam>
     /// <typeparam name="TUnitType">The underlying unit enum type.</typeparam>
-    /// <typeparam name="TValueType">The underlying value type for internal representation.</typeparam>
-#if NET7_0_OR_GREATER
-    public interface IQuantity<TSelf, TUnitType, out TValueType>
-        : IQuantity<TUnitType, TValueType>
-        , IComparisonOperators<TSelf, TSelf, bool>
-        , IParsable<TSelf>
-#else
-    public interface IQuantity<in TSelf, TUnitType, out TValueType>
-        : IQuantity<TUnitType, TValueType>
-#endif
-        where TSelf : IQuantity<TSelf, TUnitType, TValueType>
-        where TUnitType : Enum
-#if NET7_0_OR_GREATER
-        where TValueType : INumber<TValueType>
-#else
-        where TValueType : struct
-#endif
+    public interface IQuantity<TSelf, TUnitType> : IQuantityOfType<TSelf>, IQuantity<TUnitType>
+        where TSelf : IQuantity<TSelf, TUnitType>
+        where TUnitType : struct, Enum
     {
+        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        new QuantityInfo<TSelf, TUnitType> QuantityInfo { get; }
+
+#if NET
         /// <summary>
-        ///     <para>
-        ///     Compare equality to <paramref name="other"/> given a <paramref name="tolerance"/> for the maximum allowed +/- difference.
-        ///     </para>
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromMeters(2.1);
-        ///     var tolerance = Length.FromCentimeters(10);
-        ///     a.Equals(b, tolerance); // true, 2m equals 2.1m +/- 0.1m
-        ///     </code>
-        ///     </example>
-        ///     <para>
-        ///     It is generally advised against specifying "zero" tolerance, due to the nature of floating-point operations.
-        ///     </para>
+        ///     Creates an instance of the quantity from a specified value and unit.
         /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute tolerance value. Must be greater than or equal to zero.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified tolerance.</returns>
-        bool Equals(TSelf? other, TSelf tolerance);
+        /// <param name="value">The numerical value of the quantity.</param>
+        /// <param name="unit">The unit of the quantity.</param>
+        /// <returns>An instance of the quantity with the specified value and unit.</returns>
+        static abstract TSelf From(double value, TUnitType unit);
+
+        static TSelf IQuantityOfType<TSelf>.Create(double value, UnitKey unit) => TSelf.From(value, unit.ToUnit<TUnitType>());
+
+        QuantityInfo<TUnitType> IQuantity<TUnitType>.QuantityInfo
+        {
+            get => QuantityInfo;
+        }
+
+        IQuantity<TUnitType> IQuantity<TUnitType>.ToUnit(TUnitType unit)
+        {
+            return TSelf.From(As(unit), unit);
+        }
+#endif
+
     }
 }

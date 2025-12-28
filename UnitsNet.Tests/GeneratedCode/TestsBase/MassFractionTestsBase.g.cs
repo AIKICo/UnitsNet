@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -159,51 +161,39 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MassFraction(double.PositiveInfinity, MassFractionUnit.DecimalFraction));
-            Assert.Throws<ArgumentException>(() => new MassFraction(double.NegativeInfinity, MassFractionUnit.DecimalFraction));
+            var exception1 = Record.Exception(() => new MassFraction(double.PositiveInfinity, MassFractionUnit.DecimalFraction));
+            var exception2 = Record.Exception(() => new MassFraction(double.NegativeInfinity, MassFractionUnit.DecimalFraction));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MassFraction(double.NaN, MassFractionUnit.DecimalFraction));
-        }
+            var exception = Record.Exception(() => new MassFraction(double.NaN, MassFractionUnit.DecimalFraction));
 
-        [Fact]
-        public void Ctor_NullAsUnitSystem_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new MassFraction(value: 1, unitSystem: null));
-        }
-
-        [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
-        {
-            Func<object> TestCode = () => new MassFraction(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (MassFraction) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            Assert.Null(exception);
         }
 
         [Fact]
         public void MassFraction_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            MassFractionUnit[] unitsOrderedByName = EnumHelper.GetValues<MassFractionUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new MassFraction(1, MassFractionUnit.DecimalFraction);
 
-            QuantityInfo<MassFractionUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<MassFraction, MassFractionUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(MassFraction.Zero, quantityInfo.Zero);
             Assert.Equal("MassFraction", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<MassFractionUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(MassFraction.Zero, quantityInfo.Zero);
+            Assert.Equal(MassFraction.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(MassFraction.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<MassFractionUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -239,115 +229,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = MassFraction.From(1, MassFractionUnit.CentigramPerGram);
-            AssertEx.EqualTolerance(1, quantity00.CentigramsPerGram, CentigramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.CentigramPerGram, quantity00.Unit);
-
-            var quantity01 = MassFraction.From(1, MassFractionUnit.CentigramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity01.CentigramsPerKilogram, CentigramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.CentigramPerKilogram, quantity01.Unit);
-
-            var quantity02 = MassFraction.From(1, MassFractionUnit.DecagramPerGram);
-            AssertEx.EqualTolerance(1, quantity02.DecagramsPerGram, DecagramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.DecagramPerGram, quantity02.Unit);
-
-            var quantity03 = MassFraction.From(1, MassFractionUnit.DecagramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity03.DecagramsPerKilogram, DecagramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.DecagramPerKilogram, quantity03.Unit);
-
-            var quantity04 = MassFraction.From(1, MassFractionUnit.DecigramPerGram);
-            AssertEx.EqualTolerance(1, quantity04.DecigramsPerGram, DecigramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.DecigramPerGram, quantity04.Unit);
-
-            var quantity05 = MassFraction.From(1, MassFractionUnit.DecigramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity05.DecigramsPerKilogram, DecigramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.DecigramPerKilogram, quantity05.Unit);
-
-            var quantity06 = MassFraction.From(1, MassFractionUnit.DecimalFraction);
-            AssertEx.EqualTolerance(1, quantity06.DecimalFractions, DecimalFractionsTolerance);
-            Assert.Equal(MassFractionUnit.DecimalFraction, quantity06.Unit);
-
-            var quantity07 = MassFraction.From(1, MassFractionUnit.GramPerGram);
-            AssertEx.EqualTolerance(1, quantity07.GramsPerGram, GramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.GramPerGram, quantity07.Unit);
-
-            var quantity08 = MassFraction.From(1, MassFractionUnit.GramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity08.GramsPerKilogram, GramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.GramPerKilogram, quantity08.Unit);
-
-            var quantity09 = MassFraction.From(1, MassFractionUnit.HectogramPerGram);
-            AssertEx.EqualTolerance(1, quantity09.HectogramsPerGram, HectogramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.HectogramPerGram, quantity09.Unit);
-
-            var quantity10 = MassFraction.From(1, MassFractionUnit.HectogramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity10.HectogramsPerKilogram, HectogramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.HectogramPerKilogram, quantity10.Unit);
-
-            var quantity11 = MassFraction.From(1, MassFractionUnit.KilogramPerGram);
-            AssertEx.EqualTolerance(1, quantity11.KilogramsPerGram, KilogramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.KilogramPerGram, quantity11.Unit);
-
-            var quantity12 = MassFraction.From(1, MassFractionUnit.KilogramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity12.KilogramsPerKilogram, KilogramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.KilogramPerKilogram, quantity12.Unit);
-
-            var quantity13 = MassFraction.From(1, MassFractionUnit.MicrogramPerGram);
-            AssertEx.EqualTolerance(1, quantity13.MicrogramsPerGram, MicrogramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.MicrogramPerGram, quantity13.Unit);
-
-            var quantity14 = MassFraction.From(1, MassFractionUnit.MicrogramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity14.MicrogramsPerKilogram, MicrogramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.MicrogramPerKilogram, quantity14.Unit);
-
-            var quantity15 = MassFraction.From(1, MassFractionUnit.MilligramPerGram);
-            AssertEx.EqualTolerance(1, quantity15.MilligramsPerGram, MilligramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.MilligramPerGram, quantity15.Unit);
-
-            var quantity16 = MassFraction.From(1, MassFractionUnit.MilligramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity16.MilligramsPerKilogram, MilligramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.MilligramPerKilogram, quantity16.Unit);
-
-            var quantity17 = MassFraction.From(1, MassFractionUnit.NanogramPerGram);
-            AssertEx.EqualTolerance(1, quantity17.NanogramsPerGram, NanogramsPerGramTolerance);
-            Assert.Equal(MassFractionUnit.NanogramPerGram, quantity17.Unit);
-
-            var quantity18 = MassFraction.From(1, MassFractionUnit.NanogramPerKilogram);
-            AssertEx.EqualTolerance(1, quantity18.NanogramsPerKilogram, NanogramsPerKilogramTolerance);
-            Assert.Equal(MassFractionUnit.NanogramPerKilogram, quantity18.Unit);
-
-            var quantity19 = MassFraction.From(1, MassFractionUnit.PartPerBillion);
-            AssertEx.EqualTolerance(1, quantity19.PartsPerBillion, PartsPerBillionTolerance);
-            Assert.Equal(MassFractionUnit.PartPerBillion, quantity19.Unit);
-
-            var quantity20 = MassFraction.From(1, MassFractionUnit.PartPerMillion);
-            AssertEx.EqualTolerance(1, quantity20.PartsPerMillion, PartsPerMillionTolerance);
-            Assert.Equal(MassFractionUnit.PartPerMillion, quantity20.Unit);
-
-            var quantity21 = MassFraction.From(1, MassFractionUnit.PartPerThousand);
-            AssertEx.EqualTolerance(1, quantity21.PartsPerThousand, PartsPerThousandTolerance);
-            Assert.Equal(MassFractionUnit.PartPerThousand, quantity21.Unit);
-
-            var quantity22 = MassFraction.From(1, MassFractionUnit.PartPerTrillion);
-            AssertEx.EqualTolerance(1, quantity22.PartsPerTrillion, PartsPerTrillionTolerance);
-            Assert.Equal(MassFractionUnit.PartPerTrillion, quantity22.Unit);
-
-            var quantity23 = MassFraction.From(1, MassFractionUnit.Percent);
-            AssertEx.EqualTolerance(1, quantity23.Percent, PercentTolerance);
-            Assert.Equal(MassFractionUnit.Percent, quantity23.Unit);
-
+            Assert.All(EnumHelper.GetValues<MassFractionUnit>(), unit =>
+            {
+                var quantity = MassFraction.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromDecimalFractions_WithInfinityValue_ThrowsArgumentException()
+        public void FromDecimalFractions_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => MassFraction.FromDecimalFractions(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => MassFraction.FromDecimalFractions(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => MassFraction.FromDecimalFractions(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => MassFraction.FromDecimalFractions(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromDecimalFractions_WithNanValue_ThrowsArgumentException()
+        public void FromDecimalFractions_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => MassFraction.FromDecimalFractions(double.NaN));
+            var exception = Record.Exception(() => MassFraction.FromDecimalFractions(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -381,640 +286,429 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public void As_UnitSystem_ReturnsValueInDimensionlessUnit()
+        {
+            var quantity = new MassFraction(value: 1, unit: MassFractionUnit.DecimalFraction);
+
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(quantity.Value, convertedValue);
+        }
+
+        [Fact]
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
             var quantity = new MassFraction(value: 1, unit: MassFraction.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
-
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void Parse()
+        public void ToUnit_UnitSystem_ReturnsValueInDimensionlessUnit()
         {
-            try
-            {
-                var parsed = MassFraction.Parse("1 cg/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentigramsPerGram, CentigramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.CentigramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new MassFraction(value: 1, unit: MassFractionUnit.DecimalFraction);
 
-            try
-            {
-                var parsed = MassFraction.Parse("1 cg/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentigramsPerKilogram, CentigramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.CentigramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            MassFraction convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsed = MassFraction.Parse("1 dag/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecagramsPerGram, DecagramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.DecagramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 dag/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecagramsPerKilogram, DecagramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.DecagramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 dg/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecigramsPerGram, DecigramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.DecigramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 dg/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecigramsPerKilogram, DecigramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.DecigramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 ", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecimalFractions, DecimalFractionsTolerance);
-                Assert.Equal(MassFractionUnit.DecimalFraction, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 g/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerGram, GramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.GramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 g/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.GramsPerKilogram, GramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.GramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 hg/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.HectogramsPerGram, HectogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.HectogramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 hg/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.HectogramsPerKilogram, HectogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.HectogramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 kg/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerGram, KilogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.KilogramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 kg/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerKilogram, KilogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.KilogramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 µg/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicrogramsPerGram, MicrogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.MicrogramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 µg/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicrogramsPerKilogram, MicrogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.MicrogramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 mg/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MilligramsPerGram, MilligramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.MilligramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 mg/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MilligramsPerKilogram, MilligramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.MilligramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 ng/g", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanogramsPerGram, NanogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.NanogramPerGram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 ng/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanogramsPerKilogram, NanogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.NanogramPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 ppb", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PartsPerBillion, PartsPerBillionTolerance);
-                Assert.Equal(MassFractionUnit.PartPerBillion, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 ppm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PartsPerMillion, PartsPerMillionTolerance);
-                Assert.Equal(MassFractionUnit.PartPerMillion, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 ‰", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PartsPerThousand, PartsPerThousandTolerance);
-                Assert.Equal(MassFractionUnit.PartPerThousand, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 ppt", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PartsPerTrillion, PartsPerTrillionTolerance);
-                Assert.Equal(MassFractionUnit.PartPerTrillion, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 %", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Percent, PercentTolerance);
-                Assert.Equal(MassFractionUnit.Percent, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = MassFraction.Parse("1 % (w/w)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Percent, PercentTolerance);
-                Assert.Equal(MassFractionUnit.Percent, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(MassFractionUnit.DecimalFraction, convertedQuantity.Unit);
+            Assert.Equal(quantity.Value, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParse()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
+            UnitSystem nullUnitSystem = null!;
+            Assert.Multiple(() =>
             {
-                Assert.True(MassFraction.TryParse("1 cg/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentigramsPerGram, CentigramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.CentigramPerGram, parsed.Unit);
-            }
-
+                var quantity = new MassFraction(value: 1, unit: MassFraction.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
             {
-                Assert.True(MassFraction.TryParse("1 cg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentigramsPerKilogram, CentigramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.CentigramPerKilogram, parsed.Unit);
-            }
-
+                IQuantity<MassFractionUnit> quantity = new MassFraction(value: 1, unit: MassFraction.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
             {
-                Assert.True(MassFraction.TryParse("1 dag/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecagramsPerGram, DecagramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.DecagramPerGram, parsed.Unit);
-            }
+                IQuantity quantity = new MassFraction(value: 1, unit: MassFraction.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            });
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 dag/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecagramsPerKilogram, DecagramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.DecagramPerKilogram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 cg/g", MassFractionUnit.CentigramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 cg/kg", MassFractionUnit.CentigramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 dag/g", MassFractionUnit.DecagramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 dag/kg", MassFractionUnit.DecagramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 dg/g", MassFractionUnit.DecigramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 dg/kg", MassFractionUnit.DecigramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 ", MassFractionUnit.DecimalFraction, 4.2)]
+        [InlineData("en-US", "4.2 g/g", MassFractionUnit.GramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 g/kg", MassFractionUnit.GramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 hg/g", MassFractionUnit.HectogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 hg/kg", MassFractionUnit.HectogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kg/g", MassFractionUnit.KilogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 kg/kg", MassFractionUnit.KilogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 µg/g", MassFractionUnit.MicrogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 µg/kg", MassFractionUnit.MicrogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 mg/g", MassFractionUnit.MilligramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 mg/kg", MassFractionUnit.MilligramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 ng/g", MassFractionUnit.NanogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 ng/kg", MassFractionUnit.NanogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 ppb", MassFractionUnit.PartPerBillion, 4.2)]
+        [InlineData("en-US", "4.2 ppm", MassFractionUnit.PartPerMillion, 4.2)]
+        [InlineData("en-US", "4.2 ‰", MassFractionUnit.PartPerThousand, 4.2)]
+        [InlineData("en-US", "4.2 ppt", MassFractionUnit.PartPerTrillion, 4.2)]
+        [InlineData("en-US", "4.2 %", MassFractionUnit.Percent, 4.2)]
+        [InlineData("en-US", "4.2 % (w/w)", MassFractionUnit.Percent, 4.2)]
+        public void Parse(string culture, string quantityString, MassFractionUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = MassFraction.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 dg/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecigramsPerGram, DecigramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.DecigramPerGram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 cg/g", MassFractionUnit.CentigramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 cg/kg", MassFractionUnit.CentigramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 dag/g", MassFractionUnit.DecagramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 dag/kg", MassFractionUnit.DecagramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 dg/g", MassFractionUnit.DecigramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 dg/kg", MassFractionUnit.DecigramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 ", MassFractionUnit.DecimalFraction, 4.2)]
+        [InlineData("en-US", "4.2 g/g", MassFractionUnit.GramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 g/kg", MassFractionUnit.GramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 hg/g", MassFractionUnit.HectogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 hg/kg", MassFractionUnit.HectogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 kg/g", MassFractionUnit.KilogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 kg/kg", MassFractionUnit.KilogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 µg/g", MassFractionUnit.MicrogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 µg/kg", MassFractionUnit.MicrogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 mg/g", MassFractionUnit.MilligramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 mg/kg", MassFractionUnit.MilligramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 ng/g", MassFractionUnit.NanogramPerGram, 4.2)]
+        [InlineData("en-US", "4.2 ng/kg", MassFractionUnit.NanogramPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 ppb", MassFractionUnit.PartPerBillion, 4.2)]
+        [InlineData("en-US", "4.2 ppm", MassFractionUnit.PartPerMillion, 4.2)]
+        [InlineData("en-US", "4.2 ‰", MassFractionUnit.PartPerThousand, 4.2)]
+        [InlineData("en-US", "4.2 ppt", MassFractionUnit.PartPerTrillion, 4.2)]
+        [InlineData("en-US", "4.2 %", MassFractionUnit.Percent, 4.2)]
+        [InlineData("en-US", "4.2 % (w/w)", MassFractionUnit.Percent, 4.2)]
+        public void TryParse(string culture, string quantityString, MassFractionUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(MassFraction.TryParse(quantityString, out MassFraction parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 dg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecigramsPerKilogram, DecigramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.DecigramPerKilogram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("", MassFractionUnit.DecimalFraction)]
+        [InlineData("g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("%", MassFractionUnit.Percent)]
+        [InlineData("% (w/w)", MassFractionUnit.Percent)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MassFractionUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            MassFractionUnit parsedUnit = MassFraction.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 ", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecimalFractions, DecimalFractionsTolerance);
-                Assert.Equal(MassFractionUnit.DecimalFraction, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("", MassFractionUnit.DecimalFraction)]
+        [InlineData("g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("%", MassFractionUnit.Percent)]
+        [InlineData("% (w/w)", MassFractionUnit.Percent)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MassFractionUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            MassFractionUnit parsedUnit = MassFraction.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 g/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerGram, GramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.GramPerGram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("en-US", "cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("en-US", "cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("en-US", "dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("en-US", "dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("en-US", "dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("en-US", "dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("en-US", "", MassFractionUnit.DecimalFraction)]
+        [InlineData("en-US", "g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("en-US", "g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("en-US", "hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("en-US", "hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("en-US", "kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("en-US", "kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("en-US", "µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("en-US", "µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("en-US", "mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("en-US", "mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("en-US", "ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("en-US", "ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("en-US", "ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("en-US", "ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("en-US", "‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("en-US", "ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("en-US", "%", MassFractionUnit.Percent)]
+        [InlineData("en-US", "% (w/w)", MassFractionUnit.Percent)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, MassFractionUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            MassFractionUnit parsedUnit = MassFraction.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 g/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.GramsPerKilogram, GramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.GramPerKilogram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("en-US", "cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("en-US", "cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("en-US", "dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("en-US", "dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("en-US", "dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("en-US", "dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("en-US", "", MassFractionUnit.DecimalFraction)]
+        [InlineData("en-US", "g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("en-US", "g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("en-US", "hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("en-US", "hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("en-US", "kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("en-US", "kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("en-US", "µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("en-US", "µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("en-US", "mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("en-US", "mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("en-US", "ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("en-US", "ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("en-US", "ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("en-US", "ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("en-US", "‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("en-US", "ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("en-US", "%", MassFractionUnit.Percent)]
+        [InlineData("en-US", "% (w/w)", MassFractionUnit.Percent)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, MassFractionUnit expectedUnit)
+        {
+            MassFractionUnit parsedUnit = MassFraction.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 hg/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.HectogramsPerGram, HectogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.HectogramPerGram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("", MassFractionUnit.DecimalFraction)]
+        [InlineData("g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("%", MassFractionUnit.Percent)]
+        [InlineData("% (w/w)", MassFractionUnit.Percent)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, MassFractionUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(MassFraction.TryParseUnit(abbreviation, out MassFractionUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 hg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.HectogramsPerKilogram, HectogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.HectogramPerKilogram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("", MassFractionUnit.DecimalFraction)]
+        [InlineData("g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("%", MassFractionUnit.Percent)]
+        [InlineData("% (w/w)", MassFractionUnit.Percent)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, MassFractionUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(MassFraction.TryParseUnit(abbreviation, out MassFractionUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 kg/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerGram, KilogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.KilogramPerGram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("en-US", "cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("en-US", "cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("en-US", "dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("en-US", "dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("en-US", "dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("en-US", "dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("en-US", "", MassFractionUnit.DecimalFraction)]
+        [InlineData("en-US", "g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("en-US", "g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("en-US", "hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("en-US", "hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("en-US", "kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("en-US", "kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("en-US", "µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("en-US", "µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("en-US", "mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("en-US", "mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("en-US", "ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("en-US", "ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("en-US", "ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("en-US", "ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("en-US", "‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("en-US", "ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("en-US", "%", MassFractionUnit.Percent)]
+        [InlineData("en-US", "% (w/w)", MassFractionUnit.Percent)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, MassFractionUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(MassFraction.TryParseUnit(abbreviation, out MassFractionUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 kg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilogramsPerKilogram, KilogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.KilogramPerKilogram, parsed.Unit);
-            }
+        [Theory]
+        [InlineData("en-US", "cg/g", MassFractionUnit.CentigramPerGram)]
+        [InlineData("en-US", "cg/kg", MassFractionUnit.CentigramPerKilogram)]
+        [InlineData("en-US", "dag/g", MassFractionUnit.DecagramPerGram)]
+        [InlineData("en-US", "dag/kg", MassFractionUnit.DecagramPerKilogram)]
+        [InlineData("en-US", "dg/g", MassFractionUnit.DecigramPerGram)]
+        [InlineData("en-US", "dg/kg", MassFractionUnit.DecigramPerKilogram)]
+        [InlineData("en-US", "", MassFractionUnit.DecimalFraction)]
+        [InlineData("en-US", "g/g", MassFractionUnit.GramPerGram)]
+        [InlineData("en-US", "g/kg", MassFractionUnit.GramPerKilogram)]
+        [InlineData("en-US", "hg/g", MassFractionUnit.HectogramPerGram)]
+        [InlineData("en-US", "hg/kg", MassFractionUnit.HectogramPerKilogram)]
+        [InlineData("en-US", "kg/g", MassFractionUnit.KilogramPerGram)]
+        [InlineData("en-US", "kg/kg", MassFractionUnit.KilogramPerKilogram)]
+        [InlineData("en-US", "µg/g", MassFractionUnit.MicrogramPerGram)]
+        [InlineData("en-US", "µg/kg", MassFractionUnit.MicrogramPerKilogram)]
+        [InlineData("en-US", "mg/g", MassFractionUnit.MilligramPerGram)]
+        [InlineData("en-US", "mg/kg", MassFractionUnit.MilligramPerKilogram)]
+        [InlineData("en-US", "ng/g", MassFractionUnit.NanogramPerGram)]
+        [InlineData("en-US", "ng/kg", MassFractionUnit.NanogramPerKilogram)]
+        [InlineData("en-US", "ppb", MassFractionUnit.PartPerBillion)]
+        [InlineData("en-US", "ppm", MassFractionUnit.PartPerMillion)]
+        [InlineData("en-US", "‰", MassFractionUnit.PartPerThousand)]
+        [InlineData("en-US", "ppt", MassFractionUnit.PartPerTrillion)]
+        [InlineData("en-US", "%", MassFractionUnit.Percent)]
+        [InlineData("en-US", "% (w/w)", MassFractionUnit.Percent)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, MassFractionUnit expectedUnit)
+        {
+            Assert.True(MassFraction.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out MassFractionUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(MassFraction.TryParse("1 µg/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicrogramsPerGram, MicrogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.MicrogramPerGram, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 µg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicrogramsPerKilogram, MicrogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.MicrogramPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 mg/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MilligramsPerGram, MilligramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.MilligramPerGram, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 mg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MilligramsPerKilogram, MilligramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.MilligramPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 ng/g", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanogramsPerGram, NanogramsPerGramTolerance);
-                Assert.Equal(MassFractionUnit.NanogramPerGram, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 ng/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanogramsPerKilogram, NanogramsPerKilogramTolerance);
-                Assert.Equal(MassFractionUnit.NanogramPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 ppb", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PartsPerBillion, PartsPerBillionTolerance);
-                Assert.Equal(MassFractionUnit.PartPerBillion, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 ppm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PartsPerMillion, PartsPerMillionTolerance);
-                Assert.Equal(MassFractionUnit.PartPerMillion, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 ‰", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PartsPerThousand, PartsPerThousandTolerance);
-                Assert.Equal(MassFractionUnit.PartPerThousand, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 ppt", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PartsPerTrillion, PartsPerTrillionTolerance);
-                Assert.Equal(MassFractionUnit.PartPerTrillion, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 %", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Percent, PercentTolerance);
-                Assert.Equal(MassFractionUnit.Percent, parsed.Unit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParse("1 % (w/w)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Percent, PercentTolerance);
-                Assert.Equal(MassFractionUnit.Percent, parsed.Unit);
-            }
-
+        [Theory]
+        [InlineData("en-US", MassFractionUnit.CentigramPerGram, "cg/g")]
+        [InlineData("en-US", MassFractionUnit.CentigramPerKilogram, "cg/kg")]
+        [InlineData("en-US", MassFractionUnit.DecagramPerGram, "dag/g")]
+        [InlineData("en-US", MassFractionUnit.DecagramPerKilogram, "dag/kg")]
+        [InlineData("en-US", MassFractionUnit.DecigramPerGram, "dg/g")]
+        [InlineData("en-US", MassFractionUnit.DecigramPerKilogram, "dg/kg")]
+        [InlineData("en-US", MassFractionUnit.DecimalFraction, "")]
+        [InlineData("en-US", MassFractionUnit.GramPerGram, "g/g")]
+        [InlineData("en-US", MassFractionUnit.GramPerKilogram, "g/kg")]
+        [InlineData("en-US", MassFractionUnit.HectogramPerGram, "hg/g")]
+        [InlineData("en-US", MassFractionUnit.HectogramPerKilogram, "hg/kg")]
+        [InlineData("en-US", MassFractionUnit.KilogramPerGram, "kg/g")]
+        [InlineData("en-US", MassFractionUnit.KilogramPerKilogram, "kg/kg")]
+        [InlineData("en-US", MassFractionUnit.MicrogramPerGram, "µg/g")]
+        [InlineData("en-US", MassFractionUnit.MicrogramPerKilogram, "µg/kg")]
+        [InlineData("en-US", MassFractionUnit.MilligramPerGram, "mg/g")]
+        [InlineData("en-US", MassFractionUnit.MilligramPerKilogram, "mg/kg")]
+        [InlineData("en-US", MassFractionUnit.NanogramPerGram, "ng/g")]
+        [InlineData("en-US", MassFractionUnit.NanogramPerKilogram, "ng/kg")]
+        [InlineData("en-US", MassFractionUnit.PartPerBillion, "ppb")]
+        [InlineData("en-US", MassFractionUnit.PartPerMillion, "ppm")]
+        [InlineData("en-US", MassFractionUnit.PartPerThousand, "‰")]
+        [InlineData("en-US", MassFractionUnit.PartPerTrillion, "ppt")]
+        [InlineData("en-US", MassFractionUnit.Percent, "%")]
+        public void GetAbbreviationForCulture(string culture, MassFractionUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = MassFraction.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
         }
 
         [Fact]
-        public void ParseUnit()
+        public void GetAbbreviationWithDefaultCulture()
         {
-            try
+            Assert.All(MassFraction.Units, unit =>
             {
-                var parsedUnit = MassFraction.ParseUnit("cg/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.CentigramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("cg/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.CentigramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+                var defaultAbbreviation = MassFraction.GetAbbreviation(unit);
 
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("dag/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.DecagramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("dag/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.DecagramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("dg/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.DecigramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("dg/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.DecigramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.DecimalFraction, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("g/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.GramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("g/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.GramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("hg/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.HectogramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("hg/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.HectogramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("kg/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.KilogramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("kg/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.KilogramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("µg/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.MicrogramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("µg/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.MicrogramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("mg/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.MilligramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("mg/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.MilligramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("ng/g", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.NanogramPerGram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("ng/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.NanogramPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("ppb", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.PartPerBillion, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("ppm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.PartPerMillion, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("‰", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.PartPerThousand, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("ppt", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.PartPerTrillion, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("%", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.Percent, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = MassFraction.ParseUnit("% (w/w)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(MassFractionUnit.Percent, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-        }
-
-        [Fact]
-        public void TryParseUnit()
-        {
-            {
-                Assert.True(MassFraction.TryParseUnit("cg/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.CentigramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("cg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.CentigramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("dag/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.DecagramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("dag/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.DecagramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("dg/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.DecigramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("dg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.DecigramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.DecimalFraction, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("g/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.GramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("g/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.GramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("hg/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.HectogramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("hg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.HectogramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("kg/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.KilogramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("kg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.KilogramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("µg/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.MicrogramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("µg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.MicrogramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("mg/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.MilligramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("mg/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.MilligramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("ng/g", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.NanogramPerGram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("ng/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.NanogramPerKilogram, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("ppb", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.PartPerBillion, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("ppm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.PartPerMillion, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("‰", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.PartPerThousand, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("ppt", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.PartPerTrillion, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("%", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.Percent, parsedUnit);
-            }
-
-            {
-                Assert.True(MassFraction.TryParseUnit("% (w/w)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(MassFractionUnit.Percent, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -1042,12 +736,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(MassFractionUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = MassFraction.Units.First(u => u != MassFraction.BaseUnit);
-
-            var quantity = MassFraction.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(MassFraction.Units.Where(u => u != MassFraction.BaseUnit), fromUnit =>
+            {
+                var quantity = MassFraction.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -1057,6 +751,25 @@ namespace UnitsNet.Tests
             var quantity = default(MassFraction);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(MassFractionUnit unit)
+        {
+            var quantity = MassFraction.From(3, MassFraction.BaseUnit);
+            MassFraction expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<MassFractionUnit> quantityToConvert = quantity;
+                IQuantity<MassFractionUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -1184,21 +897,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = MassFraction.FromDecimalFractions(1);
-            Assert.True(v.Equals(MassFraction.FromDecimalFractions(1), DecimalFractionsTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(MassFraction.Zero, DecimalFractionsTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = MassFraction.FromDecimalFractions(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(MassFraction.FromDecimalFractions(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             MassFraction decimalfraction = MassFraction.FromDecimalFractions(1);
@@ -1212,13 +910,39 @@ namespace UnitsNet.Tests
             Assert.False(decimalfraction.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = MassFraction.FromDecimalFractions(firstValue);
+            var otherQuantity = MassFraction.FromDecimalFractions(secondValue);
+            MassFraction maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, MassFraction.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = MassFraction.FromDecimalFractions(1);
+            var negativeTolerance = MassFraction.FromDecimalFractions(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(MassFractionUnit)).Cast<MassFractionUnit>();
+            var units = Enum.GetValues<MassFractionUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -1231,38 +955,31 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 cg/g", new MassFraction(1, MassFractionUnit.CentigramPerGram).ToString());
-                Assert.Equal("1 cg/kg", new MassFraction(1, MassFractionUnit.CentigramPerKilogram).ToString());
-                Assert.Equal("1 dag/g", new MassFraction(1, MassFractionUnit.DecagramPerGram).ToString());
-                Assert.Equal("1 dag/kg", new MassFraction(1, MassFractionUnit.DecagramPerKilogram).ToString());
-                Assert.Equal("1 dg/g", new MassFraction(1, MassFractionUnit.DecigramPerGram).ToString());
-                Assert.Equal("1 dg/kg", new MassFraction(1, MassFractionUnit.DecigramPerKilogram).ToString());
-                Assert.Equal("1", new MassFraction(1, MassFractionUnit.DecimalFraction).ToString());
-                Assert.Equal("1 g/g", new MassFraction(1, MassFractionUnit.GramPerGram).ToString());
-                Assert.Equal("1 g/kg", new MassFraction(1, MassFractionUnit.GramPerKilogram).ToString());
-                Assert.Equal("1 hg/g", new MassFraction(1, MassFractionUnit.HectogramPerGram).ToString());
-                Assert.Equal("1 hg/kg", new MassFraction(1, MassFractionUnit.HectogramPerKilogram).ToString());
-                Assert.Equal("1 kg/g", new MassFraction(1, MassFractionUnit.KilogramPerGram).ToString());
-                Assert.Equal("1 kg/kg", new MassFraction(1, MassFractionUnit.KilogramPerKilogram).ToString());
-                Assert.Equal("1 µg/g", new MassFraction(1, MassFractionUnit.MicrogramPerGram).ToString());
-                Assert.Equal("1 µg/kg", new MassFraction(1, MassFractionUnit.MicrogramPerKilogram).ToString());
-                Assert.Equal("1 mg/g", new MassFraction(1, MassFractionUnit.MilligramPerGram).ToString());
-                Assert.Equal("1 mg/kg", new MassFraction(1, MassFractionUnit.MilligramPerKilogram).ToString());
-                Assert.Equal("1 ng/g", new MassFraction(1, MassFractionUnit.NanogramPerGram).ToString());
-                Assert.Equal("1 ng/kg", new MassFraction(1, MassFractionUnit.NanogramPerKilogram).ToString());
-                Assert.Equal("1 ppb", new MassFraction(1, MassFractionUnit.PartPerBillion).ToString());
-                Assert.Equal("1 ppm", new MassFraction(1, MassFractionUnit.PartPerMillion).ToString());
-                Assert.Equal("1 ‰", new MassFraction(1, MassFractionUnit.PartPerThousand).ToString());
-                Assert.Equal("1 ppt", new MassFraction(1, MassFractionUnit.PartPerTrillion).ToString());
-                Assert.Equal("1 %", new MassFraction(1, MassFractionUnit.Percent).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 cg/g", new MassFraction(1, MassFractionUnit.CentigramPerGram).ToString());
+            Assert.Equal("1 cg/kg", new MassFraction(1, MassFractionUnit.CentigramPerKilogram).ToString());
+            Assert.Equal("1 dag/g", new MassFraction(1, MassFractionUnit.DecagramPerGram).ToString());
+            Assert.Equal("1 dag/kg", new MassFraction(1, MassFractionUnit.DecagramPerKilogram).ToString());
+            Assert.Equal("1 dg/g", new MassFraction(1, MassFractionUnit.DecigramPerGram).ToString());
+            Assert.Equal("1 dg/kg", new MassFraction(1, MassFractionUnit.DecigramPerKilogram).ToString());
+            Assert.Equal("1", new MassFraction(1, MassFractionUnit.DecimalFraction).ToString());
+            Assert.Equal("1 g/g", new MassFraction(1, MassFractionUnit.GramPerGram).ToString());
+            Assert.Equal("1 g/kg", new MassFraction(1, MassFractionUnit.GramPerKilogram).ToString());
+            Assert.Equal("1 hg/g", new MassFraction(1, MassFractionUnit.HectogramPerGram).ToString());
+            Assert.Equal("1 hg/kg", new MassFraction(1, MassFractionUnit.HectogramPerKilogram).ToString());
+            Assert.Equal("1 kg/g", new MassFraction(1, MassFractionUnit.KilogramPerGram).ToString());
+            Assert.Equal("1 kg/kg", new MassFraction(1, MassFractionUnit.KilogramPerKilogram).ToString());
+            Assert.Equal("1 µg/g", new MassFraction(1, MassFractionUnit.MicrogramPerGram).ToString());
+            Assert.Equal("1 µg/kg", new MassFraction(1, MassFractionUnit.MicrogramPerKilogram).ToString());
+            Assert.Equal("1 mg/g", new MassFraction(1, MassFractionUnit.MilligramPerGram).ToString());
+            Assert.Equal("1 mg/kg", new MassFraction(1, MassFractionUnit.MilligramPerKilogram).ToString());
+            Assert.Equal("1 ng/g", new MassFraction(1, MassFractionUnit.NanogramPerGram).ToString());
+            Assert.Equal("1 ng/kg", new MassFraction(1, MassFractionUnit.NanogramPerKilogram).ToString());
+            Assert.Equal("1 ppb", new MassFraction(1, MassFractionUnit.PartPerBillion).ToString());
+            Assert.Equal("1 ppm", new MassFraction(1, MassFractionUnit.PartPerMillion).ToString());
+            Assert.Equal("1 ‰", new MassFraction(1, MassFractionUnit.PartPerThousand).ToString());
+            Assert.Equal("1 ppt", new MassFraction(1, MassFractionUnit.PartPerTrillion).ToString());
+            Assert.Equal("1 %", new MassFraction(1, MassFractionUnit.Percent).ToString());
         }
 
         [Fact]
@@ -1300,19 +1017,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s1"));
-                Assert.Equal("0.12", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s2"));
-                Assert.Equal("0.123", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s3"));
-                Assert.Equal("0.1235", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s1"));
+            Assert.Equal("0.12", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s2"));
+            Assert.Equal("0.123", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s3"));
+            Assert.Equal("0.1235", new MassFraction(0.123456, MassFractionUnit.DecimalFraction).ToString("s4"));
         }
 
         [Fact]
@@ -1335,7 +1044,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -1348,150 +1057,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(MassFraction)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(MassFractionUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal(MassFraction.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal(MassFraction.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = MassFraction.FromDecimalFractions(1.0);
-            Assert.Equal(new {MassFraction.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

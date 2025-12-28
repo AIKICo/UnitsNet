@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -38,44 +40,28 @@ namespace UnitsNet.Tests
 // ReSharper disable once PartialTypeWithSinglePart
     public abstract partial class ThermalResistanceTestsBase : QuantityTestsBase
     {
-        protected abstract double HourSquareFeetDegreesFahrenheitPerBtuInOneSquareMeterKelvinPerKilowatt { get; }
-        protected abstract double SquareCentimeterHourDegreesCelsiusPerKilocalorieInOneSquareMeterKelvinPerKilowatt { get; }
-        protected abstract double SquareCentimeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt { get; }
-        protected abstract double SquareMeterDegreesCelsiusPerWattInOneSquareMeterKelvinPerKilowatt { get; }
-        protected abstract double SquareMeterKelvinsPerKilowattInOneSquareMeterKelvinPerKilowatt { get; }
-        protected abstract double SquareMeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt { get; }
+        protected abstract double DegreesCelsiusPerWattInOneKelvinPerWatt { get; }
+        protected abstract double KelvinsPerWattInOneKelvinPerWatt { get; }
 
 // ReSharper disable VirtualMemberNeverOverriden.Global
-        protected virtual double HourSquareFeetDegreesFahrenheitPerBtuTolerance { get { return 1e-5; } }
-        protected virtual double SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance { get { return 1e-5; } }
-        protected virtual double SquareCentimeterKelvinsPerWattTolerance { get { return 1e-5; } }
-        protected virtual double SquareMeterDegreesCelsiusPerWattTolerance { get { return 1e-5; } }
-        protected virtual double SquareMeterKelvinsPerKilowattTolerance { get { return 1e-5; } }
-        protected virtual double SquareMeterKelvinsPerWattTolerance { get { return 1e-5; } }
+        protected virtual double DegreesCelsiusPerWattTolerance { get { return 1e-5; } }
+        protected virtual double KelvinsPerWattTolerance { get { return 1e-5; } }
 // ReSharper restore VirtualMemberNeverOverriden.Global
 
         protected (double UnitsInBaseUnit, double Tolerence) GetConversionFactor(ThermalResistanceUnit unit)
         {
             return unit switch
             {
-                ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu => (HourSquareFeetDegreesFahrenheitPerBtuInOneSquareMeterKelvinPerKilowatt, HourSquareFeetDegreesFahrenheitPerBtuTolerance),
-                ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie => (SquareCentimeterHourDegreesCelsiusPerKilocalorieInOneSquareMeterKelvinPerKilowatt, SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance),
-                ThermalResistanceUnit.SquareCentimeterKelvinPerWatt => (SquareCentimeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt, SquareCentimeterKelvinsPerWattTolerance),
-                ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt => (SquareMeterDegreesCelsiusPerWattInOneSquareMeterKelvinPerKilowatt, SquareMeterDegreesCelsiusPerWattTolerance),
-                ThermalResistanceUnit.SquareMeterKelvinPerKilowatt => (SquareMeterKelvinsPerKilowattInOneSquareMeterKelvinPerKilowatt, SquareMeterKelvinsPerKilowattTolerance),
-                ThermalResistanceUnit.SquareMeterKelvinPerWatt => (SquareMeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt, SquareMeterKelvinsPerWattTolerance),
+                ThermalResistanceUnit.DegreeCelsiusPerWatt => (DegreesCelsiusPerWattInOneKelvinPerWatt, DegreesCelsiusPerWattTolerance),
+                ThermalResistanceUnit.KelvinPerWatt => (KelvinsPerWattInOneKelvinPerWatt, KelvinsPerWattTolerance),
                 _ => throw new NotSupportedException()
             };
         }
 
         public static IEnumerable<object[]> UnitTypes = new List<object[]>
         {
-            new object[] { ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu },
-            new object[] { ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie },
-            new object[] { ThermalResistanceUnit.SquareCentimeterKelvinPerWatt },
-            new object[] { ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt },
-            new object[] { ThermalResistanceUnit.SquareMeterKelvinPerKilowatt },
-            new object[] { ThermalResistanceUnit.SquareMeterKelvinPerWatt },
+            new object[] { ThermalResistanceUnit.DegreeCelsiusPerWatt },
+            new object[] { ThermalResistanceUnit.KelvinPerWatt },
         };
 
         [Fact]
@@ -83,20 +69,25 @@ namespace UnitsNet.Tests
         {
             var quantity = new ThermalResistance();
             Assert.Equal(0, quantity.Value);
-            Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, quantity.Unit);
+            Assert.Equal(ThermalResistanceUnit.KelvinPerWatt, quantity.Unit);
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new ThermalResistance(double.PositiveInfinity, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt));
-            Assert.Throws<ArgumentException>(() => new ThermalResistance(double.NegativeInfinity, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt));
+            var exception1 = Record.Exception(() => new ThermalResistance(double.PositiveInfinity, ThermalResistanceUnit.KelvinPerWatt));
+            var exception2 = Record.Exception(() => new ThermalResistance(double.NegativeInfinity, ThermalResistanceUnit.KelvinPerWatt));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new ThermalResistance(double.NaN, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt));
+            var exception = Record.Exception(() => new ThermalResistance(double.NaN, ThermalResistanceUnit.KelvinPerWatt));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -106,279 +97,270 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new ThermalResistance(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (ThermalResistance) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new ThermalResistance(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new ThermalResistance(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void ThermalResistance_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
-            var quantity = new ThermalResistance(1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt);
+            ThermalResistanceUnit[] unitsOrderedByName = EnumHelper.GetValues<ThermalResistanceUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
+            var quantity = new ThermalResistance(1, ThermalResistanceUnit.KelvinPerWatt);
 
-            QuantityInfo<ThermalResistanceUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<ThermalResistance, ThermalResistanceUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(ThermalResistance.Zero, quantityInfo.Zero);
             Assert.Equal("ThermalResistance", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<ThermalResistanceUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(ThermalResistance.Zero, quantityInfo.Zero);
+            Assert.Equal(ThermalResistance.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(ThermalResistance.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<ThermalResistanceUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
-        public void SquareMeterKelvinPerKilowattToThermalResistanceUnits()
+        public void KelvinPerWattToThermalResistanceUnits()
         {
-            ThermalResistance squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            AssertEx.EqualTolerance(HourSquareFeetDegreesFahrenheitPerBtuInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.HourSquareFeetDegreesFahrenheitPerBtu, HourSquareFeetDegreesFahrenheitPerBtuTolerance);
-            AssertEx.EqualTolerance(SquareCentimeterHourDegreesCelsiusPerKilocalorieInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.SquareCentimeterHourDegreesCelsiusPerKilocalorie, SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance);
-            AssertEx.EqualTolerance(SquareCentimeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.SquareCentimeterKelvinsPerWatt, SquareCentimeterKelvinsPerWattTolerance);
-            AssertEx.EqualTolerance(SquareMeterDegreesCelsiusPerWattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.SquareMeterDegreesCelsiusPerWatt, SquareMeterDegreesCelsiusPerWattTolerance);
-            AssertEx.EqualTolerance(SquareMeterKelvinsPerKilowattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(SquareMeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.SquareMeterKelvinsPerWatt, SquareMeterKelvinsPerWattTolerance);
+            ThermalResistance kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            AssertEx.EqualTolerance(DegreesCelsiusPerWattInOneKelvinPerWatt, kelvinperwatt.DegreesCelsiusPerWatt, DegreesCelsiusPerWattTolerance);
+            AssertEx.EqualTolerance(KelvinsPerWattInOneKelvinPerWatt, kelvinperwatt.KelvinsPerWatt, KelvinsPerWattTolerance);
         }
 
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = ThermalResistance.From(1, ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu);
-            AssertEx.EqualTolerance(1, quantity00.HourSquareFeetDegreesFahrenheitPerBtu, HourSquareFeetDegreesFahrenheitPerBtuTolerance);
-            Assert.Equal(ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu, quantity00.Unit);
-
-            var quantity01 = ThermalResistance.From(1, ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie);
-            AssertEx.EqualTolerance(1, quantity01.SquareCentimeterHourDegreesCelsiusPerKilocalorie, SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance);
-            Assert.Equal(ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie, quantity01.Unit);
-
-            var quantity02 = ThermalResistance.From(1, ThermalResistanceUnit.SquareCentimeterKelvinPerWatt);
-            AssertEx.EqualTolerance(1, quantity02.SquareCentimeterKelvinsPerWatt, SquareCentimeterKelvinsPerWattTolerance);
-            Assert.Equal(ThermalResistanceUnit.SquareCentimeterKelvinPerWatt, quantity02.Unit);
-
-            var quantity03 = ThermalResistance.From(1, ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt);
-            AssertEx.EqualTolerance(1, quantity03.SquareMeterDegreesCelsiusPerWatt, SquareMeterDegreesCelsiusPerWattTolerance);
-            Assert.Equal(ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt, quantity03.Unit);
-
-            var quantity04 = ThermalResistance.From(1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt);
-            AssertEx.EqualTolerance(1, quantity04.SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, quantity04.Unit);
-
-            var quantity05 = ThermalResistance.From(1, ThermalResistanceUnit.SquareMeterKelvinPerWatt);
-            AssertEx.EqualTolerance(1, quantity05.SquareMeterKelvinsPerWatt, SquareMeterKelvinsPerWattTolerance);
-            Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerWatt, quantity05.Unit);
-
+            Assert.All(EnumHelper.GetValues<ThermalResistanceUnit>(), unit =>
+            {
+                var quantity = ThermalResistance.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromSquareMeterKelvinsPerKilowatt_WithInfinityValue_ThrowsArgumentException()
+        public void FromKelvinsPerWatt_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => ThermalResistance.FromSquareMeterKelvinsPerKilowatt(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => ThermalResistance.FromSquareMeterKelvinsPerKilowatt(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => ThermalResistance.FromKelvinsPerWatt(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => ThermalResistance.FromKelvinsPerWatt(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromSquareMeterKelvinsPerKilowatt_WithNanValue_ThrowsArgumentException()
+        public void FromKelvinsPerWatt_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => ThermalResistance.FromSquareMeterKelvinsPerKilowatt(double.NaN));
+            var exception = Record.Exception(() => ThermalResistance.FromKelvinsPerWatt(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
         public void As()
         {
-            var squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            AssertEx.EqualTolerance(HourSquareFeetDegreesFahrenheitPerBtuInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.As(ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu), HourSquareFeetDegreesFahrenheitPerBtuTolerance);
-            AssertEx.EqualTolerance(SquareCentimeterHourDegreesCelsiusPerKilocalorieInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.As(ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie), SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance);
-            AssertEx.EqualTolerance(SquareCentimeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.As(ThermalResistanceUnit.SquareCentimeterKelvinPerWatt), SquareCentimeterKelvinsPerWattTolerance);
-            AssertEx.EqualTolerance(SquareMeterDegreesCelsiusPerWattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.As(ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt), SquareMeterDegreesCelsiusPerWattTolerance);
-            AssertEx.EqualTolerance(SquareMeterKelvinsPerKilowattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.As(ThermalResistanceUnit.SquareMeterKelvinPerKilowatt), SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(SquareMeterKelvinsPerWattInOneSquareMeterKelvinPerKilowatt, squaremeterkelvinperkilowatt.As(ThermalResistanceUnit.SquareMeterKelvinPerWatt), SquareMeterKelvinsPerWattTolerance);
+            var kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            AssertEx.EqualTolerance(DegreesCelsiusPerWattInOneKelvinPerWatt, kelvinperwatt.As(ThermalResistanceUnit.DegreeCelsiusPerWatt), DegreesCelsiusPerWattTolerance);
+            AssertEx.EqualTolerance(KelvinsPerWattInOneKelvinPerWatt, kelvinperwatt.As(ThermalResistanceUnit.KelvinPerWatt), KelvinsPerWattTolerance);
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = ThermalResistance.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new ThermalResistance(value: 1, unit: ThermalResistance.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(ThermalResistance.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = ThermalResistance.Parse("1 Hrft²°F/Btu", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.HourSquareFeetDegreesFahrenheitPerBtu, HourSquareFeetDegreesFahrenheitPerBtuTolerance);
-                Assert.Equal(ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = ThermalResistance.Parse("1 cm²Hr°C/kcal", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.SquareCentimeterHourDegreesCelsiusPerKilocalorie, SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = ThermalResistance.Parse("1 cm²K/W", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.SquareCentimeterKelvinsPerWatt, SquareCentimeterKelvinsPerWattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterKelvinPerWatt, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = ThermalResistance.Parse("1 m²°C/W", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.SquareMeterDegreesCelsiusPerWatt, SquareMeterDegreesCelsiusPerWattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = ThermalResistance.Parse("1 m²K/kW", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = ThermalResistance.Parse("1 m²K/W", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.SquareMeterKelvinsPerWatt, SquareMeterKelvinsPerWattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerWatt, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new ThermalResistance(value: 1, unit: ThermalResistance.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(ThermalResistance.TryParse("1 Hrft²°F/Btu", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.HourSquareFeetDegreesFahrenheitPerBtu, HourSquareFeetDegreesFahrenheitPerBtuTolerance);
-                Assert.Equal(ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu, parsed.Unit);
-            }
-
-            {
-                Assert.True(ThermalResistance.TryParse("1 cm²Hr°C/kcal", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.SquareCentimeterHourDegreesCelsiusPerKilocalorie, SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie, parsed.Unit);
-            }
-
-            {
-                Assert.True(ThermalResistance.TryParse("1 cm²K/W", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.SquareCentimeterKelvinsPerWatt, SquareCentimeterKelvinsPerWattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterKelvinPerWatt, parsed.Unit);
-            }
-
-            {
-                Assert.True(ThermalResistance.TryParse("1 m²°C/W", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.SquareMeterDegreesCelsiusPerWatt, SquareMeterDegreesCelsiusPerWattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt, parsed.Unit);
-            }
-
-            {
-                Assert.True(ThermalResistance.TryParse("1 m²K/kW", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, parsed.Unit);
-            }
-
-            {
-                Assert.True(ThermalResistance.TryParse("1 m²K/W", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.SquareMeterKelvinsPerWatt, SquareMeterKelvinsPerWattTolerance);
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerWatt, parsed.Unit);
-            }
-
+            var quantity = new ThermalResistance(value: 1, unit: ThermalResistance.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = ThermalResistance.ParseUnit("Hrft²°F/Btu", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new ThermalResistance(value: 1, unit: ThermalResistance.BaseUnit);
+            var expectedUnit = ThermalResistance.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = ThermalResistance.ParseUnit("cm²Hr°C/kcal", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            ThermalResistance convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = ThermalResistance.ParseUnit("cm²K/W", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterKelvinPerWatt, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = ThermalResistance.ParseUnit("m²°C/W", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = ThermalResistance.ParseUnit("m²K/kW", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = ThermalResistance.ParseUnit("m²K/W", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerWatt, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(ThermalResistance.TryParseUnit("Hrft²°F/Btu", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new ThermalResistance(value: 1, unit: ThermalResistance.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(ThermalResistance.TryParseUnit("cm²Hr°C/kcal", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new ThermalResistance(value: 1, unit: ThermalResistance.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(ThermalResistance.TryParseUnit("cm²K/W", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(ThermalResistanceUnit.SquareCentimeterKelvinPerWatt, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 °C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt, 4.2)]
+        [InlineData("en-US", "4.2 K/W", ThermalResistanceUnit.KelvinPerWatt, 4.2)]
+        public void Parse(string culture, string quantityString, ThermalResistanceUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = ThermalResistance.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(ThermalResistance.TryParseUnit("m²°C/W", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 °C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt, 4.2)]
+        [InlineData("en-US", "4.2 K/W", ThermalResistanceUnit.KelvinPerWatt, 4.2)]
+        public void TryParse(string culture, string quantityString, ThermalResistanceUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(ThermalResistance.TryParse(quantityString, out ThermalResistance parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(ThermalResistance.TryParseUnit("m²K/kW", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, parsedUnit);
-            }
+        [Theory]
+        [InlineData("°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            ThermalResistanceUnit parsedUnit = ThermalResistance.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(ThermalResistance.TryParseUnit("m²K/W", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(ThermalResistanceUnit.SquareMeterKelvinPerWatt, parsedUnit);
-            }
+        [Theory]
+        [InlineData("°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            ThermalResistanceUnit parsedUnit = ThermalResistance.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
+        [Theory]
+        [InlineData("en-US", "°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("en-US", "K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            ThermalResistanceUnit parsedUnit = ThermalResistance.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("en-US", "K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            ThermalResistanceUnit parsedUnit = ThermalResistance.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(ThermalResistance.TryParseUnit(abbreviation, out ThermalResistanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(ThermalResistance.TryParseUnit(abbreviation, out ThermalResistanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("en-US", "K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(ThermalResistance.TryParseUnit(abbreviation, out ThermalResistanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "°C/W", ThermalResistanceUnit.DegreeCelsiusPerWatt)]
+        [InlineData("en-US", "K/W", ThermalResistanceUnit.KelvinPerWatt)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, ThermalResistanceUnit expectedUnit)
+        {
+            Assert.True(ThermalResistance.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out ThermalResistanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", ThermalResistanceUnit.DegreeCelsiusPerWatt, "°C/W")]
+        [InlineData("en-US", ThermalResistanceUnit.KelvinPerWatt, "K/W")]
+        public void GetAbbreviationForCulture(string culture, ThermalResistanceUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = ThermalResistance.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(ThermalResistance.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = ThermalResistance.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -406,12 +388,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(ThermalResistanceUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = ThermalResistance.Units.First(u => u != ThermalResistance.BaseUnit);
-
-            var quantity = ThermalResistance.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(ThermalResistance.Units.Where(u => u != ThermalResistance.BaseUnit), fromUnit =>
+            {
+                var quantity = ThermalResistance.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -423,76 +405,91 @@ namespace UnitsNet.Tests
             Assert.Equal(converted.Unit, unit);
         }
 
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(ThermalResistanceUnit unit)
+        {
+            var quantity = ThermalResistance.From(3, ThermalResistance.BaseUnit);
+            ThermalResistance expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<ThermalResistanceUnit> quantityToConvert = quantity;
+                IQuantity<ThermalResistanceUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
+        }
+
         [Fact]
         public void ConversionRoundTrip()
         {
-            ThermalResistance squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            AssertEx.EqualTolerance(1, ThermalResistance.FromHourSquareFeetDegreesFahrenheitPerBtu(squaremeterkelvinperkilowatt.HourSquareFeetDegreesFahrenheitPerBtu).SquareMeterKelvinsPerKilowatt, HourSquareFeetDegreesFahrenheitPerBtuTolerance);
-            AssertEx.EqualTolerance(1, ThermalResistance.FromSquareCentimeterHourDegreesCelsiusPerKilocalorie(squaremeterkelvinperkilowatt.SquareCentimeterHourDegreesCelsiusPerKilocalorie).SquareMeterKelvinsPerKilowatt, SquareCentimeterHourDegreesCelsiusPerKilocalorieTolerance);
-            AssertEx.EqualTolerance(1, ThermalResistance.FromSquareCentimeterKelvinsPerWatt(squaremeterkelvinperkilowatt.SquareCentimeterKelvinsPerWatt).SquareMeterKelvinsPerKilowatt, SquareCentimeterKelvinsPerWattTolerance);
-            AssertEx.EqualTolerance(1, ThermalResistance.FromSquareMeterDegreesCelsiusPerWatt(squaremeterkelvinperkilowatt.SquareMeterDegreesCelsiusPerWatt).SquareMeterKelvinsPerKilowatt, SquareMeterDegreesCelsiusPerWattTolerance);
-            AssertEx.EqualTolerance(1, ThermalResistance.FromSquareMeterKelvinsPerKilowatt(squaremeterkelvinperkilowatt.SquareMeterKelvinsPerKilowatt).SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(1, ThermalResistance.FromSquareMeterKelvinsPerWatt(squaremeterkelvinperkilowatt.SquareMeterKelvinsPerWatt).SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerWattTolerance);
+            ThermalResistance kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            AssertEx.EqualTolerance(1, ThermalResistance.FromDegreesCelsiusPerWatt(kelvinperwatt.DegreesCelsiusPerWatt).KelvinsPerWatt, DegreesCelsiusPerWattTolerance);
+            AssertEx.EqualTolerance(1, ThermalResistance.FromKelvinsPerWatt(kelvinperwatt.KelvinsPerWatt).KelvinsPerWatt, KelvinsPerWattTolerance);
         }
 
         [Fact]
         public void ArithmeticOperators()
         {
-            ThermalResistance v = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            AssertEx.EqualTolerance(-1, -v.SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(2, (ThermalResistance.FromSquareMeterKelvinsPerKilowatt(3)-v).SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(2, (v + v).SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(10, (v*10).SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(10, (10*v).SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(2, (ThermalResistance.FromSquareMeterKelvinsPerKilowatt(10)/5).SquareMeterKelvinsPerKilowatt, SquareMeterKelvinsPerKilowattTolerance);
-            AssertEx.EqualTolerance(2, ThermalResistance.FromSquareMeterKelvinsPerKilowatt(10)/ThermalResistance.FromSquareMeterKelvinsPerKilowatt(5), SquareMeterKelvinsPerKilowattTolerance);
+            ThermalResistance v = ThermalResistance.FromKelvinsPerWatt(1);
+            AssertEx.EqualTolerance(-1, -v.KelvinsPerWatt, KelvinsPerWattTolerance);
+            AssertEx.EqualTolerance(2, (ThermalResistance.FromKelvinsPerWatt(3)-v).KelvinsPerWatt, KelvinsPerWattTolerance);
+            AssertEx.EqualTolerance(2, (v + v).KelvinsPerWatt, KelvinsPerWattTolerance);
+            AssertEx.EqualTolerance(10, (v*10).KelvinsPerWatt, KelvinsPerWattTolerance);
+            AssertEx.EqualTolerance(10, (10*v).KelvinsPerWatt, KelvinsPerWattTolerance);
+            AssertEx.EqualTolerance(2, (ThermalResistance.FromKelvinsPerWatt(10)/5).KelvinsPerWatt, KelvinsPerWattTolerance);
+            AssertEx.EqualTolerance(2, ThermalResistance.FromKelvinsPerWatt(10)/ThermalResistance.FromKelvinsPerWatt(5), KelvinsPerWattTolerance);
         }
 
         [Fact]
         public void ComparisonOperators()
         {
-            ThermalResistance oneSquareMeterKelvinPerKilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            ThermalResistance twoSquareMeterKelvinsPerKilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(2);
+            ThermalResistance oneKelvinPerWatt = ThermalResistance.FromKelvinsPerWatt(1);
+            ThermalResistance twoKelvinsPerWatt = ThermalResistance.FromKelvinsPerWatt(2);
 
-            Assert.True(oneSquareMeterKelvinPerKilowatt < twoSquareMeterKelvinsPerKilowatt);
-            Assert.True(oneSquareMeterKelvinPerKilowatt <= twoSquareMeterKelvinsPerKilowatt);
-            Assert.True(twoSquareMeterKelvinsPerKilowatt > oneSquareMeterKelvinPerKilowatt);
-            Assert.True(twoSquareMeterKelvinsPerKilowatt >= oneSquareMeterKelvinPerKilowatt);
+            Assert.True(oneKelvinPerWatt < twoKelvinsPerWatt);
+            Assert.True(oneKelvinPerWatt <= twoKelvinsPerWatt);
+            Assert.True(twoKelvinsPerWatt > oneKelvinPerWatt);
+            Assert.True(twoKelvinsPerWatt >= oneKelvinPerWatt);
 
-            Assert.False(oneSquareMeterKelvinPerKilowatt > twoSquareMeterKelvinsPerKilowatt);
-            Assert.False(oneSquareMeterKelvinPerKilowatt >= twoSquareMeterKelvinsPerKilowatt);
-            Assert.False(twoSquareMeterKelvinsPerKilowatt < oneSquareMeterKelvinPerKilowatt);
-            Assert.False(twoSquareMeterKelvinsPerKilowatt <= oneSquareMeterKelvinPerKilowatt);
+            Assert.False(oneKelvinPerWatt > twoKelvinsPerWatt);
+            Assert.False(oneKelvinPerWatt >= twoKelvinsPerWatt);
+            Assert.False(twoKelvinsPerWatt < oneKelvinPerWatt);
+            Assert.False(twoKelvinsPerWatt <= oneKelvinPerWatt);
         }
 
         [Fact]
         public void CompareToIsImplemented()
         {
-            ThermalResistance squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            Assert.Equal(0, squaremeterkelvinperkilowatt.CompareTo(squaremeterkelvinperkilowatt));
-            Assert.True(squaremeterkelvinperkilowatt.CompareTo(ThermalResistance.Zero) > 0);
-            Assert.True(ThermalResistance.Zero.CompareTo(squaremeterkelvinperkilowatt) < 0);
+            ThermalResistance kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            Assert.Equal(0, kelvinperwatt.CompareTo(kelvinperwatt));
+            Assert.True(kelvinperwatt.CompareTo(ThermalResistance.Zero) > 0);
+            Assert.True(ThermalResistance.Zero.CompareTo(kelvinperwatt) < 0);
         }
 
         [Fact]
         public void CompareToThrowsOnTypeMismatch()
         {
-            ThermalResistance squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            Assert.Throws<ArgumentException>(() => squaremeterkelvinperkilowatt.CompareTo(new object()));
+            ThermalResistance kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            Assert.Throws<ArgumentException>(() => kelvinperwatt.CompareTo(new object()));
         }
 
         [Fact]
         public void CompareToThrowsOnNull()
         {
-            ThermalResistance squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            Assert.Throws<ArgumentNullException>(() => squaremeterkelvinperkilowatt.CompareTo(null));
+            ThermalResistance kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            Assert.Throws<ArgumentNullException>(() => kelvinperwatt.CompareTo(null));
         }
 
         [Theory]
-        [InlineData(1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, 1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, true)]  // Same value and unit.
-        [InlineData(1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, 2, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, false)] // Different value.
-        [InlineData(2, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, 1, ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu, false)] // Different value and unit.
-        [InlineData(1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt, 1, ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu, false)] // Different unit.
+        [InlineData(1, ThermalResistanceUnit.KelvinPerWatt, 1, ThermalResistanceUnit.KelvinPerWatt, true)]  // Same value and unit.
+        [InlineData(1, ThermalResistanceUnit.KelvinPerWatt, 2, ThermalResistanceUnit.KelvinPerWatt, false)] // Different value.
+        [InlineData(2, ThermalResistanceUnit.KelvinPerWatt, 1, ThermalResistanceUnit.DegreeCelsiusPerWatt, false)] // Different value and unit.
+        [InlineData(1, ThermalResistanceUnit.KelvinPerWatt, 1, ThermalResistanceUnit.DegreeCelsiusPerWatt, false)] // Different unit.
         public void Equals_ReturnsTrue_IfValueAndUnitAreEqual(double valueA, ThermalResistanceUnit unitA, double valueB, ThermalResistanceUnit unitB, bool expectEqual)
         {
             var a = new ThermalResistance(valueA, unitA);
@@ -530,41 +527,52 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            Assert.True(v.Equals(ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1), SquareMeterKelvinsPerKilowattTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(ThermalResistance.Zero, SquareMeterKelvinsPerKilowattTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
-            ThermalResistance squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            Assert.False(squaremeterkelvinperkilowatt.Equals(new object()));
+            ThermalResistance kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            Assert.False(kelvinperwatt.Equals(new object()));
         }
 
         [Fact]
         public void EqualsReturnsFalseOnNull()
         {
-            ThermalResistance squaremeterkelvinperkilowatt = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1);
-            Assert.False(squaremeterkelvinperkilowatt.Equals(null));
+            ThermalResistance kelvinperwatt = ThermalResistance.FromKelvinsPerWatt(1);
+            Assert.False(kelvinperwatt.Equals(null));
+        }
+
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = ThermalResistance.FromKelvinsPerWatt(firstValue);
+            var otherQuantity = ThermalResistance.FromKelvinsPerWatt(secondValue);
+            ThermalResistance maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, ThermalResistance.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = ThermalResistance.FromKelvinsPerWatt(1);
+            var negativeTolerance = ThermalResistance.FromKelvinsPerWatt(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
         }
 
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(ThermalResistanceUnit)).Cast<ThermalResistanceUnit>();
+            var units = Enum.GetValues<ThermalResistanceUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -577,20 +585,9 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 Hrft²°F/Btu", new ThermalResistance(1, ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu).ToString());
-                Assert.Equal("1 cm²Hr°C/kcal", new ThermalResistance(1, ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie).ToString());
-                Assert.Equal("1 cm²K/W", new ThermalResistance(1, ThermalResistanceUnit.SquareCentimeterKelvinPerWatt).ToString());
-                Assert.Equal("1 m²°C/W", new ThermalResistance(1, ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt).ToString());
-                Assert.Equal("1 m²K/kW", new ThermalResistance(1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString());
-                Assert.Equal("1 m²K/W", new ThermalResistance(1, ThermalResistanceUnit.SquareMeterKelvinPerWatt).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 °C/W", new ThermalResistance(1, ThermalResistanceUnit.DegreeCelsiusPerWatt).ToString());
+            Assert.Equal("1 K/W", new ThermalResistance(1, ThermalResistanceUnit.KelvinPerWatt).ToString());
         }
 
         [Fact]
@@ -599,40 +596,28 @@ namespace UnitsNet.Tests
             // Chose this culture, because we don't currently have any abbreviations mapped for that culture and we expect the en-US to be used as fallback.
             var swedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
-            Assert.Equal("1 Hrft²°F/Btu", new ThermalResistance(1, ThermalResistanceUnit.HourSquareFeetDegreeFahrenheitPerBtu).ToString(swedishCulture));
-            Assert.Equal("1 cm²Hr°C/kcal", new ThermalResistance(1, ThermalResistanceUnit.SquareCentimeterHourDegreeCelsiusPerKilocalorie).ToString(swedishCulture));
-            Assert.Equal("1 cm²K/W", new ThermalResistance(1, ThermalResistanceUnit.SquareCentimeterKelvinPerWatt).ToString(swedishCulture));
-            Assert.Equal("1 m²°C/W", new ThermalResistance(1, ThermalResistanceUnit.SquareMeterDegreeCelsiusPerWatt).ToString(swedishCulture));
-            Assert.Equal("1 m²K/kW", new ThermalResistance(1, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString(swedishCulture));
-            Assert.Equal("1 m²K/W", new ThermalResistance(1, ThermalResistanceUnit.SquareMeterKelvinPerWatt).ToString(swedishCulture));
+            Assert.Equal("1 °C/W", new ThermalResistance(1, ThermalResistanceUnit.DegreeCelsiusPerWatt).ToString(swedishCulture));
+            Assert.Equal("1 K/W", new ThermalResistance(1, ThermalResistanceUnit.KelvinPerWatt).ToString(swedishCulture));
         }
 
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s1"));
-                Assert.Equal("0.12 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s2"));
-                Assert.Equal("0.123 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s3"));
-                Assert.Equal("0.1235 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s1"));
+            Assert.Equal("0.12 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s2"));
+            Assert.Equal("0.123 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s3"));
+            Assert.Equal("0.1235 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s4"));
         }
 
         [Fact]
         public void ToString_SFormatAndCulture_FormatsNumberWithGivenDigitsAfterRadixForGivenCulture()
         {
             var culture = CultureInfo.InvariantCulture;
-            Assert.Equal("0.1 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s1", culture));
-            Assert.Equal("0.12 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s2", culture));
-            Assert.Equal("0.123 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s3", culture));
-            Assert.Equal("0.1235 m²K/kW", new ThermalResistance(0.123456, ThermalResistanceUnit.SquareMeterKelvinPerKilowatt).ToString("s4", culture));
+            Assert.Equal("0.1 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s1", culture));
+            Assert.Equal("0.12 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s2", culture));
+            Assert.Equal("0.123 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s3", culture));
+            Assert.Equal("0.1235 K/W", new ThermalResistance(0.123456, ThermalResistanceUnit.KelvinPerWatt).ToString("s4", culture));
         }
 
         [Theory]
@@ -640,12 +625,12 @@ namespace UnitsNet.Tests
         [InlineData("en-US")]
         public void ToString_NullFormat_DefaultsToGeneralFormat(string cultureName)
         {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
+            var quantity = ThermalResistance.FromKelvinsPerWatt(1.0);
             CultureInfo formatProvider = cultureName == null
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -653,155 +638,15 @@ namespace UnitsNet.Tests
         [InlineData("g")]
         public void ToString_NullProvider_EqualsCurrentCulture(string format)
         {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
+            var quantity = ThermalResistance.FromKelvinsPerWatt(1.0);
             Assert.Equal(quantity.ToString(format, CultureInfo.CurrentCulture), quantity.ToString(format, null));
-        }
-
-        [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(ThermalResistance)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(ThermalResistanceUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal(ThermalResistance.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal(ThermalResistance.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
         }
 
         [Fact]
         public void GetHashCode_Equals()
         {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(1.0);
-            Assert.Equal(new {ThermalResistance.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            var quantity = ThermalResistance.FromKelvinsPerWatt(1.0);
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]
@@ -809,8 +654,8 @@ namespace UnitsNet.Tests
         [InlineData(-1.0)]
         public void NegationOperator_ReturnsQuantity_WithNegatedValue(double value)
         {
-            var quantity = ThermalResistance.FromSquareMeterKelvinsPerKilowatt(value);
-            Assert.Equal(ThermalResistance.FromSquareMeterKelvinsPerKilowatt(-value), -quantity);
+            var quantity = ThermalResistance.FromKelvinsPerWatt(value);
+            Assert.Equal(ThermalResistance.FromKelvinsPerWatt(-value), -quantity);
         }
     }
 }

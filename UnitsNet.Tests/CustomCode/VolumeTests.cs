@@ -2,13 +2,13 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using UnitsNet.Units;
 using Xunit;
 
 namespace UnitsNet.Tests
 {
     public class VolumeTests : VolumeTestsBase
     {
-        protected override bool SupportsSIUnitSystem => true;
         protected override double CentilitersInOneCubicMeter => 1E5;
 
         protected override double CubicCentimetersInOneCubicMeter => 1E6;
@@ -17,7 +17,7 @@ namespace UnitsNet.Tests
 
         protected override double CubicFeetInOneCubicMeter => 35.314666721488590250438010354003;
 
-        protected override double CubicInchesInOneCubicMeter => 61023.98242;
+        protected override double CubicInchesInOneCubicMeter => 61_023.744094732283952756881891717;
 
         protected override double CubicKilometersInOneCubicMeter => 1E-9;
 
@@ -77,6 +77,8 @@ namespace UnitsNet.Tests
         protected override double ImperialBeerBarrelsInOneCubicMeter => 6.1102568972;
 
         protected override double UkTablespoonsInOneCubicMeter => 66666.6666667;
+
+        protected override double MetricTablespoonsInOneCubicMeter => 66666.6666667;
 
         protected override double UsBeerBarrelsInOneCubicMeter => 8.5216790723083;
 
@@ -151,8 +153,24 @@ namespace UnitsNet.Tests
         [Fact]
         public void VolumeDividedByVolumeFlowEqualsTimeSpan()
         {
-            TimeSpan timeSpan = Volume.FromCubicMeters(20) / VolumeFlow.FromCubicMetersPerSecond(2);
-            Assert.Equal(TimeSpan.FromSeconds(10), timeSpan);
+            Duration duration = Volume.FromCubicMeters(20) / VolumeFlow.FromCubicMetersPerSecond(2);
+            Assert.Equal(Duration.FromSeconds(10), duration);
+        }
+
+        [Theory]
+        [InlineData(50, VolumeUnit.CubicMeter,
+            5, SpecificVolumeUnit.CubicMeterPerKilogram,
+            10, MassUnit.Kilogram)]
+        public void Dividing_Volume_By_SpecificVolume_ReturnsMass(double volumeValue, VolumeUnit volumeUnit, double specificVolumeValue,
+            SpecificVolumeUnit specificVolumeUnit, double expectedMassValue, MassUnit expectedMassUnit)
+        {
+            var mass = new Mass(expectedMassValue, expectedMassUnit);
+            var specificVolume = new SpecificVolume(specificVolumeValue, specificVolumeUnit);
+            var expectedVolume = new Volume(volumeValue, volumeUnit);
+
+            Mass massFromVolume = expectedVolume / specificVolume;
+
+            Assert.Equal(mass, massFromVolume);
         }
     }
 }

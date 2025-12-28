@@ -8,19 +8,15 @@ using Xunit;
 
 namespace UnitsNet.Tests
 {
-    // Avoid accessing static prop DefaultToString in parallel from multiple tests:
-    // UnitSystemTests.DefaultToStringFormatting()
-    // LengthTests.ToStringReturnsCorrectNumberAndUnitWithCentimeterAsDefualtUnit()
-    [Collection(nameof(UnitAbbreviationsCacheFixture))]
     public class LengthTests : LengthTestsBase
     {
-        protected override bool SupportsSIUnitSystem => true;
         protected override double CentimetersInOneMeter => 100;
 
         protected override double DecimetersInOneMeter => 10;
         protected override double DtpPicasInOneMeter => 236.22047244;
         protected override double DtpPointsInOneMeter => 2834.6456693;
 
+        protected override double FemtometersInOneMeter => 1E+15;
         protected override double FeetInOneMeter => 3.28083989501;
 
         protected override double HectometersInOneMeter => 1E-2;
@@ -50,6 +46,7 @@ namespace UnitsNet.Tests
 
         protected override double FathomsInOneMeter => 0.546806649;
 
+        protected override double PicometersInOneMeter => 1E+12;
         protected override double PrinterPicasInOneMeter => 237.10630158;
         protected override double PrinterPointsInOneMeter => 2845.2755906;
 
@@ -65,6 +62,8 @@ namespace UnitsNet.Tests
 
         protected override double KiloparsecsInOneMeter => 3.2407790389471100000000000E-20;
 
+        protected override double KiloyardsInOneMeter => 1.0936132983E-3;
+
         protected override double LightYearsInOneMeter => 1.0570008340247000000000000E-16;
 
         protected override double MegalightYearsInOneMeter => 1.0570008340247000000000000E-22;
@@ -73,7 +72,7 @@ namespace UnitsNet.Tests
 
         protected override double ParsecsInOneMeter => 3.2407790389471100000000000E-17;
 
-        protected override double SolarRadiusesInOneMeter => 1.43779384911791000E-09;
+        protected override double SolarRadiusesInOneMeter => 1.4374011786689664E-09;
 
         protected override double ChainsInOneMeter => 0.0497096953789867;
 
@@ -84,41 +83,48 @@ namespace UnitsNet.Tests
         protected override double DataMilesInOneMeter => 0.000546807;
 
         protected override double MegametersInOneMeter => 1e-6;
+        protected override double GigametersInOneMeter => 1e-9;
 
         protected override double KilofeetInOneMeter => 3.28083989501e-3;
 
-        [ Fact]
+        [Fact]
+        public void AllBaseQuantityUnitsAreBaseUnits()
+        {
+            Assert.All(Length.Info.UnitInfos, unitInfo => Assert.Equal(new BaseUnits(unitInfo.Value), unitInfo.BaseUnits));
+        }
+
+        [Fact]
         public void AreaTimesLengthEqualsVolume()
         {
-            Volume volume = Area.FromSquareMeters(10)*Length.FromMeters(3);
+            Volume volume = Area.FromSquareMeters(10) * Length.FromMeters(3);
             Assert.Equal(volume, Volume.FromCubicMeters(30));
         }
 
         [Fact]
         public void ForceTimesLengthEqualsTorque()
         {
-            Torque torque = Force.FromNewtons(1)*Length.FromMeters(3);
+            Torque torque = Force.FromNewtons(1) * Length.FromMeters(3);
             Assert.Equal(torque, Torque.FromNewtonMeters(3));
         }
 
         [Fact]
         public void LengthTimesAreaEqualsVolume()
         {
-            Volume volume = Length.FromMeters(3)*Area.FromSquareMeters(9);
+            Volume volume = Length.FromMeters(3) * Area.FromSquareMeters(9);
             Assert.Equal(volume, Volume.FromCubicMeters(27));
         }
 
         [Fact]
         public void LengthTimesForceEqualsTorque()
         {
-            Torque torque = Length.FromMeters(3)*Force.FromNewtons(1);
+            Torque torque = Length.FromMeters(3) * Force.FromNewtons(1);
             Assert.Equal(torque, Torque.FromNewtonMeters(3));
         }
 
         [Fact]
         public void LengthTimesLengthEqualsArea()
         {
-            Area area = Length.FromMeters(10)*Length.FromMeters(2);
+            Area area = Length.FromMeters(10) * Length.FromMeters(2);
             Assert.Equal(area, Area.FromSquareMeters(20));
         }
 
@@ -127,6 +133,20 @@ namespace UnitsNet.Tests
         {
             Duration duration = Length.FromMeters(20) / Speed.FromMetersPerSecond(2);
             Assert.Equal(Duration.FromSeconds(10), duration);
+        }
+
+        [Fact]
+        public void LengthDividedByAreaEqualsReciprocalLength()
+        {
+            ReciprocalLength reciprocalLength = Length.FromMeters(20) / Area.FromSquareMeters(2);
+            Assert.Equal(ReciprocalLength.FromInverseMeters(10), reciprocalLength);
+        }
+
+        [Fact]
+        public void LengthDividedByVolumeEqualsReciprocalArea()
+        {
+            ReciprocalArea reciprocalArea = Length.FromMeters(20) / Volume.FromCubicMeters(2);
+            Assert.Equal(ReciprocalArea.FromInverseSquareMeters(10), reciprocalArea);
         }
 
         [Fact]
@@ -152,7 +172,7 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void ToStringReturnsCorrectNumberAndUnitWithCentimeterAsDefualtUnit()
+        public void ToStringReturnsCorrectNumberAndUnitWithCentimeterAsDefaultUnit()
         {
             var value = Length.From(2, LengthUnit.Centimeter);
             string valueString = value.ToString(CultureInfo.InvariantCulture);
@@ -171,8 +191,8 @@ namespace UnitsNet.Tests
             negativeLength = Length.FromInches(-25.0);
             feetInches = negativeLength.FeetInches;
 
-            Assert.Equal(-2.0, feetInches.Feet);
-            Assert.Equal(-1.0, feetInches.Inches);
+            Assert.Equal(-2, feetInches.Feet);
+            Assert.Equal(-1, feetInches.Inches);
         }
 
         [Fact]
@@ -186,13 +206,6 @@ namespace UnitsNet.Tests
         {
             var length = new Length(1.0, UnitSystem.SI);
             Assert.Equal(LengthUnit.Meter, length.Unit);
-        }
-
-        [Fact]
-        public void Constructor_UnitSystemWithNoMatchingBaseUnits_ThrowsArgumentException()
-        {
-            // AmplitudeRatio is unitless. Can't have any matches :)
-            Assert.Throws<ArgumentException>(() => new AmplitudeRatio(1.0, UnitSystem.SI));
         }
 
         [Fact]
@@ -216,7 +229,7 @@ namespace UnitsNet.Tests
         [Theory]
         [InlineData(-1.0, -1.0)]
         [InlineData(-2.0, -0.5)]
-        [InlineData(0.0, 0.0)]
+        [InlineData(0.0, double.PositiveInfinity)]
         [InlineData(1.0, 1.0)]
         [InlineData(2.0, 0.5)]
         public static void InverseReturnsReciprocalLength(double value, double expected)

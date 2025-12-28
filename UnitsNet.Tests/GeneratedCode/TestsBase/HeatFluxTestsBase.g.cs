@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -135,16 +137,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new HeatFlux(double.PositiveInfinity, HeatFluxUnit.WattPerSquareMeter));
-            Assert.Throws<ArgumentException>(() => new HeatFlux(double.NegativeInfinity, HeatFluxUnit.WattPerSquareMeter));
+            var exception1 = Record.Exception(() => new HeatFlux(double.PositiveInfinity, HeatFluxUnit.WattPerSquareMeter));
+            var exception2 = Record.Exception(() => new HeatFlux(double.NegativeInfinity, HeatFluxUnit.WattPerSquareMeter));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new HeatFlux(double.NaN, HeatFluxUnit.WattPerSquareMeter));
+            var exception = Record.Exception(() => new HeatFlux(double.NaN, HeatFluxUnit.WattPerSquareMeter));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -154,32 +161,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new HeatFlux(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (HeatFlux) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new HeatFlux(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new HeatFlux(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void HeatFlux_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            HeatFluxUnit[] unitsOrderedByName = EnumHelper.GetValues<HeatFluxUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new HeatFlux(1, HeatFluxUnit.WattPerSquareMeter);
 
-            QuantityInfo<HeatFluxUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<HeatFlux, HeatFluxUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(HeatFlux.Zero, quantityInfo.Zero);
             Assert.Equal("HeatFlux", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<HeatFluxUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(HeatFlux.Zero, quantityInfo.Zero);
+            Assert.Equal(HeatFlux.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(HeatFlux.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<HeatFluxUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -209,91 +220,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = HeatFlux.From(1, HeatFluxUnit.BtuPerHourSquareFoot);
-            AssertEx.EqualTolerance(1, quantity00.BtusPerHourSquareFoot, BtusPerHourSquareFootTolerance);
-            Assert.Equal(HeatFluxUnit.BtuPerHourSquareFoot, quantity00.Unit);
-
-            var quantity01 = HeatFlux.From(1, HeatFluxUnit.BtuPerMinuteSquareFoot);
-            AssertEx.EqualTolerance(1, quantity01.BtusPerMinuteSquareFoot, BtusPerMinuteSquareFootTolerance);
-            Assert.Equal(HeatFluxUnit.BtuPerMinuteSquareFoot, quantity01.Unit);
-
-            var quantity02 = HeatFlux.From(1, HeatFluxUnit.BtuPerSecondSquareFoot);
-            AssertEx.EqualTolerance(1, quantity02.BtusPerSecondSquareFoot, BtusPerSecondSquareFootTolerance);
-            Assert.Equal(HeatFluxUnit.BtuPerSecondSquareFoot, quantity02.Unit);
-
-            var quantity03 = HeatFlux.From(1, HeatFluxUnit.BtuPerSecondSquareInch);
-            AssertEx.EqualTolerance(1, quantity03.BtusPerSecondSquareInch, BtusPerSecondSquareInchTolerance);
-            Assert.Equal(HeatFluxUnit.BtuPerSecondSquareInch, quantity03.Unit);
-
-            var quantity04 = HeatFlux.From(1, HeatFluxUnit.CaloriePerSecondSquareCentimeter);
-            AssertEx.EqualTolerance(1, quantity04.CaloriesPerSecondSquareCentimeter, CaloriesPerSecondSquareCentimeterTolerance);
-            Assert.Equal(HeatFluxUnit.CaloriePerSecondSquareCentimeter, quantity04.Unit);
-
-            var quantity05 = HeatFlux.From(1, HeatFluxUnit.CentiwattPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity05.CentiwattsPerSquareMeter, CentiwattsPerSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.CentiwattPerSquareMeter, quantity05.Unit);
-
-            var quantity06 = HeatFlux.From(1, HeatFluxUnit.DeciwattPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity06.DeciwattsPerSquareMeter, DeciwattsPerSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.DeciwattPerSquareMeter, quantity06.Unit);
-
-            var quantity07 = HeatFlux.From(1, HeatFluxUnit.KilocaloriePerHourSquareMeter);
-            AssertEx.EqualTolerance(1, quantity07.KilocaloriesPerHourSquareMeter, KilocaloriesPerHourSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.KilocaloriePerHourSquareMeter, quantity07.Unit);
-
-            var quantity08 = HeatFlux.From(1, HeatFluxUnit.KilocaloriePerSecondSquareCentimeter);
-            AssertEx.EqualTolerance(1, quantity08.KilocaloriesPerSecondSquareCentimeter, KilocaloriesPerSecondSquareCentimeterTolerance);
-            Assert.Equal(HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, quantity08.Unit);
-
-            var quantity09 = HeatFlux.From(1, HeatFluxUnit.KilowattPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity09.KilowattsPerSquareMeter, KilowattsPerSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.KilowattPerSquareMeter, quantity09.Unit);
-
-            var quantity10 = HeatFlux.From(1, HeatFluxUnit.MicrowattPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity10.MicrowattsPerSquareMeter, MicrowattsPerSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.MicrowattPerSquareMeter, quantity10.Unit);
-
-            var quantity11 = HeatFlux.From(1, HeatFluxUnit.MilliwattPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity11.MilliwattsPerSquareMeter, MilliwattsPerSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.MilliwattPerSquareMeter, quantity11.Unit);
-
-            var quantity12 = HeatFlux.From(1, HeatFluxUnit.NanowattPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity12.NanowattsPerSquareMeter, NanowattsPerSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.NanowattPerSquareMeter, quantity12.Unit);
-
-            var quantity13 = HeatFlux.From(1, HeatFluxUnit.PoundForcePerFootSecond);
-            AssertEx.EqualTolerance(1, quantity13.PoundsForcePerFootSecond, PoundsForcePerFootSecondTolerance);
-            Assert.Equal(HeatFluxUnit.PoundForcePerFootSecond, quantity13.Unit);
-
-            var quantity14 = HeatFlux.From(1, HeatFluxUnit.PoundPerSecondCubed);
-            AssertEx.EqualTolerance(1, quantity14.PoundsPerSecondCubed, PoundsPerSecondCubedTolerance);
-            Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, quantity14.Unit);
-
-            var quantity15 = HeatFlux.From(1, HeatFluxUnit.WattPerSquareFoot);
-            AssertEx.EqualTolerance(1, quantity15.WattsPerSquareFoot, WattsPerSquareFootTolerance);
-            Assert.Equal(HeatFluxUnit.WattPerSquareFoot, quantity15.Unit);
-
-            var quantity16 = HeatFlux.From(1, HeatFluxUnit.WattPerSquareInch);
-            AssertEx.EqualTolerance(1, quantity16.WattsPerSquareInch, WattsPerSquareInchTolerance);
-            Assert.Equal(HeatFluxUnit.WattPerSquareInch, quantity16.Unit);
-
-            var quantity17 = HeatFlux.From(1, HeatFluxUnit.WattPerSquareMeter);
-            AssertEx.EqualTolerance(1, quantity17.WattsPerSquareMeter, WattsPerSquareMeterTolerance);
-            Assert.Equal(HeatFluxUnit.WattPerSquareMeter, quantity17.Unit);
-
+            Assert.All(EnumHelper.GetValues<HeatFluxUnit>(), unit =>
+            {
+                var quantity = HeatFlux.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromWattsPerSquareMeter_WithInfinityValue_ThrowsArgumentException()
+        public void FromWattsPerSquareMeter_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => HeatFlux.FromWattsPerSquareMeter(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => HeatFlux.FromWattsPerSquareMeter(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => HeatFlux.FromWattsPerSquareMeter(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => HeatFlux.FromWattsPerSquareMeter(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromWattsPerSquareMeter_WithNanValue_ThrowsArgumentException()
+        public void FromWattsPerSquareMeter_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => HeatFlux.FromWattsPerSquareMeter(double.NaN));
+            var exception = Record.Exception(() => HeatFlux.FromWattsPerSquareMeter(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -321,496 +271,378 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = HeatFlux.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new HeatFlux(value: 1, unit: HeatFlux.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(HeatFlux.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = HeatFlux.Parse("1 BTU/h·ft²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BtusPerHourSquareFoot, BtusPerHourSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerHourSquareFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 BTU/min·ft²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BtusPerMinuteSquareFoot, BtusPerMinuteSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerMinuteSquareFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 BTU/s·ft²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BtusPerSecondSquareFoot, BtusPerSecondSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 BTU/s·in²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BtusPerSecondSquareInch, BtusPerSecondSquareInchTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 cal/s·cm²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CaloriesPerSecondSquareCentimeter, CaloriesPerSecondSquareCentimeterTolerance);
-                Assert.Equal(HeatFluxUnit.CaloriePerSecondSquareCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 cW/m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CentiwattsPerSquareMeter, CentiwattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.CentiwattPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 dW/m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DeciwattsPerSquareMeter, DeciwattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.DeciwattPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 kcal/h·m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilocaloriesPerHourSquareMeter, KilocaloriesPerHourSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.KilocaloriePerHourSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 kcal/s·cm²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilocaloriesPerSecondSquareCentimeter, KilocaloriesPerSecondSquareCentimeterTolerance);
-                Assert.Equal(HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 kW/m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.KilowattsPerSquareMeter, KilowattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.KilowattPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 µW/m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MicrowattsPerSquareMeter, MicrowattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.MicrowattPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 mW/m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MilliwattsPerSquareMeter, MilliwattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.MilliwattPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 nW/m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NanowattsPerSquareMeter, NanowattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.NanowattPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 lbf/(ft·s)", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundsForcePerFootSecond, PoundsForcePerFootSecondTolerance);
-                Assert.Equal(HeatFluxUnit.PoundForcePerFootSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 lb/s³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundsPerSecondCubed, PoundsPerSecondCubedTolerance);
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 lbm/s³", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PoundsPerSecondCubed, PoundsPerSecondCubedTolerance);
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 W/ft²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattsPerSquareFoot, WattsPerSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.WattPerSquareFoot, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 W/in²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattsPerSquareInch, WattsPerSquareInchTolerance);
-                Assert.Equal(HeatFluxUnit.WattPerSquareInch, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = HeatFlux.Parse("1 W/m²", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.WattsPerSquareMeter, WattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.WattPerSquareMeter, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new HeatFlux(value: 1, unit: HeatFlux.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(HeatFlux.TryParse("1 BTU/h·ft²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BtusPerHourSquareFoot, BtusPerHourSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerHourSquareFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 BTU/min·ft²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BtusPerMinuteSquareFoot, BtusPerMinuteSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerMinuteSquareFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 BTU/s·ft²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BtusPerSecondSquareFoot, BtusPerSecondSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 BTU/s·in²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BtusPerSecondSquareInch, BtusPerSecondSquareInchTolerance);
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 cal/s·cm²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CaloriesPerSecondSquareCentimeter, CaloriesPerSecondSquareCentimeterTolerance);
-                Assert.Equal(HeatFluxUnit.CaloriePerSecondSquareCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 cW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CentiwattsPerSquareMeter, CentiwattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.CentiwattPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 dW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DeciwattsPerSquareMeter, DeciwattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.DeciwattPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 kcal/h·m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilocaloriesPerHourSquareMeter, KilocaloriesPerHourSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.KilocaloriePerHourSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 kcal/s·cm²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilocaloriesPerSecondSquareCentimeter, KilocaloriesPerSecondSquareCentimeterTolerance);
-                Assert.Equal(HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 kW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.KilowattsPerSquareMeter, KilowattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.KilowattPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 µW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MicrowattsPerSquareMeter, MicrowattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.MicrowattPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 mW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MilliwattsPerSquareMeter, MilliwattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.MilliwattPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 nW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NanowattsPerSquareMeter, NanowattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.NanowattPerSquareMeter, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 lbf/(ft·s)", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundsForcePerFootSecond, PoundsForcePerFootSecondTolerance);
-                Assert.Equal(HeatFluxUnit.PoundForcePerFootSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 lb/s³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundsPerSecondCubed, PoundsPerSecondCubedTolerance);
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 lbm/s³", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PoundsPerSecondCubed, PoundsPerSecondCubedTolerance);
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 W/ft²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattsPerSquareFoot, WattsPerSquareFootTolerance);
-                Assert.Equal(HeatFluxUnit.WattPerSquareFoot, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 W/in²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattsPerSquareInch, WattsPerSquareInchTolerance);
-                Assert.Equal(HeatFluxUnit.WattPerSquareInch, parsed.Unit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParse("1 W/m²", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.WattsPerSquareMeter, WattsPerSquareMeterTolerance);
-                Assert.Equal(HeatFluxUnit.WattPerSquareMeter, parsed.Unit);
-            }
-
+            var quantity = new HeatFlux(value: 1, unit: HeatFlux.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("BTU/h·ft²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.BtuPerHourSquareFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new HeatFlux(value: 1, unit: HeatFlux.BaseUnit);
+            var expectedUnit = HeatFlux.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("BTU/min·ft²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.BtuPerMinuteSquareFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            HeatFlux convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("BTU/s·ft²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("BTU/s·in²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("cal/s·cm²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.CaloriePerSecondSquareCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("cW/m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.CentiwattPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("dW/m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.DeciwattPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("kcal/h·m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.KilocaloriePerHourSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("kcal/s·cm²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("kW/m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.KilowattPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("µW/m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.MicrowattPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("mW/m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.MilliwattPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("nW/m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.NanowattPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("lbf/(ft·s)", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.PoundForcePerFootSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("lb/s³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("lbm/s³", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("W/ft²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.WattPerSquareFoot, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("W/in²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.WattPerSquareInch, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = HeatFlux.ParseUnit("W/m²", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(HeatFluxUnit.WattPerSquareMeter, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(HeatFlux.TryParseUnit("BTU/h·ft²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.BtuPerHourSquareFoot, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new HeatFlux(value: 1, unit: HeatFlux.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("BTU/min·ft²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.BtuPerMinuteSquareFoot, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new HeatFlux(value: 1, unit: HeatFlux.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("BTU/s·ft²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareFoot, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch, 4.2)]
+        [InlineData("en-US", "4.2 cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 cW/m²", HeatFluxUnit.CentiwattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 dW/m²", HeatFluxUnit.DeciwattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kW/m²", HeatFluxUnit.KilowattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 µW/m²", HeatFluxUnit.MicrowattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 mW/m²", HeatFluxUnit.MilliwattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 nW/m²", HeatFluxUnit.NanowattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond, 4.2)]
+        [InlineData("en-US", "4.2 lb/s³", HeatFluxUnit.PoundPerSecondCubed, 4.2)]
+        [InlineData("en-US", "4.2 lbm/s³", HeatFluxUnit.PoundPerSecondCubed, 4.2)]
+        [InlineData("en-US", "4.2 W/ft²", HeatFluxUnit.WattPerSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 W/in²", HeatFluxUnit.WattPerSquareInch, 4.2)]
+        [InlineData("en-US", "4.2 W/m²", HeatFluxUnit.WattPerSquareMeter, 4.2)]
+        public void Parse(string culture, string quantityString, HeatFluxUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = HeatFlux.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("BTU/s·in²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.BtuPerSecondSquareInch, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch, 4.2)]
+        [InlineData("en-US", "4.2 cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 cW/m²", HeatFluxUnit.CentiwattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 dW/m²", HeatFluxUnit.DeciwattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, 4.2)]
+        [InlineData("en-US", "4.2 kW/m²", HeatFluxUnit.KilowattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 µW/m²", HeatFluxUnit.MicrowattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 mW/m²", HeatFluxUnit.MilliwattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 nW/m²", HeatFluxUnit.NanowattPerSquareMeter, 4.2)]
+        [InlineData("en-US", "4.2 lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond, 4.2)]
+        [InlineData("en-US", "4.2 lb/s³", HeatFluxUnit.PoundPerSecondCubed, 4.2)]
+        [InlineData("en-US", "4.2 lbm/s³", HeatFluxUnit.PoundPerSecondCubed, 4.2)]
+        [InlineData("en-US", "4.2 W/ft²", HeatFluxUnit.WattPerSquareFoot, 4.2)]
+        [InlineData("en-US", "4.2 W/in²", HeatFluxUnit.WattPerSquareInch, 4.2)]
+        [InlineData("en-US", "4.2 W/m²", HeatFluxUnit.WattPerSquareMeter, 4.2)]
+        public void TryParse(string culture, string quantityString, HeatFluxUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(HeatFlux.TryParse(quantityString, out HeatFlux parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("cal/s·cm²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.CaloriePerSecondSquareCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            HeatFluxUnit parsedUnit = HeatFlux.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("cW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.CentiwattPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            HeatFluxUnit parsedUnit = HeatFlux.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("dW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.DeciwattPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("en-US", "BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("en-US", "BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("en-US", "BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("en-US", "cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("en-US", "dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("en-US", "kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("en-US", "kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("en-US", "µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("en-US", "mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("en-US", "nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("en-US", "lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("en-US", "lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("en-US", "W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("en-US", "W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            HeatFluxUnit parsedUnit = HeatFlux.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("kcal/h·m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.KilocaloriePerHourSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("en-US", "BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("en-US", "BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("en-US", "BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("en-US", "cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("en-US", "dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("en-US", "kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("en-US", "kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("en-US", "µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("en-US", "mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("en-US", "nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("en-US", "lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("en-US", "lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("en-US", "W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("en-US", "W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            HeatFluxUnit parsedUnit = HeatFlux.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("kcal/s·cm²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(HeatFlux.TryParseUnit(abbreviation, out HeatFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("kW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.KilowattPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(HeatFlux.TryParseUnit(abbreviation, out HeatFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("µW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.MicrowattPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("en-US", "BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("en-US", "BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("en-US", "BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("en-US", "cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("en-US", "dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("en-US", "kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("en-US", "kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("en-US", "µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("en-US", "mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("en-US", "nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("en-US", "lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("en-US", "lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("en-US", "W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("en-US", "W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(HeatFlux.TryParseUnit(abbreviation, out HeatFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("mW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.MilliwattPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "BTU/(h·ft²)", HeatFluxUnit.BtuPerHourSquareFoot)]
+        [InlineData("en-US", "BTU/(min·ft²)", HeatFluxUnit.BtuPerMinuteSquareFoot)]
+        [InlineData("en-US", "BTU/(s·ft²)", HeatFluxUnit.BtuPerSecondSquareFoot)]
+        [InlineData("en-US", "BTU/(s·in²)", HeatFluxUnit.BtuPerSecondSquareInch)]
+        [InlineData("en-US", "cal/(s·cm²)", HeatFluxUnit.CaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "cW/m²", HeatFluxUnit.CentiwattPerSquareMeter)]
+        [InlineData("en-US", "dW/m²", HeatFluxUnit.DeciwattPerSquareMeter)]
+        [InlineData("en-US", "kcal/(h·m²)", HeatFluxUnit.KilocaloriePerHourSquareMeter)]
+        [InlineData("en-US", "kcal/(s·cm²)", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter)]
+        [InlineData("en-US", "kW/m²", HeatFluxUnit.KilowattPerSquareMeter)]
+        [InlineData("en-US", "µW/m²", HeatFluxUnit.MicrowattPerSquareMeter)]
+        [InlineData("en-US", "mW/m²", HeatFluxUnit.MilliwattPerSquareMeter)]
+        [InlineData("en-US", "nW/m²", HeatFluxUnit.NanowattPerSquareMeter)]
+        [InlineData("en-US", "lbf/(ft·s)", HeatFluxUnit.PoundForcePerFootSecond)]
+        [InlineData("en-US", "lb/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "lbm/s³", HeatFluxUnit.PoundPerSecondCubed)]
+        [InlineData("en-US", "W/ft²", HeatFluxUnit.WattPerSquareFoot)]
+        [InlineData("en-US", "W/in²", HeatFluxUnit.WattPerSquareInch)]
+        [InlineData("en-US", "W/m²", HeatFluxUnit.WattPerSquareMeter)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, HeatFluxUnit expectedUnit)
+        {
+            Assert.True(HeatFlux.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out HeatFluxUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("nW/m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.NanowattPerSquareMeter, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", HeatFluxUnit.BtuPerHourSquareFoot, "BTU/(h·ft²)")]
+        [InlineData("en-US", HeatFluxUnit.BtuPerMinuteSquareFoot, "BTU/(min·ft²)")]
+        [InlineData("en-US", HeatFluxUnit.BtuPerSecondSquareFoot, "BTU/(s·ft²)")]
+        [InlineData("en-US", HeatFluxUnit.BtuPerSecondSquareInch, "BTU/(s·in²)")]
+        [InlineData("en-US", HeatFluxUnit.CaloriePerSecondSquareCentimeter, "cal/(s·cm²)")]
+        [InlineData("en-US", HeatFluxUnit.CentiwattPerSquareMeter, "cW/m²")]
+        [InlineData("en-US", HeatFluxUnit.DeciwattPerSquareMeter, "dW/m²")]
+        [InlineData("en-US", HeatFluxUnit.KilocaloriePerHourSquareMeter, "kcal/(h·m²)")]
+        [InlineData("en-US", HeatFluxUnit.KilocaloriePerSecondSquareCentimeter, "kcal/(s·cm²)")]
+        [InlineData("en-US", HeatFluxUnit.KilowattPerSquareMeter, "kW/m²")]
+        [InlineData("en-US", HeatFluxUnit.MicrowattPerSquareMeter, "µW/m²")]
+        [InlineData("en-US", HeatFluxUnit.MilliwattPerSquareMeter, "mW/m²")]
+        [InlineData("en-US", HeatFluxUnit.NanowattPerSquareMeter, "nW/m²")]
+        [InlineData("en-US", HeatFluxUnit.PoundForcePerFootSecond, "lbf/(ft·s)")]
+        [InlineData("en-US", HeatFluxUnit.PoundPerSecondCubed, "lb/s³")]
+        [InlineData("en-US", HeatFluxUnit.WattPerSquareFoot, "W/ft²")]
+        [InlineData("en-US", HeatFluxUnit.WattPerSquareInch, "W/in²")]
+        [InlineData("en-US", HeatFluxUnit.WattPerSquareMeter, "W/m²")]
+        public void GetAbbreviationForCulture(string culture, HeatFluxUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = HeatFlux.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
 
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(HeatFlux.Units, unit =>
             {
-                Assert.True(HeatFlux.TryParseUnit("lbf/(ft·s)", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.PoundForcePerFootSecond, parsedUnit);
-            }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("lb/s³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsedUnit);
-            }
+                var defaultAbbreviation = HeatFlux.GetAbbreviation(unit);
 
-            {
-                Assert.True(HeatFlux.TryParseUnit("lbm/s³", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.PoundPerSecondCubed, parsedUnit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParseUnit("W/ft²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.WattPerSquareFoot, parsedUnit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParseUnit("W/in²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.WattPerSquareInch, parsedUnit);
-            }
-
-            {
-                Assert.True(HeatFlux.TryParseUnit("W/m²", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(HeatFluxUnit.WattPerSquareMeter, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -838,12 +670,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(HeatFluxUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = HeatFlux.Units.First(u => u != HeatFlux.BaseUnit);
-
-            var quantity = HeatFlux.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(HeatFlux.Units.Where(u => u != HeatFlux.BaseUnit), fromUnit =>
+            {
+                var quantity = HeatFlux.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -853,6 +685,25 @@ namespace UnitsNet.Tests
             var quantity = default(HeatFlux);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(HeatFluxUnit unit)
+        {
+            var quantity = HeatFlux.From(3, HeatFlux.BaseUnit);
+            HeatFlux expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<HeatFluxUnit> quantityToConvert = quantity;
+                IQuantity<HeatFluxUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -974,21 +825,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = HeatFlux.FromWattsPerSquareMeter(1);
-            Assert.True(v.Equals(HeatFlux.FromWattsPerSquareMeter(1), WattsPerSquareMeterTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(HeatFlux.Zero, WattsPerSquareMeterTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = HeatFlux.FromWattsPerSquareMeter(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(HeatFlux.FromWattsPerSquareMeter(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             HeatFlux wattpersquaremeter = HeatFlux.FromWattsPerSquareMeter(1);
@@ -1002,13 +838,39 @@ namespace UnitsNet.Tests
             Assert.False(wattpersquaremeter.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = HeatFlux.FromWattsPerSquareMeter(firstValue);
+            var otherQuantity = HeatFlux.FromWattsPerSquareMeter(secondValue);
+            HeatFlux maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, HeatFlux.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = HeatFlux.FromWattsPerSquareMeter(1);
+            var negativeTolerance = HeatFlux.FromWattsPerSquareMeter(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(HeatFluxUnit)).Cast<HeatFluxUnit>();
+            var units = Enum.GetValues<HeatFluxUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -1021,32 +883,25 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 BTU/h·ft²", new HeatFlux(1, HeatFluxUnit.BtuPerHourSquareFoot).ToString());
-                Assert.Equal("1 BTU/min·ft²", new HeatFlux(1, HeatFluxUnit.BtuPerMinuteSquareFoot).ToString());
-                Assert.Equal("1 BTU/s·ft²", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareFoot).ToString());
-                Assert.Equal("1 BTU/s·in²", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareInch).ToString());
-                Assert.Equal("1 cal/s·cm²", new HeatFlux(1, HeatFluxUnit.CaloriePerSecondSquareCentimeter).ToString());
-                Assert.Equal("1 cW/m²", new HeatFlux(1, HeatFluxUnit.CentiwattPerSquareMeter).ToString());
-                Assert.Equal("1 dW/m²", new HeatFlux(1, HeatFluxUnit.DeciwattPerSquareMeter).ToString());
-                Assert.Equal("1 kcal/h·m²", new HeatFlux(1, HeatFluxUnit.KilocaloriePerHourSquareMeter).ToString());
-                Assert.Equal("1 kcal/s·cm²", new HeatFlux(1, HeatFluxUnit.KilocaloriePerSecondSquareCentimeter).ToString());
-                Assert.Equal("1 kW/m²", new HeatFlux(1, HeatFluxUnit.KilowattPerSquareMeter).ToString());
-                Assert.Equal("1 µW/m²", new HeatFlux(1, HeatFluxUnit.MicrowattPerSquareMeter).ToString());
-                Assert.Equal("1 mW/m²", new HeatFlux(1, HeatFluxUnit.MilliwattPerSquareMeter).ToString());
-                Assert.Equal("1 nW/m²", new HeatFlux(1, HeatFluxUnit.NanowattPerSquareMeter).ToString());
-                Assert.Equal("1 lbf/(ft·s)", new HeatFlux(1, HeatFluxUnit.PoundForcePerFootSecond).ToString());
-                Assert.Equal("1 lb/s³", new HeatFlux(1, HeatFluxUnit.PoundPerSecondCubed).ToString());
-                Assert.Equal("1 W/ft²", new HeatFlux(1, HeatFluxUnit.WattPerSquareFoot).ToString());
-                Assert.Equal("1 W/in²", new HeatFlux(1, HeatFluxUnit.WattPerSquareInch).ToString());
-                Assert.Equal("1 W/m²", new HeatFlux(1, HeatFluxUnit.WattPerSquareMeter).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 BTU/(h·ft²)", new HeatFlux(1, HeatFluxUnit.BtuPerHourSquareFoot).ToString());
+            Assert.Equal("1 BTU/(min·ft²)", new HeatFlux(1, HeatFluxUnit.BtuPerMinuteSquareFoot).ToString());
+            Assert.Equal("1 BTU/(s·ft²)", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareFoot).ToString());
+            Assert.Equal("1 BTU/(s·in²)", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareInch).ToString());
+            Assert.Equal("1 cal/(s·cm²)", new HeatFlux(1, HeatFluxUnit.CaloriePerSecondSquareCentimeter).ToString());
+            Assert.Equal("1 cW/m²", new HeatFlux(1, HeatFluxUnit.CentiwattPerSquareMeter).ToString());
+            Assert.Equal("1 dW/m²", new HeatFlux(1, HeatFluxUnit.DeciwattPerSquareMeter).ToString());
+            Assert.Equal("1 kcal/(h·m²)", new HeatFlux(1, HeatFluxUnit.KilocaloriePerHourSquareMeter).ToString());
+            Assert.Equal("1 kcal/(s·cm²)", new HeatFlux(1, HeatFluxUnit.KilocaloriePerSecondSquareCentimeter).ToString());
+            Assert.Equal("1 kW/m²", new HeatFlux(1, HeatFluxUnit.KilowattPerSquareMeter).ToString());
+            Assert.Equal("1 µW/m²", new HeatFlux(1, HeatFluxUnit.MicrowattPerSquareMeter).ToString());
+            Assert.Equal("1 mW/m²", new HeatFlux(1, HeatFluxUnit.MilliwattPerSquareMeter).ToString());
+            Assert.Equal("1 nW/m²", new HeatFlux(1, HeatFluxUnit.NanowattPerSquareMeter).ToString());
+            Assert.Equal("1 lbf/(ft·s)", new HeatFlux(1, HeatFluxUnit.PoundForcePerFootSecond).ToString());
+            Assert.Equal("1 lb/s³", new HeatFlux(1, HeatFluxUnit.PoundPerSecondCubed).ToString());
+            Assert.Equal("1 W/ft²", new HeatFlux(1, HeatFluxUnit.WattPerSquareFoot).ToString());
+            Assert.Equal("1 W/in²", new HeatFlux(1, HeatFluxUnit.WattPerSquareInch).ToString());
+            Assert.Equal("1 W/m²", new HeatFlux(1, HeatFluxUnit.WattPerSquareMeter).ToString());
         }
 
         [Fact]
@@ -1055,15 +910,15 @@ namespace UnitsNet.Tests
             // Chose this culture, because we don't currently have any abbreviations mapped for that culture and we expect the en-US to be used as fallback.
             var swedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
-            Assert.Equal("1 BTU/h·ft²", new HeatFlux(1, HeatFluxUnit.BtuPerHourSquareFoot).ToString(swedishCulture));
-            Assert.Equal("1 BTU/min·ft²", new HeatFlux(1, HeatFluxUnit.BtuPerMinuteSquareFoot).ToString(swedishCulture));
-            Assert.Equal("1 BTU/s·ft²", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareFoot).ToString(swedishCulture));
-            Assert.Equal("1 BTU/s·in²", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareInch).ToString(swedishCulture));
-            Assert.Equal("1 cal/s·cm²", new HeatFlux(1, HeatFluxUnit.CaloriePerSecondSquareCentimeter).ToString(swedishCulture));
+            Assert.Equal("1 BTU/(h·ft²)", new HeatFlux(1, HeatFluxUnit.BtuPerHourSquareFoot).ToString(swedishCulture));
+            Assert.Equal("1 BTU/(min·ft²)", new HeatFlux(1, HeatFluxUnit.BtuPerMinuteSquareFoot).ToString(swedishCulture));
+            Assert.Equal("1 BTU/(s·ft²)", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareFoot).ToString(swedishCulture));
+            Assert.Equal("1 BTU/(s·in²)", new HeatFlux(1, HeatFluxUnit.BtuPerSecondSquareInch).ToString(swedishCulture));
+            Assert.Equal("1 cal/(s·cm²)", new HeatFlux(1, HeatFluxUnit.CaloriePerSecondSquareCentimeter).ToString(swedishCulture));
             Assert.Equal("1 cW/m²", new HeatFlux(1, HeatFluxUnit.CentiwattPerSquareMeter).ToString(swedishCulture));
             Assert.Equal("1 dW/m²", new HeatFlux(1, HeatFluxUnit.DeciwattPerSquareMeter).ToString(swedishCulture));
-            Assert.Equal("1 kcal/h·m²", new HeatFlux(1, HeatFluxUnit.KilocaloriePerHourSquareMeter).ToString(swedishCulture));
-            Assert.Equal("1 kcal/s·cm²", new HeatFlux(1, HeatFluxUnit.KilocaloriePerSecondSquareCentimeter).ToString(swedishCulture));
+            Assert.Equal("1 kcal/(h·m²)", new HeatFlux(1, HeatFluxUnit.KilocaloriePerHourSquareMeter).ToString(swedishCulture));
+            Assert.Equal("1 kcal/(s·cm²)", new HeatFlux(1, HeatFluxUnit.KilocaloriePerSecondSquareCentimeter).ToString(swedishCulture));
             Assert.Equal("1 kW/m²", new HeatFlux(1, HeatFluxUnit.KilowattPerSquareMeter).ToString(swedishCulture));
             Assert.Equal("1 µW/m²", new HeatFlux(1, HeatFluxUnit.MicrowattPerSquareMeter).ToString(swedishCulture));
             Assert.Equal("1 mW/m²", new HeatFlux(1, HeatFluxUnit.MilliwattPerSquareMeter).ToString(swedishCulture));
@@ -1078,19 +933,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s1"));
-                Assert.Equal("0.12 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s2"));
-                Assert.Equal("0.123 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s3"));
-                Assert.Equal("0.1235 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s1"));
+            Assert.Equal("0.12 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s2"));
+            Assert.Equal("0.123 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s3"));
+            Assert.Equal("0.1235 W/m²", new HeatFlux(0.123456, HeatFluxUnit.WattPerSquareMeter).ToString("s4"));
         }
 
         [Fact]
@@ -1113,7 +960,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -1126,150 +973,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(HeatFlux)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(HeatFluxUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal(HeatFlux.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal(HeatFlux.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = HeatFlux.FromWattsPerSquareMeter(1.0);
-            Assert.Equal(new {HeatFlux.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

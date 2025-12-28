@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public LeakRate(double value, LeakRateUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of LeakRate, which is Second. All conversions go via this value.
         /// </summary>
         public static LeakRateUnit BaseUnit { get; } = LeakRateUnit.PascalCubicMeterPerSecond;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of LeakRate.
         /// </summary>
         public static LeakRate MaxValue { get; } = new LeakRate(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of LeakRate.
         /// </summary>
         public static LeakRate MinValue { get; } = new LeakRate(double.MinValue, BaseUnit);
 
@@ -81,6 +80,11 @@ namespace UnitsNet
         /// </summary>
         public static LeakRate Zero { get; } = new LeakRate(0, BaseUnit);
         #region Conversion Properties
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LeakRateUnit.AtmCubicCentimeterPerSecond"/>
+        /// </summary>
+        public double AtmCubicCentimetersPerSecond => As(LeakRateUnit.AtmCubicCentimeterPerSecond);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="LeakRateUnit.MillibarLiterPerSecond"/>
@@ -102,21 +106,23 @@ namespace UnitsNet
         #region Static Factory Methods
 
         /// <summary>
+        ///     Creates a <see cref="LeakRate"/> from <see cref="LeakRateUnit.AtmCubicCentimeterPerSecond"/>.
+        /// </summary>
+        public static LeakRate FromAtmCubicCentimetersPerSecond(double atmcubiccentimeterspersecond) => new LeakRate(atmcubiccentimeterspersecond, LeakRateUnit.AtmCubicCentimeterPerSecond);
+
+        /// <summary>
         ///     Creates a <see cref="LeakRate"/> from <see cref="LeakRateUnit.MillibarLiterPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static LeakRate FromMillibarLitersPerSecond(double millibarliterspersecond) => new LeakRate(millibarliterspersecond, LeakRateUnit.MillibarLiterPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="LeakRate"/> from <see cref="LeakRateUnit.PascalCubicMeterPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static LeakRate FromPascalCubicMetersPerSecond(double pascalcubicmeterspersecond) => new LeakRate(pascalcubicmeterspersecond, LeakRateUnit.PascalCubicMeterPerSecond);
 
         /// <summary>
         ///     Creates a <see cref="LeakRate"/> from <see cref="LeakRateUnit.TorrLiterPerSecond"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static LeakRate FromTorrLitersPerSecond(double torrliterspersecond) => new LeakRate(torrliterspersecond, LeakRateUnit.TorrLiterPerSecond);
 
         /// <summary>
@@ -141,9 +147,9 @@ namespace UnitsNet
                 public double As(LeakRateUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this LeakRate to another LeakRate with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A LeakRate with the specified unit.</returns>
                 public LeakRate ToUnit(LeakRateUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -159,10 +165,11 @@ namespace UnitsNet
                 {
                     return Unit switch
                     {
+                        LeakRateUnit.AtmCubicCentimeterPerSecond => _value / (1e6 / 101325),
                         LeakRateUnit.MillibarLiterPerSecond => _value / 10,
                         LeakRateUnit.PascalCubicMeterPerSecond => _value,
                         LeakRateUnit.TorrLiterPerSecond => _value / 7.5,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -175,10 +182,11 @@ namespace UnitsNet
 
                     return unit switch
                     {
+                        LeakRateUnit.AtmCubicCentimeterPerSecond => baseUnitValue * (1e6 / 101325),
                         LeakRateUnit.MillibarLiterPerSecond => baseUnitValue * 10,
                         LeakRateUnit.PascalCubicMeterPerSecond => baseUnitValue,
                         LeakRateUnit.TorrLiterPerSecond => baseUnitValue * 7.5,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

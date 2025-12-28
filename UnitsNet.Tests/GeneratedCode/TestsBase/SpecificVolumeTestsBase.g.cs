@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -75,16 +77,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new SpecificVolume(double.PositiveInfinity, SpecificVolumeUnit.CubicMeterPerKilogram));
-            Assert.Throws<ArgumentException>(() => new SpecificVolume(double.NegativeInfinity, SpecificVolumeUnit.CubicMeterPerKilogram));
+            var exception1 = Record.Exception(() => new SpecificVolume(double.PositiveInfinity, SpecificVolumeUnit.CubicMeterPerKilogram));
+            var exception2 = Record.Exception(() => new SpecificVolume(double.NegativeInfinity, SpecificVolumeUnit.CubicMeterPerKilogram));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new SpecificVolume(double.NaN, SpecificVolumeUnit.CubicMeterPerKilogram));
+            var exception = Record.Exception(() => new SpecificVolume(double.NaN, SpecificVolumeUnit.CubicMeterPerKilogram));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -94,32 +101,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new SpecificVolume(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (SpecificVolume) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new SpecificVolume(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new SpecificVolume(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void SpecificVolume_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            SpecificVolumeUnit[] unitsOrderedByName = EnumHelper.GetValues<SpecificVolumeUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new SpecificVolume(1, SpecificVolumeUnit.CubicMeterPerKilogram);
 
-            QuantityInfo<SpecificVolumeUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<SpecificVolume, SpecificVolumeUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(SpecificVolume.Zero, quantityInfo.Zero);
             Assert.Equal("SpecificVolume", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<SpecificVolumeUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(SpecificVolume.Zero, quantityInfo.Zero);
+            Assert.Equal(SpecificVolume.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(SpecificVolume.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<SpecificVolumeUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -134,31 +145,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = SpecificVolume.From(1, SpecificVolumeUnit.CubicFootPerPound);
-            AssertEx.EqualTolerance(1, quantity00.CubicFeetPerPound, CubicFeetPerPoundTolerance);
-            Assert.Equal(SpecificVolumeUnit.CubicFootPerPound, quantity00.Unit);
-
-            var quantity01 = SpecificVolume.From(1, SpecificVolumeUnit.CubicMeterPerKilogram);
-            AssertEx.EqualTolerance(1, quantity01.CubicMetersPerKilogram, CubicMetersPerKilogramTolerance);
-            Assert.Equal(SpecificVolumeUnit.CubicMeterPerKilogram, quantity01.Unit);
-
-            var quantity02 = SpecificVolume.From(1, SpecificVolumeUnit.MillicubicMeterPerKilogram);
-            AssertEx.EqualTolerance(1, quantity02.MillicubicMetersPerKilogram, MillicubicMetersPerKilogramTolerance);
-            Assert.Equal(SpecificVolumeUnit.MillicubicMeterPerKilogram, quantity02.Unit);
-
+            Assert.All(EnumHelper.GetValues<SpecificVolumeUnit>(), unit =>
+            {
+                var quantity = SpecificVolume.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromCubicMetersPerKilogram_WithInfinityValue_ThrowsArgumentException()
+        public void FromCubicMetersPerKilogram_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => SpecificVolume.FromCubicMetersPerKilogram(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => SpecificVolume.FromCubicMetersPerKilogram(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => SpecificVolume.FromCubicMetersPerKilogram(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => SpecificVolume.FromCubicMetersPerKilogram(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromCubicMetersPerKilogram_WithNanValue_ThrowsArgumentException()
+        public void FromCubicMetersPerKilogram_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => SpecificVolume.FromCubicMetersPerKilogram(double.NaN));
+            var exception = Record.Exception(() => SpecificVolume.FromCubicMetersPerKilogram(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -171,112 +181,203 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = SpecificVolume.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new SpecificVolume(value: 1, unit: SpecificVolume.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(SpecificVolume.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = SpecificVolume.Parse("1 ft³/lb", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicFeetPerPound, CubicFeetPerPoundTolerance);
-                Assert.Equal(SpecificVolumeUnit.CubicFootPerPound, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificVolume.Parse("1 m³/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CubicMetersPerKilogram, CubicMetersPerKilogramTolerance);
-                Assert.Equal(SpecificVolumeUnit.CubicMeterPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = SpecificVolume.Parse("1 mm³/kg", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.MillicubicMetersPerKilogram, MillicubicMetersPerKilogramTolerance);
-                Assert.Equal(SpecificVolumeUnit.MillicubicMeterPerKilogram, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new SpecificVolume(value: 1, unit: SpecificVolume.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(SpecificVolume.TryParse("1 ft³/lb", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicFeetPerPound, CubicFeetPerPoundTolerance);
-                Assert.Equal(SpecificVolumeUnit.CubicFootPerPound, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificVolume.TryParse("1 m³/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CubicMetersPerKilogram, CubicMetersPerKilogramTolerance);
-                Assert.Equal(SpecificVolumeUnit.CubicMeterPerKilogram, parsed.Unit);
-            }
-
-            {
-                Assert.True(SpecificVolume.TryParse("1 mm³/kg", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.MillicubicMetersPerKilogram, MillicubicMetersPerKilogramTolerance);
-                Assert.Equal(SpecificVolumeUnit.MillicubicMeterPerKilogram, parsed.Unit);
-            }
-
+            var quantity = new SpecificVolume(value: 1, unit: SpecificVolume.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = SpecificVolume.ParseUnit("ft³/lb", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificVolumeUnit.CubicFootPerPound, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new SpecificVolume(value: 1, unit: SpecificVolume.BaseUnit);
+            var expectedUnit = SpecificVolume.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = SpecificVolume.ParseUnit("m³/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificVolumeUnit.CubicMeterPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            SpecificVolume convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = SpecificVolume.ParseUnit("mm³/kg", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(SpecificVolumeUnit.MillicubicMeterPerKilogram, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(SpecificVolume.TryParseUnit("ft³/lb", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificVolumeUnit.CubicFootPerPound, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new SpecificVolume(value: 1, unit: SpecificVolume.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(SpecificVolume.TryParseUnit("m³/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificVolumeUnit.CubicMeterPerKilogram, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new SpecificVolume(value: 1, unit: SpecificVolume.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(SpecificVolume.TryParseUnit("mm³/kg", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(SpecificVolumeUnit.MillicubicMeterPerKilogram, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 ft³/lb", SpecificVolumeUnit.CubicFootPerPound, 4.2)]
+        [InlineData("en-US", "4.2 m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram, 4.2)]
+        public void Parse(string culture, string quantityString, SpecificVolumeUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = SpecificVolume.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
+        [Theory]
+        [InlineData("en-US", "4.2 ft³/lb", SpecificVolumeUnit.CubicFootPerPound, 4.2)]
+        [InlineData("en-US", "4.2 m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram, 4.2)]
+        [InlineData("en-US", "4.2 mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram, 4.2)]
+        public void TryParse(string culture, string quantityString, SpecificVolumeUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(SpecificVolume.TryParse(quantityString, out SpecificVolume parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            SpecificVolumeUnit parsedUnit = SpecificVolume.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            SpecificVolumeUnit parsedUnit = SpecificVolume.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("en-US", "m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("en-US", "mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            SpecificVolumeUnit parsedUnit = SpecificVolume.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("en-US", "m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("en-US", "mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            SpecificVolumeUnit parsedUnit = SpecificVolume.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(SpecificVolume.TryParseUnit(abbreviation, out SpecificVolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(SpecificVolume.TryParseUnit(abbreviation, out SpecificVolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("en-US", "m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("en-US", "mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(SpecificVolume.TryParseUnit(abbreviation, out SpecificVolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "ft³/lb", SpecificVolumeUnit.CubicFootPerPound)]
+        [InlineData("en-US", "m³/kg", SpecificVolumeUnit.CubicMeterPerKilogram)]
+        [InlineData("en-US", "mm³/kg", SpecificVolumeUnit.MillicubicMeterPerKilogram)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, SpecificVolumeUnit expectedUnit)
+        {
+            Assert.True(SpecificVolume.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out SpecificVolumeUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", SpecificVolumeUnit.CubicFootPerPound, "ft³/lb")]
+        [InlineData("en-US", SpecificVolumeUnit.CubicMeterPerKilogram, "m³/kg")]
+        [InlineData("en-US", SpecificVolumeUnit.MillicubicMeterPerKilogram, "mm³/kg")]
+        public void GetAbbreviationForCulture(string culture, SpecificVolumeUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = SpecificVolume.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(SpecificVolume.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = SpecificVolume.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -304,12 +405,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(SpecificVolumeUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = SpecificVolume.Units.First(u => u != SpecificVolume.BaseUnit);
-
-            var quantity = SpecificVolume.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(SpecificVolume.Units.Where(u => u != SpecificVolume.BaseUnit), fromUnit =>
+            {
+                var quantity = SpecificVolume.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -319,6 +420,25 @@ namespace UnitsNet.Tests
             var quantity = default(SpecificVolume);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(SpecificVolumeUnit unit)
+        {
+            var quantity = SpecificVolume.From(3, SpecificVolume.BaseUnit);
+            SpecificVolume expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<SpecificVolumeUnit> quantityToConvert = quantity;
+                IQuantity<SpecificVolumeUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -425,21 +545,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = SpecificVolume.FromCubicMetersPerKilogram(1);
-            Assert.True(v.Equals(SpecificVolume.FromCubicMetersPerKilogram(1), CubicMetersPerKilogramTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(SpecificVolume.Zero, CubicMetersPerKilogramTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = SpecificVolume.FromCubicMetersPerKilogram(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(SpecificVolume.FromCubicMetersPerKilogram(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             SpecificVolume cubicmeterperkilogram = SpecificVolume.FromCubicMetersPerKilogram(1);
@@ -453,13 +558,39 @@ namespace UnitsNet.Tests
             Assert.False(cubicmeterperkilogram.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = SpecificVolume.FromCubicMetersPerKilogram(firstValue);
+            var otherQuantity = SpecificVolume.FromCubicMetersPerKilogram(secondValue);
+            SpecificVolume maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, SpecificVolume.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1);
+            var negativeTolerance = SpecificVolume.FromCubicMetersPerKilogram(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(SpecificVolumeUnit)).Cast<SpecificVolumeUnit>();
+            var units = Enum.GetValues<SpecificVolumeUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -472,17 +603,10 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 ft³/lb", new SpecificVolume(1, SpecificVolumeUnit.CubicFootPerPound).ToString());
-                Assert.Equal("1 m³/kg", new SpecificVolume(1, SpecificVolumeUnit.CubicMeterPerKilogram).ToString());
-                Assert.Equal("1 mm³/kg", new SpecificVolume(1, SpecificVolumeUnit.MillicubicMeterPerKilogram).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 ft³/lb", new SpecificVolume(1, SpecificVolumeUnit.CubicFootPerPound).ToString());
+            Assert.Equal("1 m³/kg", new SpecificVolume(1, SpecificVolumeUnit.CubicMeterPerKilogram).ToString());
+            Assert.Equal("1 mm³/kg", new SpecificVolume(1, SpecificVolumeUnit.MillicubicMeterPerKilogram).ToString());
         }
 
         [Fact]
@@ -499,19 +623,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s1"));
-                Assert.Equal("0.12 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s2"));
-                Assert.Equal("0.123 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s3"));
-                Assert.Equal("0.1235 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s1"));
+            Assert.Equal("0.12 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s2"));
+            Assert.Equal("0.123 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s3"));
+            Assert.Equal("0.1235 m³/kg", new SpecificVolume(0.123456, SpecificVolumeUnit.CubicMeterPerKilogram).ToString("s4"));
         }
 
         [Fact]
@@ -534,7 +650,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -547,150 +663,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(SpecificVolume)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(SpecificVolumeUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal(SpecificVolume.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal(SpecificVolume.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = SpecificVolume.FromCubicMetersPerKilogram(1.0);
-            Assert.Equal(new {SpecificVolume.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

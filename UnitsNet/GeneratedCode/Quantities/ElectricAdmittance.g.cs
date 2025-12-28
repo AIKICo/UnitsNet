@@ -17,13 +17,12 @@
 // Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
+using System.Resources;
 using System.Runtime.Serialization;
-using UnitsNet.InternalHelpers;
-using UnitsNet.Units;
+#if NET
+using System.Numerics;
+#endif
 
 #nullable enable
 
@@ -33,45 +32,117 @@ namespace UnitsNet
 {
     /// <inheritdoc />
     /// <summary>
-    ///     Electric admittance is a measure of how easily a circuit or device will allow a current to flow. It is defined as the inverse of impedance. The SI unit of admittance is the siemens (symbol S).
+    ///     Electric admittance is a measure of how easily a circuit or device will allow a current to flow by the combined effect of conductance and susceptance in a circuit. It is defined as the inverse of impedance. The SI unit of admittance is the siemens (symbol S).
     /// </summary>
+    /// <remarks>
+    ///     https://en.wikipedia.org/wiki/Electrical_admittance
+    /// </remarks>
+    [Obsolete("Admittance is a complex number, which is not currently supported by UnitsNet. Please use either ElectricConductance or ElectricSusceptance instead.")]
     [DataContract]
+    [DebuggerTypeProxy(typeof(QuantityDisplay))]
     public readonly partial struct ElectricAdmittance :
-        IArithmeticQuantity<ElectricAdmittance, ElectricAdmittanceUnit, double>,
+        IArithmeticQuantity<ElectricAdmittance, ElectricAdmittanceUnit>,
+#if NET7_0_OR_GREATER
+        IDivisionOperators<ElectricAdmittance, ElectricAdmittance, double>,
+        IComparisonOperators<ElectricAdmittance, ElectricAdmittance, bool>,
+        IParsable<ElectricAdmittance>,
+#endif
         IComparable,
         IComparable<ElectricAdmittance>,
-        IConvertible,
         IEquatable<ElectricAdmittance>,
         IFormattable
     {
         /// <summary>
         ///     The numeric value this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Value", Order = 0)]
+        [DataMember(Name = "Value", Order = 1)]
         private readonly double _value;
 
         /// <summary>
         ///     The unit this quantity was constructed with.
         /// </summary>
-        [DataMember(Name = "Unit", Order = 1)]
+        [DataMember(Name = "Unit", Order = 2)]
         private readonly ElectricAdmittanceUnit? _unit;
+
+        /// <summary>
+        ///     Provides detailed information about the <see cref="ElectricAdmittance"/> quantity, including its name, base unit, unit mappings, base dimensions, and conversion functions.
+        /// </summary>
+        public sealed class ElectricAdmittanceInfo: QuantityInfo<ElectricAdmittance, ElectricAdmittanceUnit>
+        {
+            /// <inheritdoc />
+            public ElectricAdmittanceInfo(string name, ElectricAdmittanceUnit baseUnit, IEnumerable<IUnitDefinition<ElectricAdmittanceUnit>> unitMappings, ElectricAdmittance zero, BaseDimensions baseDimensions,
+                QuantityFromDelegate<ElectricAdmittance, ElectricAdmittanceUnit> fromDelegate, ResourceManager? unitAbbreviations)
+                : base(name, baseUnit, unitMappings, zero, baseDimensions, fromDelegate, unitAbbreviations)
+            {
+            }
+
+            /// <inheritdoc />
+            public ElectricAdmittanceInfo(string name, ElectricAdmittanceUnit baseUnit, IEnumerable<IUnitDefinition<ElectricAdmittanceUnit>> unitMappings, ElectricAdmittance zero, BaseDimensions baseDimensions)
+                : this(name, baseUnit, unitMappings, zero, baseDimensions, ElectricAdmittance.From, new ResourceManager("UnitsNet.GeneratedCode.Resources.ElectricAdmittance", typeof(ElectricAdmittance).Assembly))
+            {
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricAdmittanceInfo"/> class with the default settings for the ElectricAdmittance quantity.
+            /// </summary>
+            /// <returns>A new instance of the <see cref="ElectricAdmittanceInfo"/> class with the default settings.</returns>
+            public static ElectricAdmittanceInfo CreateDefault()
+            {
+                return new ElectricAdmittanceInfo(nameof(ElectricAdmittance), DefaultBaseUnit, GetDefaultMappings(), new ElectricAdmittance(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     Creates a new instance of the <see cref="ElectricAdmittanceInfo"/> class with the default settings for the ElectricAdmittance quantity and a callback for customizing the default unit mappings.
+            /// </summary>
+            /// <param name="customizeUnits">
+            ///     A callback function for customizing the default unit mappings.
+            /// </param>
+            /// <returns>
+            ///     A new instance of the <see cref="ElectricAdmittanceInfo"/> class with the default settings.
+            /// </returns>
+            public static ElectricAdmittanceInfo CreateDefault(Func<IEnumerable<UnitDefinition<ElectricAdmittanceUnit>>, IEnumerable<IUnitDefinition<ElectricAdmittanceUnit>>> customizeUnits)
+            {
+                return new ElectricAdmittanceInfo(nameof(ElectricAdmittance), DefaultBaseUnit, customizeUnits(GetDefaultMappings()), new ElectricAdmittance(0, DefaultBaseUnit), DefaultBaseDimensions);
+            }
+
+            /// <summary>
+            ///     The <see cref="BaseDimensions" /> for <see cref="ElectricAdmittance"/> is [T^3][L^-2][M^-1][I^2].
+            /// </summary>
+            public static BaseDimensions DefaultBaseDimensions { get; } = new BaseDimensions(-2, -1, 3, 2, 0, 0, 0);
+
+            /// <summary>
+            ///     The default base unit of ElectricAdmittance is Siemens. All conversions, as defined in the <see cref="GetDefaultMappings"/>, go via this value.
+            /// </summary>
+            public static ElectricAdmittanceUnit DefaultBaseUnit { get; } = ElectricAdmittanceUnit.Siemens;
+
+            /// <summary>
+            ///     Retrieves the default mappings for <see cref="ElectricAdmittanceUnit"/>.
+            /// </summary>
+            /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="UnitDefinition{ElectricAdmittanceUnit}"/> representing the default unit mappings for ElectricAdmittance.</returns>
+            public static IEnumerable<UnitDefinition<ElectricAdmittanceUnit>> GetDefaultMappings()
+            {
+                yield return new (ElectricAdmittanceUnit.Gigamho, "Gigamho", "Gigamhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Gigasiemens, "Gigasiemens", "Gigasiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Microgram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricAdmittanceUnit.Kilomho, "Kilomho", "Kilomhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Kilosiemens, "Kilosiemens", "Kilosiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Gram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricAdmittanceUnit.Megamho, "Megamho", "Megamhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Megasiemens, "Megasiemens", "Megasiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Milligram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricAdmittanceUnit.Mho, "Mho", "Mhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Micromho, "Micromho", "Micromhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Microsiemens, "Microsiemens", "Microsiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Milliampere));
+                yield return new (ElectricAdmittanceUnit.Millimho, "Millimho", "Millimhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Millisiemens, "Millisiemens", "Millisiemens", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Nanomho, "Nanomho", "Nanomhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Nanosiemens, "Nanosiemens", "Nanosiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Millisecond, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricAdmittanceUnit.Siemens, "Siemens", "Siemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Kilogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+                yield return new (ElectricAdmittanceUnit.Teramho, "Teramho", "Teramhos", BaseUnits.Undefined);
+                yield return new (ElectricAdmittanceUnit.Terasiemens, "Terasiemens", "Terasiemens", new BaseUnits(length: LengthUnit.Meter, mass: MassUnit.Nanogram, time: DurationUnit.Second, current: ElectricCurrentUnit.Ampere));
+            }
+        }
 
         static ElectricAdmittance()
         {
-            BaseDimensions = new BaseDimensions(-2, -1, 3, 2, 0, 0, 0);
-            BaseUnit = ElectricAdmittanceUnit.Siemens;
-            Units = Enum.GetValues(typeof(ElectricAdmittanceUnit)).Cast<ElectricAdmittanceUnit>().ToArray();
-            Zero = new ElectricAdmittance(0, BaseUnit);
-            Info = new QuantityInfo<ElectricAdmittanceUnit>("ElectricAdmittance",
-                new UnitInfo<ElectricAdmittanceUnit>[]
-                {
-                    new UnitInfo<ElectricAdmittanceUnit>(ElectricAdmittanceUnit.Microsiemens, "Microsiemens", BaseUnits.Undefined, "ElectricAdmittance"),
-                    new UnitInfo<ElectricAdmittanceUnit>(ElectricAdmittanceUnit.Millisiemens, "Millisiemens", BaseUnits.Undefined, "ElectricAdmittance"),
-                    new UnitInfo<ElectricAdmittanceUnit>(ElectricAdmittanceUnit.Nanosiemens, "Nanosiemens", BaseUnits.Undefined, "ElectricAdmittance"),
-                    new UnitInfo<ElectricAdmittanceUnit>(ElectricAdmittanceUnit.Siemens, "Siemens", BaseUnits.Undefined, "ElectricAdmittance"),
-                },
-                BaseUnit, Zero, BaseDimensions);
-
+            Info = ElectricAdmittanceInfo.CreateDefault();
             DefaultConversionFunctions = new UnitConverter();
             RegisterDefaultConversions(DefaultConversionFunctions);
         }
@@ -81,10 +152,9 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricAdmittance(double value, ElectricAdmittanceUnit unit)
         {
-            _value = Guard.EnsureValidNumber(value, nameof(value));
+            _value = value;
             _unit = unit;
         }
 
@@ -98,13 +168,8 @@ namespace UnitsNet
         /// <exception cref="ArgumentException">No unit was found for the given <see cref="UnitSystem"/>.</exception>
         public ElectricAdmittance(double value, UnitSystem unitSystem)
         {
-            if (unitSystem is null) throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-
-            _value = Guard.EnsureValidNumber(value, nameof(value));
-            _unit = firstUnitInfo?.Value ?? throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
+            _value = value;
+            _unit = Info.GetDefaultUnit(unitSystem);
         }
 
         #region Static Properties
@@ -115,30 +180,27 @@ namespace UnitsNet
         public static UnitConverter DefaultConversionFunctions { get; }
 
         /// <inheritdoc cref="IQuantity.QuantityInfo"/>
-        public static QuantityInfo<ElectricAdmittanceUnit> Info { get; }
+        public static QuantityInfo<ElectricAdmittance, ElectricAdmittanceUnit> Info { get; }
 
         /// <summary>
         ///     The <see cref="BaseDimensions" /> of this quantity.
         /// </summary>
-        public static BaseDimensions BaseDimensions { get; }
+        public static BaseDimensions BaseDimensions => Info.BaseDimensions;
 
         /// <summary>
         ///     The base unit of ElectricAdmittance, which is Siemens. All conversions go via this value.
         /// </summary>
-        public static ElectricAdmittanceUnit BaseUnit { get; }
+        public static ElectricAdmittanceUnit BaseUnit => Info.BaseUnitInfo.Value;
 
         /// <summary>
         ///     All units of measurement for the ElectricAdmittance quantity.
         /// </summary>
-        public static ElectricAdmittanceUnit[] Units { get; }
+        public static IReadOnlyCollection<ElectricAdmittanceUnit> Units => Info.Units;
 
         /// <summary>
         ///     Gets an instance of this quantity with a value of 0 in the base unit Siemens.
         /// </summary>
-        public static ElectricAdmittance Zero { get; }
-
-        /// <inheritdoc cref="Zero"/>
-        public static ElectricAdmittance AdditiveIdentity => Zero;
+        public static ElectricAdmittance Zero => Info.Zero;
 
         #endregion
 
@@ -150,27 +212,75 @@ namespace UnitsNet
         public double Value => _value;
 
         /// <inheritdoc />
-        QuantityValue IQuantity.Value => _value;
-
-        Enum IQuantity.Unit => Unit;
-
-        /// <inheritdoc />
         public ElectricAdmittanceUnit Unit => _unit.GetValueOrDefault(BaseUnit);
 
         /// <inheritdoc />
-        public QuantityInfo<ElectricAdmittanceUnit> QuantityInfo => Info;
+        public QuantityInfo<ElectricAdmittance, ElectricAdmittanceUnit> QuantityInfo => Info;
 
-        /// <inheritdoc cref="IQuantity.QuantityInfo"/>
+        #region Explicit implementations
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        UnitKey IQuantity.UnitKey => UnitKey.ForUnit(Unit);
+
+#if NETSTANDARD2_0
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        IQuantityInstanceInfo<ElectricAdmittance> IQuantityOfType<ElectricAdmittance>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        QuantityInfo<ElectricAdmittanceUnit> IQuantity<ElectricAdmittanceUnit>.QuantityInfo => Info;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         QuantityInfo IQuantity.QuantityInfo => Info;
 
-        /// <summary>
-        ///     The <see cref="BaseDimensions" /> of this quantity.
-        /// </summary>
-        public BaseDimensions Dimensions => ElectricAdmittance.BaseDimensions;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        Enum IQuantity.Unit => Unit;
+#endif
+
+        #endregion
 
         #endregion
 
         #region Conversion Properties
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Gigamho"/>
+        /// </summary>
+        public double Gigamhos => As(ElectricAdmittanceUnit.Gigamho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Gigasiemens"/>
+        /// </summary>
+        public double Gigasiemens => As(ElectricAdmittanceUnit.Gigasiemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Kilomho"/>
+        /// </summary>
+        public double Kilomhos => As(ElectricAdmittanceUnit.Kilomho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Kilosiemens"/>
+        /// </summary>
+        public double Kilosiemens => As(ElectricAdmittanceUnit.Kilosiemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Megamho"/>
+        /// </summary>
+        public double Megamhos => As(ElectricAdmittanceUnit.Megamho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Megasiemens"/>
+        /// </summary>
+        public double Megasiemens => As(ElectricAdmittanceUnit.Megasiemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Mho"/>
+        /// </summary>
+        public double Mhos => As(ElectricAdmittanceUnit.Mho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Micromho"/>
+        /// </summary>
+        public double Micromhos => As(ElectricAdmittanceUnit.Micromho);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Microsiemens"/>
@@ -178,9 +288,19 @@ namespace UnitsNet
         public double Microsiemens => As(ElectricAdmittanceUnit.Microsiemens);
 
         /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Millimho"/>
+        /// </summary>
+        public double Millimhos => As(ElectricAdmittanceUnit.Millimho);
+
+        /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Millisiemens"/>
         /// </summary>
         public double Millisiemens => As(ElectricAdmittanceUnit.Millisiemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Nanomho"/>
+        /// </summary>
+        public double Nanomhos => As(ElectricAdmittanceUnit.Nanomho);
 
         /// <summary>
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Nanosiemens"/>
@@ -191,6 +311,16 @@ namespace UnitsNet
         ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Siemens"/>
         /// </summary>
         public double Siemens => As(ElectricAdmittanceUnit.Siemens);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Teramho"/>
+        /// </summary>
+        public double Teramhos => As(ElectricAdmittanceUnit.Teramho);
+
+        /// <summary>
+        ///     Gets a <see cref="double"/> value of this quantity converted into <see cref="ElectricAdmittanceUnit.Terasiemens"/>
+        /// </summary>
+        public double Terasiemens => As(ElectricAdmittanceUnit.Terasiemens);
 
         #endregion
 
@@ -203,17 +333,41 @@ namespace UnitsNet
         internal static void RegisterDefaultConversions(UnitConverter unitConverter)
         {
             // Register in unit converter: ElectricAdmittanceUnit -> BaseUnit
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Gigamho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Gigasiemens, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Kilomho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Kilosiemens, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Megamho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Megasiemens, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Mho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Micromho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
             unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Microsiemens, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Millimho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
             unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Millisiemens, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Nanomho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
             unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Nanosiemens, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Teramho, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Terasiemens, ElectricAdmittanceUnit.Siemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Siemens));
 
             // Register in unit converter: BaseUnit <-> BaseUnit
             unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Siemens, quantity => quantity);
 
             // Register in unit converter: BaseUnit -> ElectricAdmittanceUnit
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Gigamho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Gigamho));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Gigasiemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Gigasiemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Kilomho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Kilomho));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Kilosiemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Kilosiemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Megamho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Megamho));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Megasiemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Megasiemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Mho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Mho));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Micromho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Micromho));
             unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Microsiemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Microsiemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Millimho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Millimho));
             unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Millisiemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Millisiemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Nanomho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Nanomho));
             unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Nanosiemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Nanosiemens));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Teramho, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Teramho));
+            unitConverter.SetConversionFunction<ElectricAdmittance>(ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Terasiemens, quantity => quantity.ToUnit(ElectricAdmittanceUnit.Terasiemens));
         }
 
         /// <summary>
@@ -234,7 +388,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use for localization. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static string GetAbbreviation(ElectricAdmittanceUnit unit, IFormatProvider? provider)
         {
-            return UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit, provider);
+            return UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit, provider);
         }
 
         #endregion
@@ -242,43 +396,131 @@ namespace UnitsNet
         #region Static Factory Methods
 
         /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Gigamho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromGigamhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Gigamho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Gigasiemens"/>.
+        /// </summary>
+        public static ElectricAdmittance FromGigasiemens(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Gigasiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Kilomho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromKilomhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Kilomho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Kilosiemens"/>.
+        /// </summary>
+        public static ElectricAdmittance FromKilosiemens(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Kilosiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Megamho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromMegamhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Megamho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Megasiemens"/>.
+        /// </summary>
+        public static ElectricAdmittance FromMegasiemens(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Megasiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Mho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromMhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Mho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Micromho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromMicromhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Micromho);
+        }
+
+        /// <summary>
         ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Microsiemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricAdmittance FromMicrosiemens(QuantityValue microsiemens)
+        public static ElectricAdmittance FromMicrosiemens(double value)
         {
-            double value = (double) microsiemens;
             return new ElectricAdmittance(value, ElectricAdmittanceUnit.Microsiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Millimho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromMillimhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Millimho);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Millisiemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricAdmittance FromMillisiemens(QuantityValue millisiemens)
+        public static ElectricAdmittance FromMillisiemens(double value)
         {
-            double value = (double) millisiemens;
             return new ElectricAdmittance(value, ElectricAdmittanceUnit.Millisiemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Nanomho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromNanomhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Nanomho);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Nanosiemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricAdmittance FromNanosiemens(QuantityValue nanosiemens)
+        public static ElectricAdmittance FromNanosiemens(double value)
         {
-            double value = (double) nanosiemens;
             return new ElectricAdmittance(value, ElectricAdmittanceUnit.Nanosiemens);
         }
 
         /// <summary>
         ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Siemens"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
-        public static ElectricAdmittance FromSiemens(QuantityValue siemens)
+        public static ElectricAdmittance FromSiemens(double value)
         {
-            double value = (double) siemens;
             return new ElectricAdmittance(value, ElectricAdmittanceUnit.Siemens);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Teramho"/>.
+        /// </summary>
+        public static ElectricAdmittance FromTeramhos(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Teramho);
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="ElectricAdmittance"/> from <see cref="ElectricAdmittanceUnit.Terasiemens"/>.
+        /// </summary>
+        public static ElectricAdmittance FromTerasiemens(double value)
+        {
+            return new ElectricAdmittance(value, ElectricAdmittanceUnit.Terasiemens);
         }
 
         /// <summary>
@@ -287,9 +529,9 @@ namespace UnitsNet
         /// <param name="value">Value to convert from.</param>
         /// <param name="fromUnit">Unit to convert from.</param>
         /// <returns>ElectricAdmittance unit value.</returns>
-        public static ElectricAdmittance From(QuantityValue value, ElectricAdmittanceUnit fromUnit)
+        public static ElectricAdmittance From(double value, ElectricAdmittanceUnit fromUnit)
         {
-            return new ElectricAdmittance((double)value, fromUnit);
+            return new ElectricAdmittance(value, fromUnit);
         }
 
         #endregion
@@ -348,7 +590,7 @@ namespace UnitsNet
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
         public static ElectricAdmittance Parse(string str, IFormatProvider? provider)
         {
-            return QuantityParser.Default.Parse<ElectricAdmittance, ElectricAdmittanceUnit>(
+            return UnitsNetSetup.Default.QuantityParser.Parse<ElectricAdmittance, ElectricAdmittanceUnit>(
                 str,
                 provider,
                 From);
@@ -362,7 +604,7 @@ namespace UnitsNet
         /// <example>
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
-        public static bool TryParse(string? str, out ElectricAdmittance result)
+        public static bool TryParse([NotNullWhen(true)]string? str, out ElectricAdmittance result)
         {
             return TryParse(str, null, out result);
         }
@@ -377,9 +619,9 @@ namespace UnitsNet
         ///     Length.Parse("5.5 m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParse(string? str, IFormatProvider? provider, out ElectricAdmittance result)
+        public static bool TryParse([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricAdmittance result)
         {
-            return QuantityParser.Default.TryParse<ElectricAdmittance, ElectricAdmittanceUnit>(
+            return UnitsNetSetup.Default.QuantityParser.TryParse<ElectricAdmittance, ElectricAdmittanceUnit>(
                 str,
                 provider,
                 From,
@@ -412,11 +654,11 @@ namespace UnitsNet
         /// <exception cref="UnitsNetException">Error parsing string.</exception>
         public static ElectricAdmittanceUnit ParseUnit(string str, IFormatProvider? provider)
         {
-            return UnitParser.Default.Parse<ElectricAdmittanceUnit>(str, provider);
+            return UnitParser.Default.Parse(str, Info.UnitInfos, provider).Value;
         }
 
         /// <inheritdoc cref="TryParseUnit(string,IFormatProvider,out UnitsNet.Units.ElectricAdmittanceUnit)"/>
-        public static bool TryParseUnit(string str, out ElectricAdmittanceUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, out ElectricAdmittanceUnit unit)
         {
             return TryParseUnit(str, null, out unit);
         }
@@ -431,9 +673,9 @@ namespace UnitsNet
         ///     Length.TryParseUnit("m", CultureInfo.GetCultureInfo("en-US"));
         /// </example>
         /// <param name="provider">Format to use when parsing number and unit. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public static bool TryParseUnit(string str, IFormatProvider? provider, out ElectricAdmittanceUnit unit)
+        public static bool TryParseUnit([NotNullWhen(true)]string? str, IFormatProvider? provider, out ElectricAdmittanceUnit unit)
         {
-            return UnitParser.Default.TryParse<ElectricAdmittanceUnit>(str, provider, out unit);
+            return UnitParser.Default.TryParse(str, Info, provider, out unit);
         }
 
         #endregion
@@ -549,6 +791,15 @@ namespace UnitsNet
 
         #pragma warning restore CS0809
 
+        /// <summary>
+        ///     Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A hash code for the current ElectricAdmittance.</returns>
+        public override int GetHashCode()
+        {
+            return Comparison.GetHashCode(Unit, Value);
+        }
+
         /// <summary>Compares the current <see cref="ElectricAdmittance"/> with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other when converted to the same unit.</summary>
         /// <param name="obj">An object to compare with this instance.</param>
         /// <exception cref="T:System.ArgumentException">
@@ -585,88 +836,6 @@ namespace UnitsNet
             return _value.CompareTo(other.ToUnit(this.Unit).Value);
         }
 
-        /// <summary>
-        ///     <para>
-        ///     Compare equality to another ElectricAdmittance within the given absolute or relative tolerance.
-        ///     </para>
-        ///     <para>
-        ///     Relative tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a percentage of this quantity's value. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison. A relative tolerance of 0.01 means the absolute difference must be within +/- 1% of
-        ///     this quantity's value to be considered equal.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within +/- 1% of a (0.02m or 2cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Relative);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Absolute tolerance is defined as the maximum allowable absolute difference between this quantity's value and
-        ///     <paramref name="other"/> as a fixed number in this quantity's unit. <paramref name="other"/> will be converted into
-        ///     this quantity's unit for comparison.
-        ///     <example>
-        ///     In this example, the two quantities will be equal if the value of b is within 0.01 of a (0.01m or 1cm).
-        ///     <code>
-        ///     var a = Length.FromMeters(2.0);
-        ///     var b = Length.FromInches(50.0);
-        ///     a.Equals(b, 0.01, ComparisonType.Absolute);
-        ///     </code>
-        ///     </example>
-        ///     </para>
-        ///     <para>
-        ///     Note that it is advised against specifying zero difference, due to the nature
-        ///     of floating-point operations and using double internally.
-        ///     </para>
-        /// </summary>
-        /// <param name="other">The other quantity to compare to.</param>
-        /// <param name="tolerance">The absolute or relative tolerance value. Must be greater than or equal to 0.</param>
-        /// <param name="comparisonType">The comparison type: either relative or absolute.</param>
-        /// <returns>True if the absolute difference between the two values is not greater than the specified relative or absolute tolerance.</returns>
-        [Obsolete("Use Equals(ElectricAdmittance other, ElectricAdmittance tolerance) instead, to check equality across units and to specify the max tolerance for rounding errors due to floating-point arithmetic when converting between units.")]
-        public bool Equals(ElectricAdmittance other, double tolerance, ComparisonType comparisonType)
-        {
-            if (tolerance < 0)
-                throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be greater than or equal to 0.");
-
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance,
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(IQuantity? other, IQuantity tolerance)
-        {
-            return other is ElectricAdmittance otherTyped
-                   && (tolerance is ElectricAdmittance toleranceTyped
-                       ? true
-                       : throw new ArgumentException($"Tolerance quantity ({tolerance.QuantityInfo.Name}) did not match the other quantities of type 'ElectricAdmittance'.", nameof(tolerance)))
-                   && Equals(otherTyped, toleranceTyped);
-        }
-
-        /// <inheritdoc />
-        public bool Equals(ElectricAdmittance other, ElectricAdmittance tolerance)
-        {
-            return UnitsNet.Comparison.Equals(
-                referenceValue: this.Value,
-                otherValue: other.As(this.Unit),
-                tolerance: tolerance.As(this.Unit),
-                comparisonType: ComparisonType.Absolute);
-        }
-
-        /// <summary>
-        ///     Returns the hash code for this instance.
-        /// </summary>
-        /// <returns>A hash code for the current ElectricAdmittance.</returns>
-        public override int GetHashCode()
-        {
-            return new { Info.Name, Value, Unit }.GetHashCode();
-        }
-
         #endregion
 
         #region Conversion Methods
@@ -683,37 +852,10 @@ namespace UnitsNet
             return ToUnit(unit).Value;
         }
 
-        /// <inheritdoc cref="IQuantity.As(UnitSystem)"/>
-        public double As(UnitSystem unitSystem)
+        /// <inheritdoc cref="IQuantity.As(UnitKey)"/>
+        public double As(UnitKey unitKey)
         {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return As(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        double IQuantity.As(Enum unit)
-        {
-            if (!(unit is ElectricAdmittanceUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricAdmittanceUnit)} is supported.", nameof(unit));
-
-            return (double)As(typedUnit);
-        }
-
-        /// <inheritdoc />
-        double IValueQuantity<double>.As(Enum unit)
-        {
-            if (!(unit is ElectricAdmittanceUnit typedUnit))
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricAdmittanceUnit)} is supported.", nameof(unit));
-
-            return As(typedUnit);
+            return As(unitKey.ToUnit<ElectricAdmittanceUnit>());
         }
 
         /// <summary>
@@ -753,7 +895,7 @@ namespace UnitsNet
             else
             {
                 // No possible conversion
-                throw new NotImplementedException($"Can not convert {Unit} to {unit}.");
+                throw new UnitNotFoundException($"Can't convert {Unit} to {unit}.");
             }
         }
 
@@ -774,14 +916,38 @@ namespace UnitsNet
             ElectricAdmittance? convertedOrNull = (Unit, unit) switch
             {
                 // ElectricAdmittanceUnit -> BaseUnit
+                (ElectricAdmittanceUnit.Gigamho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e9d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Gigasiemens, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e9d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Kilomho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e3d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Kilosiemens, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e3d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Megamho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e6d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Megasiemens, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e6d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Mho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance(_value, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Micromho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e-6d, ElectricAdmittanceUnit.Siemens),
                 (ElectricAdmittanceUnit.Microsiemens, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e-6d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Millimho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e-3d, ElectricAdmittanceUnit.Siemens),
                 (ElectricAdmittanceUnit.Millisiemens, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e-3d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Nanomho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e-9d, ElectricAdmittanceUnit.Siemens),
                 (ElectricAdmittanceUnit.Nanosiemens, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e-9d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Teramho, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e12d, ElectricAdmittanceUnit.Siemens),
+                (ElectricAdmittanceUnit.Terasiemens, ElectricAdmittanceUnit.Siemens) => new ElectricAdmittance((_value) * 1e12d, ElectricAdmittanceUnit.Siemens),
 
                 // BaseUnit -> ElectricAdmittanceUnit
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Gigamho) => new ElectricAdmittance((_value) / 1e9d, ElectricAdmittanceUnit.Gigamho),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Gigasiemens) => new ElectricAdmittance((_value) / 1e9d, ElectricAdmittanceUnit.Gigasiemens),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Kilomho) => new ElectricAdmittance((_value) / 1e3d, ElectricAdmittanceUnit.Kilomho),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Kilosiemens) => new ElectricAdmittance((_value) / 1e3d, ElectricAdmittanceUnit.Kilosiemens),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Megamho) => new ElectricAdmittance((_value) / 1e6d, ElectricAdmittanceUnit.Megamho),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Megasiemens) => new ElectricAdmittance((_value) / 1e6d, ElectricAdmittanceUnit.Megasiemens),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Mho) => new ElectricAdmittance(_value, ElectricAdmittanceUnit.Mho),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Micromho) => new ElectricAdmittance((_value) / 1e-6d, ElectricAdmittanceUnit.Micromho),
                 (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Microsiemens) => new ElectricAdmittance((_value) / 1e-6d, ElectricAdmittanceUnit.Microsiemens),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Millimho) => new ElectricAdmittance((_value) / 1e-3d, ElectricAdmittanceUnit.Millimho),
                 (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Millisiemens) => new ElectricAdmittance((_value) / 1e-3d, ElectricAdmittanceUnit.Millisiemens),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Nanomho) => new ElectricAdmittance((_value) / 1e-9d, ElectricAdmittanceUnit.Nanomho),
                 (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Nanosiemens) => new ElectricAdmittance((_value) / 1e-9d, ElectricAdmittanceUnit.Nanosiemens),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Teramho) => new ElectricAdmittance((_value) / 1e12d, ElectricAdmittanceUnit.Teramho),
+                (ElectricAdmittanceUnit.Siemens, ElectricAdmittanceUnit.Terasiemens) => new ElectricAdmittance((_value) / 1e12d, ElectricAdmittanceUnit.Terasiemens),
 
                 _ => null
             };
@@ -796,6 +962,16 @@ namespace UnitsNet
             return true;
         }
 
+        #region Explicit implementations
+
+        double IQuantity.As(Enum unit)
+        {
+            if (unit is not ElectricAdmittanceUnit typedUnit)
+                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricAdmittanceUnit)} is supported.", nameof(unit));
+
+            return As(typedUnit);
+        }
+
         /// <inheritdoc />
         IQuantity IQuantity.ToUnit(Enum unit)
         {
@@ -805,41 +981,10 @@ namespace UnitsNet
             return ToUnit(typedUnit, DefaultConversionFunctions);
         }
 
-        /// <inheritdoc cref="IQuantity.ToUnit(UnitSystem)"/>
-        public ElectricAdmittance ToUnit(UnitSystem unitSystem)
-        {
-            if (unitSystem is null)
-                throw new ArgumentNullException(nameof(unitSystem));
-
-            var unitInfos = Info.GetUnitInfosFor(unitSystem.BaseUnits);
-
-            var firstUnitInfo = unitInfos.FirstOrDefault();
-            if (firstUnitInfo == null)
-                throw new ArgumentException("No units were found for the given UnitSystem.", nameof(unitSystem));
-
-            return ToUnit(firstUnitInfo.Value);
-        }
-
-        /// <inheritdoc />
-        IQuantity IQuantity.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
         /// <inheritdoc />
         IQuantity<ElectricAdmittanceUnit> IQuantity<ElectricAdmittanceUnit>.ToUnit(ElectricAdmittanceUnit unit) => ToUnit(unit);
 
-        /// <inheritdoc />
-        IQuantity<ElectricAdmittanceUnit> IQuantity<ElectricAdmittanceUnit>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(Enum unit)
-        {
-            if (unit is not ElectricAdmittanceUnit typedUnit)
-                throw new ArgumentException($"The given unit is of type {unit.GetType()}. Only {typeof(ElectricAdmittanceUnit)} is supported.", nameof(unit));
-
-            return ToUnit(typedUnit);
-        }
-
-        /// <inheritdoc />
-        IValueQuantity<double> IValueQuantity<double>.ToUnit(UnitSystem unitSystem) => ToUnit(unitSystem);
+        #endregion
 
         #endregion
 
@@ -851,140 +996,19 @@ namespace UnitsNet
         /// <returns>String representation.</returns>
         public override string ToString()
         {
-            return ToString("g");
+            return ToString(null, null);
         }
 
-        /// <summary>
-        ///     Gets the default string representation of value and unit using the given format provider.
-        /// </summary>
-        /// <returns>String representation.</returns>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        public string ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
-        /// <summary>
-        /// Gets the string representation of this instance in the specified format string using <see cref="CultureInfo.CurrentCulture" />.
-        /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <returns>The string representation.</returns>
-        public string ToString(string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
-
-        /// <inheritdoc cref="QuantityFormatter.Format{TUnitType}(IQuantity{TUnitType}, string, IFormatProvider)"/>
+        /// <inheritdoc cref="QuantityFormatter.Format{TQuantity}(TQuantity, string?, IFormatProvider?)"/>
         /// <summary>
         /// Gets the string representation of this instance in the specified format string using the specified format provider, or <see cref="CultureInfo.CurrentCulture" /> if null.
         /// </summary>
-        /// <param name="format">The format string.</param>
-        /// <param name="provider">Format to use for localization and number formatting. Defaults to <see cref="CultureInfo.CurrentCulture" /> if null.</param>
-        /// <returns>The string representation.</returns>
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return QuantityFormatter.Format<ElectricAdmittanceUnit>(this, format, provider);
+            return QuantityFormatter.Default.Format(this, format, provider);
         }
 
         #endregion
 
-        #region IConvertible Methods
-
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricAdmittance)} to bool is not supported.");
-        }
-
-        byte IConvertible.ToByte(IFormatProvider? provider)
-        {
-            return Convert.ToByte(_value);
-        }
-
-        char IConvertible.ToChar(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricAdmittance)} to char is not supported.");
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
-        {
-            throw new InvalidCastException($"Converting {typeof(ElectricAdmittance)} to DateTime is not supported.");
-        }
-
-        decimal IConvertible.ToDecimal(IFormatProvider? provider)
-        {
-            return Convert.ToDecimal(_value);
-        }
-
-        double IConvertible.ToDouble(IFormatProvider? provider)
-        {
-            return Convert.ToDouble(_value);
-        }
-
-        short IConvertible.ToInt16(IFormatProvider? provider)
-        {
-            return Convert.ToInt16(_value);
-        }
-
-        int IConvertible.ToInt32(IFormatProvider? provider)
-        {
-            return Convert.ToInt32(_value);
-        }
-
-        long IConvertible.ToInt64(IFormatProvider? provider)
-        {
-            return Convert.ToInt64(_value);
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider? provider)
-        {
-            return Convert.ToSByte(_value);
-        }
-
-        float IConvertible.ToSingle(IFormatProvider? provider)
-        {
-            return Convert.ToSingle(_value);
-        }
-
-        string IConvertible.ToString(IFormatProvider? provider)
-        {
-            return ToString("g", provider);
-        }
-
-        object IConvertible.ToType(Type conversionType, IFormatProvider? provider)
-        {
-            if (conversionType == typeof(ElectricAdmittance))
-                return this;
-            else if (conversionType == typeof(ElectricAdmittanceUnit))
-                return Unit;
-            else if (conversionType == typeof(QuantityInfo))
-                return ElectricAdmittance.Info;
-            else if (conversionType == typeof(BaseDimensions))
-                return ElectricAdmittance.BaseDimensions;
-            else
-                throw new InvalidCastException($"Converting {typeof(ElectricAdmittance)} to {conversionType} is not supported.");
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider? provider)
-        {
-            return Convert.ToUInt16(_value);
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider? provider)
-        {
-            return Convert.ToUInt32(_value);
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider? provider)
-        {
-            return Convert.ToUInt64(_value);
-        }
-
-        #endregion
     }
 }

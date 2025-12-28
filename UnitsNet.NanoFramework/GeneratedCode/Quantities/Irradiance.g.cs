@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public Irradiance(double value, IrradianceUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of Irradiance, which is Second. All conversions go via this value.
         /// </summary>
         public static IrradianceUnit BaseUnit { get; } = IrradianceUnit.WattPerSquareMeter;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of Irradiance.
         /// </summary>
         public static Irradiance MaxValue { get; } = new Irradiance(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of Irradiance.
         /// </summary>
         public static Irradiance MinValue { get; } = new Irradiance(double.MinValue, BaseUnit);
 
@@ -156,85 +155,71 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.KilowattPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromKilowattsPerSquareCentimeter(double kilowattspersquarecentimeter) => new Irradiance(kilowattspersquarecentimeter, IrradianceUnit.KilowattPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.KilowattPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromKilowattsPerSquareMeter(double kilowattspersquaremeter) => new Irradiance(kilowattspersquaremeter, IrradianceUnit.KilowattPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.MegawattPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromMegawattsPerSquareCentimeter(double megawattspersquarecentimeter) => new Irradiance(megawattspersquarecentimeter, IrradianceUnit.MegawattPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.MegawattPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromMegawattsPerSquareMeter(double megawattspersquaremeter) => new Irradiance(megawattspersquaremeter, IrradianceUnit.MegawattPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.MicrowattPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromMicrowattsPerSquareCentimeter(double microwattspersquarecentimeter) => new Irradiance(microwattspersquarecentimeter, IrradianceUnit.MicrowattPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.MicrowattPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromMicrowattsPerSquareMeter(double microwattspersquaremeter) => new Irradiance(microwattspersquaremeter, IrradianceUnit.MicrowattPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.MilliwattPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromMilliwattsPerSquareCentimeter(double milliwattspersquarecentimeter) => new Irradiance(milliwattspersquarecentimeter, IrradianceUnit.MilliwattPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.MilliwattPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromMilliwattsPerSquareMeter(double milliwattspersquaremeter) => new Irradiance(milliwattspersquaremeter, IrradianceUnit.MilliwattPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.NanowattPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromNanowattsPerSquareCentimeter(double nanowattspersquarecentimeter) => new Irradiance(nanowattspersquarecentimeter, IrradianceUnit.NanowattPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.NanowattPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromNanowattsPerSquareMeter(double nanowattspersquaremeter) => new Irradiance(nanowattspersquaremeter, IrradianceUnit.NanowattPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.PicowattPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromPicowattsPerSquareCentimeter(double picowattspersquarecentimeter) => new Irradiance(picowattspersquarecentimeter, IrradianceUnit.PicowattPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.PicowattPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromPicowattsPerSquareMeter(double picowattspersquaremeter) => new Irradiance(picowattspersquaremeter, IrradianceUnit.PicowattPerSquareMeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.WattPerSquareCentimeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromWattsPerSquareCentimeter(double wattspersquarecentimeter) => new Irradiance(wattspersquarecentimeter, IrradianceUnit.WattPerSquareCentimeter);
 
         /// <summary>
         ///     Creates a <see cref="Irradiance"/> from <see cref="IrradianceUnit.WattPerSquareMeter"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static Irradiance FromWattsPerSquareMeter(double wattspersquaremeter) => new Irradiance(wattspersquaremeter, IrradianceUnit.WattPerSquareMeter);
 
         /// <summary>
@@ -259,9 +244,9 @@ namespace UnitsNet
                 public double As(IrradianceUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this Irradiance to another Irradiance with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A Irradiance with the specified unit.</returns>
                 public Irradiance ToUnit(IrradianceUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -291,7 +276,7 @@ namespace UnitsNet
                         IrradianceUnit.PicowattPerSquareMeter => (_value) * 1e-12d,
                         IrradianceUnit.WattPerSquareCentimeter => _value * 10000,
                         IrradianceUnit.WattPerSquareMeter => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -318,7 +303,7 @@ namespace UnitsNet
                         IrradianceUnit.PicowattPerSquareMeter => (baseUnitValue) / 1e-12d,
                         IrradianceUnit.WattPerSquareCentimeter => baseUnitValue * 0.0001,
                         IrradianceUnit.WattPerSquareMeter => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

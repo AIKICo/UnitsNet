@@ -39,7 +39,9 @@
     "Mole": 12,
     "Nanomole": 13,
     "NanopoundMole": 14,
-    "PoundMole": 15
+    "PoundMole": 15,
+    "Femtomole": 19,
+    "Picomole": 18
   },
   "AmplitudeRatio": {
     "DecibelMicrovolt": 1,
@@ -64,19 +66,6 @@
     "Radian": 14,
     "Revolution": 15,
     "Tilt": 16
-  },
-  "ApparentEnergy": {
-    "KilovoltampereHour": 1,
-    "MegavoltampereHour": 2,
-    "VoltampereHour": 3
-  },
-  "ApparentPower": {
-    "Gigavoltampere": 1,
-    "Kilovoltampere": 2,
-    "Megavoltampere": 3,
-    "Voltampere": 4,
-    "Microvoltampere": 6,
-    "Millivoltampere": 7
   },
   "Area": {
     "Acre": 1,
@@ -133,26 +122,36 @@
     "TebibitPerSecond": 23,
     "TebibytePerSecond": 24,
     "TerabitPerSecond": 25,
-    "TerabytePerSecond": 26
+    "TerabytePerSecond": 26,
+    "ExaoctetPerSecond": 29,
+    "ExbioctetPerSecond": 31,
+    "GibioctetPerSecond": 32,
+    "GigaoctetPerSecond": 35,
+    "KibioctetPerSecond": 30,
+    "KilooctetPerSecond": 27,
+    "MebioctetPerSecond": 36,
+    "MegaoctetPerSecond": 34,
+    "OctetPerSecond": 28,
+    "PebioctetPerSecond": 33,
+    "PetaoctetPerSecond": 46,
+    "TebioctetPerSecond": 42,
+    "TeraoctetPerSecond": 40
   },
   "BrakeSpecificFuelConsumption": {
     "GramPerKiloWattHour": 1,
     "KilogramPerJoule": 2,
     "PoundPerMechanicalHorsepowerHour": 3
   },
-  "Capacitance": {
-    "Farad": 1,
-    "Kilofarad": 2,
-    "Megafarad": 3,
-    "Microfarad": 4,
-    "Millifarad": 5,
-    "Nanofarad": 6,
-    "Picofarad": 7
-  },
   "CoefficientOfThermalExpansion": {
     "InverseDegreeCelsius": 1,
     "InverseDegreeFahrenheit": 2,
-    "InverseKelvin": 3
+    "InverseKelvin": 3,
+    "PerDegreeCelsius": 9,
+    "PerDegreeFahrenheit": 11,
+    "PerKelvin": 13,
+    "PpmPerDegreeCelsius": 6,
+    "PpmPerDegreeFahrenheit": 4,
+    "PpmPerKelvin": 7
   },
   "Compressibility": {
     "InverseAtmosphere": 1,
@@ -214,7 +213,12 @@
     "TonnePerCubicFoot": 48,
     "TonnePerCubicInch": 49,
     "TonnePerCubicMeter": 50,
-    "TonnePerCubicMillimeter": 51
+    "TonnePerCubicMillimeter": 51,
+    "FemtogramPerDeciliter": 59,
+    "FemtogramPerLiter": 56,
+    "FemtogramPerMilliliter": 61,
+    "KilopoundPerCubicYard": 64,
+    "PoundPerCubicYard": 58
   },
   "Duration": {
     "Day": 1,
@@ -227,7 +231,9 @@
     "Nanosecond": 8,
     "Second": 9,
     "Week": 10,
-    "Year365": 11
+    "Year365": 11,
+    "Sol": 15,
+    "Picosecond": 12
   },
   "DynamicViscosity": {
     "Centipoise": 1,
@@ -245,7 +251,19 @@
     "Microsiemens": 1,
     "Millisiemens": 2,
     "Nanosiemens": 3,
-    "Siemens": 4
+    "Siemens": 4,
+    "Kilomho": 8,
+    "Mho": 7,
+    "Micromho": 12,
+    "Millimho": 5,
+    "Nanomho": 6,
+    "Gigamho": 16,
+    "Gigasiemens": 19,
+    "Kilosiemens": 14,
+    "Megamho": 10,
+    "Megasiemens": 13,
+    "Teramho": 15,
+    "Terasiemens": 9
   },
   "ElectricCharge": {
     "AmpereHour": 1,
@@ -268,7 +286,18 @@
     "Millisiemens": 2,
     "Siemens": 3,
     "Kilosiemens": 6,
-    "Nanosiemens": 10
+    "Nanosiemens": 10,
+    "Kilomho": 15,
+    "Mho": 12,
+    "Micromho": 5,
+    "Millimho": 9,
+    "Nanomho": 14,
+    "Gigamho": 7,
+    "Gigasiemens": 18,
+    "Megamho": 8,
+    "Megasiemens": 17,
+    "Teramho": 19,
+    "Terasiemens": 16
   },
   "ElectricConductivity": {
     "SiemensPerFoot": 1,
@@ -321,13 +350,6 @@
     "Volt": 5,
     "Nanovolt": 11
   },
-  "ElectricPotentialAc": {
-    "KilovoltAc": 1,
-    "MegavoltAc": 2,
-    "MicrovoltAc": 3,
-    "MillivoltAc": 4,
-    "VoltAc": 5
-  },
   "ElectricPotentialChangeRate": {
     "KilovoltPerHour": 1,
     "KilovoltPerMicrosecond": 2,
@@ -350,13 +372,6 @@
     "VoltPerMinute": 19,
     "VoltPerSecond": 20
   },
-  "ElectricPotentialDc": {
-    "KilovoltDc": 1,
-    "MegavoltDc": 2,
-    "MicrovoltDc": 3,
-    "MillivoltDc": 4,
-    "VoltDc": 5
-  },
   "ElectricResistance": {
     "Gigaohm": 1,
     "Kiloohm": 2,
@@ -364,7 +379,8 @@
     "Microohm": 4,
     "Milliohm": 5,
     "Ohm": 6,
-    "Teraohm": 12
+    "Teraohm": 12,
+    "Nanoohm": 11
   },
   "ElectricResistivity": {
     "KiloohmCentimeter": 1,
@@ -425,7 +441,9 @@
     "WattDay": 35,
     "WattHour": 36,
     "Petajoule": 43,
-    "Terajoule": 37
+    "Terajoule": 37,
+    "Microjoule": 47,
+    "Nanojoule": 45
   },
   "Entropy": {
     "CaloriePerKelvin": 1,
@@ -441,7 +459,7 @@
     "Dyn": 2,
     "KilogramForce": 3,
     "Kilonewton": 4,
-    "KiloPond": 5,
+    "Kilopond": 5,
     "KilopoundForce": 6,
     "Meganewton": 7,
     "Micronewton": 8,
@@ -591,7 +609,20 @@
     "Tebibit": 23,
     "Tebibyte": 24,
     "Terabit": 25,
-    "Terabyte": 26
+    "Terabyte": 26,
+    "Exaoctet": 33,
+    "Exbioctet": 35,
+    "Gibioctet": 27,
+    "Gigaoctet": 28,
+    "Kibioctet": 30,
+    "Kilooctet": 32,
+    "Mebioctet": 36,
+    "Megaoctet": 34,
+    "Octet": 31,
+    "Pebioctet": 29,
+    "Petaoctet": 39,
+    "Tebioctet": 43,
+    "Teraoctet": 40
   },
   "Irradiance": {
     "KilowattPerSquareCentimeter": 1,
@@ -616,7 +647,9 @@
     "KilojoulePerSquareMeter": 4,
     "KilowattHourPerSquareMeter": 5,
     "MillijoulePerSquareCentimeter": 6,
-    "WattHourPerSquareMeter": 7
+    "WattHourPerSquareMeter": 7,
+    "BtuPerSquareFoot": 15,
+    "KilobtuPerSquareFoot": 9
   },
   "Jerk": {
     "CentimeterPerSecondCubed": 1,
@@ -683,7 +716,11 @@
     "UsSurveyFoot": 35,
     "Yard": 36,
     "Megameter": 41,
-    "Kilofoot": 45
+    "Kilofoot": 45,
+    "Femtometer": 48,
+    "Picometer": 43,
+    "Gigameter": 44,
+    "Kiloyard": 38
   },
   "Level": {
     "Decibel": 1,
@@ -703,7 +740,11 @@
     "MilligramPerMeter": 11,
     "MilligramPerMillimeter": 12,
     "PoundPerFoot": 13,
-    "PoundPerInch": 14
+    "PoundPerInch": 14,
+    "GramPerFoot": 22,
+    "KilogramPerFoot": 19,
+    "MicrogramPerFoot": 20,
+    "MilligramPerFoot": 18
   },
   "LinearPowerDensity": {
     "GigawattPerCentimeter": 1,
@@ -795,7 +836,11 @@
     "Stone": 24,
     "Tonne": 25,
     "Femtogram": 35,
-    "Picogram": 29
+    "Picogram": 29,
+    "Dalton": 37,
+    "Gigadalton": 33,
+    "Kilodalton": 26,
+    "Megadalton": 30
   },
   "MassConcentration": {
     "CentigramPerDeciliter": 1,
@@ -935,11 +980,11 @@
     "KilotonneSquareCentimeter": 9,
     "KilotonneSquareDecimeter": 10,
     "KilotonneSquareMeter": 11,
-    "KilotonneSquareMilimeter": 12,
+    "KilotonneSquareMillimeter": 12,
     "MegatonneSquareCentimeter": 13,
     "MegatonneSquareDecimeter": 14,
     "MegatonneSquareMeter": 15,
-    "MegatonneSquareMilimeter": 16,
+    "MegatonneSquareMillimeter": 16,
     "MilligramSquareCentimeter": 17,
     "MilligramSquareDecimeter": 18,
     "MilligramSquareMeter": 19,
@@ -951,7 +996,7 @@
     "TonneSquareCentimeter": 25,
     "TonneSquareDecimeter": 26,
     "TonneSquareMeter": 27,
-    "TonneSquareMilimeter": 28
+    "TonneSquareMillimeter": 28
   },
   "MolarEnergy": {
     "JoulePerMole": 1,
@@ -1040,7 +1085,8 @@
     "Petawatt": 23,
     "Picowatt": 24,
     "Terawatt": 25,
-    "Watt": 26
+    "Watt": 26,
+    "TonOfRefrigeration": 29
   },
   "PowerDensity": {
     "DecawattPerCubicFoot": 1,
@@ -1141,7 +1187,8 @@
     "TonneForcePerSquareMillimeter": 46,
     "Torr": 47,
     "MeterOfWaterColumn": 57,
-    "CentimeterOfWaterColumn": 48
+    "CentimeterOfWaterColumn": 48,
+    "Millitorr": 52
   },
   "PressureChangeRate": {
     "AtmospherePerSecond": 1,
@@ -1174,17 +1221,6 @@
   "RatioChangeRate": {
     "DecimalFractionPerSecond": 1,
     "PercentPerSecond": 2
-  },
-  "ReactiveEnergy": {
-    "KilovoltampereReactiveHour": 1,
-    "MegavoltampereReactiveHour": 2,
-    "VoltampereReactiveHour": 3
-  },
-  "ReactivePower": {
-    "GigavoltampereReactive": 1,
-    "KilovoltampereReactive": 2,
-    "MegavoltampereReactive": 3,
-    "VoltampereReactive": 4
   },
   "ReciprocalArea": {
     "InverseSquareCentimeter": 1,
@@ -1268,7 +1304,8 @@
     "NewtonMillimeterPerDegree": 30,
     "NewtonMillimeterPerRadian": 31,
     "PoundForceFeetPerRadian": 32,
-    "PoundForceFootPerDegrees": 33
+    "PoundForceFootPerDegrees": 33,
+    "KilopoundForceFootPerRadian": 38
   },
   "RotationalStiffnessPerLength": {
     "KilonewtonMeterPerRadianPerMeter": 1,
@@ -1313,7 +1350,7 @@
     "WattDayPerTonne": 27,
     "WattHourPerKilogram": 28,
     "WattHourPerPound": 29,
-    "MegaJoulePerTonne": 37
+    "MegajoulePerTonne": 37
   },
   "SpecificEntropy": {
     "BtuPerPoundFahrenheit": 1,
@@ -1327,9 +1364,9 @@
     "MegajoulePerKilogramKelvin": 9
   },
   "SpecificFuelConsumption": {
-    "GramPerKiloNewtonSecond": 1,
+    "GramPerKilonewtonSecond": 1,
     "KilogramPerKilogramForceHour": 2,
-    "KilogramPerKiloNewtonSecond": 3,
+    "KilogramPerKilonewtonSecond": 3,
     "PoundMassPerPoundForceHour": 4
   },
   "SpecificVolume": {
@@ -1424,7 +1461,14 @@
     "KilodegreeCelsiusPerSecond": 7,
     "MicrodegreeCelsiusPerSecond": 8,
     "MillidegreeCelsiusPerSecond": 9,
-    "NanodegreeCelsiusPerSecond": 10
+    "NanodegreeCelsiusPerSecond": 10,
+    "DegreeKelvinPerMinute": 20,
+    "DegreeCelsiusPerHour": 18,
+    "DegreeFahrenheitPerHour": 11,
+    "DegreeFahrenheitPerMinute": 16,
+    "DegreeFahrenheitPerSecond": 19,
+    "DegreeKelvinPerHour": 12,
+    "DegreeKelvinPerSecond": 15
   },
   "TemperatureDelta": {
     "DegreeCelsius": 1,
@@ -1448,12 +1492,8 @@
     "WattPerMeterKelvin": 2
   },
   "ThermalResistance": {
-    "HourSquareFeetDegreeFahrenheitPerBtu": 1,
-    "SquareCentimeterHourDegreeCelsiusPerKilocalorie": 2,
-    "SquareCentimeterKelvinPerWatt": 3,
-    "SquareMeterDegreeCelsiusPerWatt": 4,
-    "SquareMeterKelvinPerKilowatt": 5,
-    "SquareMeterKelvinPerWatt": 6
+    "DegreeCelsiusPerWatt": 10,
+    "KelvinPerWatt": 11
   },
   "Torque": {
     "GramForceCentimeter": 1,
@@ -1565,29 +1605,30 @@
     "UsTablespoon": 51,
     "UsTeaspoon": 52,
     "Nanoliter": 53,
-    "ImperialQuart": 57
+    "ImperialQuart": 57,
+    "MetricTablespoon": 63
   },
   "VolumeConcentration": {
-    "CentilitersPerLiter": 1,
-    "CentilitersPerMililiter": 2,
-    "DecilitersPerLiter": 3,
-    "DecilitersPerMililiter": 4,
+    "CentiliterPerLiter": 1,
+    "CentiliterPerMilliliter": 2,
+    "DeciliterPerLiter": 3,
+    "DeciliterPerMilliliter": 4,
     "DecimalFraction": 5,
-    "LitersPerLiter": 6,
-    "LitersPerMililiter": 7,
-    "MicrolitersPerLiter": 8,
-    "MicrolitersPerMililiter": 9,
-    "MillilitersPerLiter": 10,
-    "MillilitersPerMililiter": 11,
-    "NanolitersPerLiter": 12,
-    "NanolitersPerMililiter": 13,
+    "LiterPerLiter": 6,
+    "LiterPerMilliliter": 7,
+    "MicroliterPerLiter": 8,
+    "MicroliterPerMilliliter": 9,
+    "MilliliterPerLiter": 10,
+    "MilliliterPerMilliliter": 11,
+    "NanoliterPerLiter": 12,
+    "NanoliterPerMilliliter": 13,
     "PartPerBillion": 14,
     "PartPerMillion": 15,
     "PartPerThousand": 16,
     "PartPerTrillion": 17,
     "Percent": 18,
-    "PicolitersPerLiter": 19,
-    "PicolitersPerMililiter": 20
+    "PicoliterPerLiter": 19,
+    "PicoliterPerMilliliter": 20
   },
   "VolumeFlow": {
     "AcreFootPerDay": 1,
@@ -1657,7 +1698,15 @@
     "MegaliterPerMinute": 64,
     "MegaliterPerSecond": 65,
     "MegaukGallonPerDay": 73,
-    "MegausGallonPerDay": 77
+    "MegausGallonPerDay": 77,
+    "DecaliterPerDay": 71,
+    "DecaliterPerHour": 78,
+    "DecaliterPerMinute": 67,
+    "DecaliterPerSecond": 70,
+    "HectoliterPerDay": 74,
+    "HectoliterPerHour": 72,
+    "HectoliterPerMinute": 75,
+    "HectoliterPerSecond": 69
   },
   "VolumeFlowPerArea": {
     "CubicFootPerMinutePerSquareFoot": 1,
@@ -1752,7 +1801,8 @@
     "MillibarLiterPerSecond": 7,
     "PascalQubicMeterPerSecond": 1,
     "TorrLiterPerSecond": 4,
-    "PascalCubicMeterPerSecond": 2
+    "PascalCubicMeterPerSecond": 2,
+    "AtmCubicCentimeterPerSecond": 10
   },
   "AbsorbedDoseOfIonizingRadiation": {
     "Centigray": 6,
@@ -1770,6 +1820,203 @@
     "Petagray": 19,
     "Picogray": 11,
     "Rad": 17,
-    "Teragray": 14
+    "Teragray": 14,
+    "Decigray": 26
+  },
+  "Molality": {
+    "MolePerGram": 4,
+    "MolePerKilogram": 1,
+    "MillimolePerKilogram": 2
+  },
+  "Radioactivity": {
+    "Becquerel": 7,
+    "Curie": 9,
+    "Exabecquerel": 10,
+    "Gigabecquerel": 4,
+    "Gigacurie": 5,
+    "Gigarutherford": 1,
+    "Kilobecquerel": 6,
+    "Kilocurie": 8,
+    "Kilorutherford": 2,
+    "Megabecquerel": 3,
+    "Megacurie": 20,
+    "Megarutherford": 13,
+    "Microbecquerel": 19,
+    "Microcurie": 15,
+    "Microrutherford": 14,
+    "Millibecquerel": 17,
+    "Millicurie": 18,
+    "Millirutherford": 12,
+    "Nanobecquerel": 16,
+    "Nanocurie": 11,
+    "Nanorutherford": 27,
+    "Petabecquerel": 21,
+    "Rutherford": 28,
+    "Terabecquerel": 23,
+    "Teracurie": 29,
+    "Terarutherford": 22,
+    "Picobecquerel": 36,
+    "Picocurie": 35,
+    "Picorutherford": 25
+  },
+  "RadiationExposure": {
+    "CoulombPerKilogram": 10,
+    "MicrocoulombPerKilogram": 3,
+    "MillicoulombPerKilogram": 2,
+    "NanocoulombPerKilogram": 6,
+    "PicocoulombPerKilogram": 5,
+    "Roentgen": 4,
+    "Microroentgen": 12,
+    "Milliroentgen": 13
+  },
+  "RadiationEquivalentDose": {
+    "Microsievert": 1,
+    "MilliroentgenEquivalentMan": 2,
+    "Millisievert": 7,
+    "Nanosievert": 5,
+    "RoentgenEquivalentMan": 4,
+    "Sievert": 9,
+    "Kilosievert": 3,
+    "Megasievert": 6
+  },
+  "RadiationEquivalentDoseRate": {
+    "MicrosievertPerHour": 1,
+    "MilliroentgenEquivalentManPerHour": 4,
+    "MillisievertPerHour": 3,
+    "NanosievertPerHour": 2,
+    "RoentgenEquivalentManPerHour": 5,
+    "SievertPerHour": 6,
+    "SievertPerSecond": 16,
+    "MicrosievertPerSecond": 17,
+    "MillisievertPerSecond": 14,
+    "NanosievertPerSecond": 9
+  },
+  "DoseAreaProduct": {
+    "CentigraySquareCentimeter": 6,
+    "CentigraySquareDecimeter": 3,
+    "CentigraySquareMeter": 7,
+    "CentigraySquareMillimeter": 2,
+    "DecigraySquareCentimeter": 9,
+    "DecigraySquareDecimeter": 1,
+    "DecigraySquareMeter": 4,
+    "DecigraySquareMillimeter": 8,
+    "GraySquareCentimeter": 10,
+    "GraySquareDecimeter": 5,
+    "GraySquareMeter": 19,
+    "GraySquareMillimeter": 16,
+    "MicrograySquareCentimeter": 13,
+    "MicrograySquareDecimeter": 20,
+    "MicrograySquareMeter": 15,
+    "MicrograySquareMillimeter": 18,
+    "MilligraySquareCentimeter": 14,
+    "MilligraySquareDecimeter": 17,
+    "MilligraySquareMeter": 11,
+    "MilligraySquareMillimeter": 12,
+    "CentigraySquareMicrometer": 21,
+    "DecigraySquareMicrometer": 25,
+    "GraySquareMicrometer": 26,
+    "MicrograySquareMicrometer": 29,
+    "MilligraySquareMicrometer": 30
+  },
+  "ElectricApparentEnergy": {
+    "KilovoltampereHour": 7,
+    "MegavoltampereHour": 3,
+    "VoltampereHour": 10
+  },
+  "ElectricApparentPower": {
+    "Gigavoltampere": 3,
+    "Kilovoltampere": 1,
+    "Megavoltampere": 2,
+    "Microvoltampere": 10,
+    "Millivoltampere": 6,
+    "Voltampere": 9
+  },
+  "ElectricCapacitance": {
+    "Farad": 3,
+    "Kilofarad": 8,
+    "Megafarad": 1,
+    "Microfarad": 7,
+    "Millifarad": 5,
+    "Nanofarad": 4,
+    "Picofarad": 10
+  },
+  "ElectricReactance": {
+    "Gigaohm": 5,
+    "Kiloohm": 8,
+    "Megaohm": 1,
+    "Microohm": 9,
+    "Milliohm": 4,
+    "Ohm": 6,
+    "Teraohm": 2,
+    "Nanoohm": 13
+  },
+  "ElectricReactiveEnergy": {
+    "KilovoltampereReactiveHour": 10,
+    "MegavoltampereReactiveHour": 4,
+    "VoltampereReactiveHour": 7
+  },
+  "ElectricReactivePower": {
+    "GigavoltampereReactive": 1,
+    "KilovoltampereReactive": 2,
+    "MegavoltampereReactive": 8,
+    "VoltampereReactive": 7
+  },
+  "ElectricSusceptance": {
+    "Kilomho": 8,
+    "Kilosiemens": 4,
+    "Mho": 7,
+    "Micromho": 9,
+    "Microsiemens": 10,
+    "Millimho": 3,
+    "Millisiemens": 6,
+    "Nanomho": 5,
+    "Nanosiemens": 1,
+    "Siemens": 2,
+    "Gigamho": 16,
+    "Gigasiemens": 15,
+    "Megamho": 12,
+    "Megasiemens": 19,
+    "Teramho": 20,
+    "Terasiemens": 14
+  },
+  "ElectricImpedance": {
+    "Gigaohm": 4,
+    "Kiloohm": 3,
+    "Megaohm": 10,
+    "Microohm": 8,
+    "Milliohm": 9,
+    "Nanoohm": 7,
+    "Ohm": 6,
+    "Teraohm": 5
+  },
+  "FluidResistance": {
+    "DyneSecondPerCentimeterToTheFifth": 6,
+    "MegapascalSecondPerCubicMeter": 7,
+    "MillimeterMercuryMinutePerCubicCentimeter": 3,
+    "MillimeterMercuryMinutePerCubicMeter": 5,
+    "MillimeterMercuryMinutePerLiter": 2,
+    "MillimeterMercuryMinutePerMilliliter": 9,
+    "MillimeterMercurySecondPerCubicCentimeter": 8,
+    "MillimeterMercurySecondPerCubicMeter": 10,
+    "MillimeterMercurySecondPerLiter": 4,
+    "MillimeterMercurySecondPerMilliliter": 1,
+    "PascalMinutePerCubicCentimeter": 19,
+    "PascalMinutePerCubicMeter": 16,
+    "PascalMinutePerLiter": 15,
+    "PascalMinutePerMilliliter": 12,
+    "PascalSecondPerCubicCentimeter": 18,
+    "PascalSecondPerCubicMeter": 13,
+    "PascalSecondPerLiter": 11,
+    "PascalSecondPerMilliliter": 20,
+    "WoodUnit": 17
+  },
+  "ThermalInsulance": {
+    "HourSquareFeetDegreeFahrenheitPerBtu": 2,
+    "SquareCentimeterHourDegreeCelsiusPerKilocalorie": 6,
+    "SquareCentimeterKelvinPerWatt": 7,
+    "SquareMeterDegreeCelsiusPerWatt": 3,
+    "SquareMeterKelvinPerKilowatt": 5,
+    "SquareMeterKelvinPerWatt": 4,
+    "SquareMillimeterKelvinPerWatt": 13
   }
 }

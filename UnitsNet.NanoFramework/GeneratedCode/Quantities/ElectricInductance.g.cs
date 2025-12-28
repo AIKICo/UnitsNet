@@ -54,7 +54,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public ElectricInductance(double value, ElectricInductanceUnit unit)
         {
             _value = value;
@@ -62,17 +61,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of ElectricInductance, which is Second. All conversions go via this value.
         /// </summary>
         public static ElectricInductanceUnit BaseUnit { get; } = ElectricInductanceUnit.Henry;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of ElectricInductance.
         /// </summary>
         public static ElectricInductance MaxValue { get; } = new ElectricInductance(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of ElectricInductance.
         /// </summary>
         public static ElectricInductance MinValue { get; } = new ElectricInductance(double.MinValue, BaseUnit);
 
@@ -114,31 +113,26 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="ElectricInductance"/> from <see cref="ElectricInductanceUnit.Henry"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricInductance FromHenries(double henries) => new ElectricInductance(henries, ElectricInductanceUnit.Henry);
 
         /// <summary>
         ///     Creates a <see cref="ElectricInductance"/> from <see cref="ElectricInductanceUnit.Microhenry"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricInductance FromMicrohenries(double microhenries) => new ElectricInductance(microhenries, ElectricInductanceUnit.Microhenry);
 
         /// <summary>
         ///     Creates a <see cref="ElectricInductance"/> from <see cref="ElectricInductanceUnit.Millihenry"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricInductance FromMillihenries(double millihenries) => new ElectricInductance(millihenries, ElectricInductanceUnit.Millihenry);
 
         /// <summary>
         ///     Creates a <see cref="ElectricInductance"/> from <see cref="ElectricInductanceUnit.Nanohenry"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricInductance FromNanohenries(double nanohenries) => new ElectricInductance(nanohenries, ElectricInductanceUnit.Nanohenry);
 
         /// <summary>
         ///     Creates a <see cref="ElectricInductance"/> from <see cref="ElectricInductanceUnit.Picohenry"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static ElectricInductance FromPicohenries(double picohenries) => new ElectricInductance(picohenries, ElectricInductanceUnit.Picohenry);
 
         /// <summary>
@@ -163,9 +157,9 @@ namespace UnitsNet
                 public double As(ElectricInductanceUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this ElectricInductance to another ElectricInductance with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A ElectricInductance with the specified unit.</returns>
                 public ElectricInductance ToUnit(ElectricInductanceUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -186,7 +180,7 @@ namespace UnitsNet
                         ElectricInductanceUnit.Millihenry => (_value) * 1e-3d,
                         ElectricInductanceUnit.Nanohenry => (_value) * 1e-9d,
                         ElectricInductanceUnit.Picohenry => (_value) * 1e-12d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -204,7 +198,7 @@ namespace UnitsNet
                         ElectricInductanceUnit.Millihenry => (baseUnitValue) / 1e-3d,
                         ElectricInductanceUnit.Nanohenry => (baseUnitValue) / 1e-9d,
                         ElectricInductanceUnit.Picohenry => (baseUnitValue) / 1e-12d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

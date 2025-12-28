@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public VitaminA(double value, VitaminAUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of VitaminA, which is Second. All conversions go via this value.
         /// </summary>
         public static VitaminAUnit BaseUnit { get; } = VitaminAUnit.InternationalUnit;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of VitaminA.
         /// </summary>
         public static VitaminA MaxValue { get; } = new VitaminA(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of VitaminA.
         /// </summary>
         public static VitaminA MinValue { get; } = new VitaminA(double.MinValue, BaseUnit);
 
@@ -91,7 +90,6 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="VitaminA"/> from <see cref="VitaminAUnit.InternationalUnit"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static VitaminA FromInternationalUnits(double internationalunits) => new VitaminA(internationalunits, VitaminAUnit.InternationalUnit);
 
         /// <summary>
@@ -116,9 +114,9 @@ namespace UnitsNet
                 public double As(VitaminAUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this VitaminA to another VitaminA with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A VitaminA with the specified unit.</returns>
                 public VitaminA ToUnit(VitaminAUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -135,7 +133,7 @@ namespace UnitsNet
                     return Unit switch
                     {
                         VitaminAUnit.InternationalUnit => _value,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -149,7 +147,7 @@ namespace UnitsNet
                     return unit switch
                     {
                         VitaminAUnit.InternationalUnit => baseUnitValue,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

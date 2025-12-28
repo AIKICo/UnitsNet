@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -79,16 +81,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Illuminance(double.PositiveInfinity, IlluminanceUnit.Lux));
-            Assert.Throws<ArgumentException>(() => new Illuminance(double.NegativeInfinity, IlluminanceUnit.Lux));
+            var exception1 = Record.Exception(() => new Illuminance(double.PositiveInfinity, IlluminanceUnit.Lux));
+            var exception2 = Record.Exception(() => new Illuminance(double.NegativeInfinity, IlluminanceUnit.Lux));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Illuminance(double.NaN, IlluminanceUnit.Lux));
+            var exception = Record.Exception(() => new Illuminance(double.NaN, IlluminanceUnit.Lux));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -98,32 +105,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new Illuminance(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Illuminance) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new Illuminance(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new Illuminance(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void Illuminance_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            IlluminanceUnit[] unitsOrderedByName = EnumHelper.GetValues<IlluminanceUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Illuminance(1, IlluminanceUnit.Lux);
 
-            QuantityInfo<IlluminanceUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Illuminance, IlluminanceUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Illuminance.Zero, quantityInfo.Zero);
             Assert.Equal("Illuminance", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<IlluminanceUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Illuminance.Zero, quantityInfo.Zero);
+            Assert.Equal(Illuminance.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Illuminance.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<IlluminanceUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -139,35 +150,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Illuminance.From(1, IlluminanceUnit.Kilolux);
-            AssertEx.EqualTolerance(1, quantity00.Kilolux, KiloluxTolerance);
-            Assert.Equal(IlluminanceUnit.Kilolux, quantity00.Unit);
-
-            var quantity01 = Illuminance.From(1, IlluminanceUnit.Lux);
-            AssertEx.EqualTolerance(1, quantity01.Lux, LuxTolerance);
-            Assert.Equal(IlluminanceUnit.Lux, quantity01.Unit);
-
-            var quantity02 = Illuminance.From(1, IlluminanceUnit.Megalux);
-            AssertEx.EqualTolerance(1, quantity02.Megalux, MegaluxTolerance);
-            Assert.Equal(IlluminanceUnit.Megalux, quantity02.Unit);
-
-            var quantity03 = Illuminance.From(1, IlluminanceUnit.Millilux);
-            AssertEx.EqualTolerance(1, quantity03.Millilux, MilliluxTolerance);
-            Assert.Equal(IlluminanceUnit.Millilux, quantity03.Unit);
-
+            Assert.All(EnumHelper.GetValues<IlluminanceUnit>(), unit =>
+            {
+                var quantity = Illuminance.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromLux_WithInfinityValue_ThrowsArgumentException()
+        public void FromLux_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Illuminance.FromLux(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Illuminance.FromLux(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Illuminance.FromLux(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Illuminance.FromLux(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromLux_WithNanValue_ThrowsArgumentException()
+        public void FromLux_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Illuminance.FromLux(double.NaN));
+            var exception = Record.Exception(() => Illuminance.FromLux(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -181,114 +187,214 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = Illuminance.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new Illuminance(value: 1, unit: Illuminance.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(Illuminance.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = Illuminance.Parse("1 klx", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Kilolux, KiloluxTolerance);
-                Assert.Equal(IlluminanceUnit.Kilolux, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Illuminance.Parse("1 lx", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Lux, LuxTolerance);
-                Assert.Equal(IlluminanceUnit.Lux, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Illuminance.Parse("1 Mlx", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Megalux, MegaluxTolerance);
-                Assert.Equal(IlluminanceUnit.Megalux, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Illuminance.Parse("1 mlx", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Millilux, MilliluxTolerance);
-                Assert.Equal(IlluminanceUnit.Millilux, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new Illuminance(value: 1, unit: Illuminance.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(Illuminance.TryParse("1 klx", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Kilolux, KiloluxTolerance);
-                Assert.Equal(IlluminanceUnit.Kilolux, parsed.Unit);
-            }
-
-            {
-                Assert.True(Illuminance.TryParse("1 lx", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Lux, LuxTolerance);
-                Assert.Equal(IlluminanceUnit.Lux, parsed.Unit);
-            }
-
+            var quantity = new Illuminance(value: 1, unit: Illuminance.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = Illuminance.ParseUnit("klx", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(IlluminanceUnit.Kilolux, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Illuminance(value: 1, unit: Illuminance.BaseUnit);
+            var expectedUnit = Illuminance.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = Illuminance.ParseUnit("lx", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(IlluminanceUnit.Lux, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            Illuminance convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = Illuminance.ParseUnit("Mlx", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(IlluminanceUnit.Megalux, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Illuminance.ParseUnit("mlx", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(IlluminanceUnit.Millilux, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(Illuminance.TryParseUnit("klx", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(IlluminanceUnit.Kilolux, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new Illuminance(value: 1, unit: Illuminance.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(Illuminance.TryParseUnit("lx", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(IlluminanceUnit.Lux, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new Illuminance(value: 1, unit: Illuminance.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
+        [Theory]
+        [InlineData("en-US", "4.2 klx", IlluminanceUnit.Kilolux, 4.2)]
+        [InlineData("en-US", "4.2 lx", IlluminanceUnit.Lux, 4.2)]
+        [InlineData("en-US", "4.2 Mlx", IlluminanceUnit.Megalux, 4.2)]
+        [InlineData("en-US", "4.2 mlx", IlluminanceUnit.Millilux, 4.2)]
+        public void Parse(string culture, string quantityString, IlluminanceUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Illuminance.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 klx", IlluminanceUnit.Kilolux, 4.2)]
+        [InlineData("en-US", "4.2 lx", IlluminanceUnit.Lux, 4.2)]
+        [InlineData("en-US", "4.2 Mlx", IlluminanceUnit.Megalux, 4.2)]
+        [InlineData("en-US", "4.2 mlx", IlluminanceUnit.Millilux, 4.2)]
+        public void TryParse(string culture, string quantityString, IlluminanceUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Illuminance.TryParse(quantityString, out Illuminance parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("klx", IlluminanceUnit.Kilolux)]
+        [InlineData("lx", IlluminanceUnit.Lux)]
+        [InlineData("Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("mlx", IlluminanceUnit.Millilux)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            IlluminanceUnit parsedUnit = Illuminance.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("klx", IlluminanceUnit.Kilolux)]
+        [InlineData("lx", IlluminanceUnit.Lux)]
+        [InlineData("Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("mlx", IlluminanceUnit.Millilux)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            IlluminanceUnit parsedUnit = Illuminance.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "klx", IlluminanceUnit.Kilolux)]
+        [InlineData("en-US", "lx", IlluminanceUnit.Lux)]
+        [InlineData("en-US", "Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("en-US", "mlx", IlluminanceUnit.Millilux)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            IlluminanceUnit parsedUnit = Illuminance.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "klx", IlluminanceUnit.Kilolux)]
+        [InlineData("en-US", "lx", IlluminanceUnit.Lux)]
+        [InlineData("en-US", "Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("en-US", "mlx", IlluminanceUnit.Millilux)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            IlluminanceUnit parsedUnit = Illuminance.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("klx", IlluminanceUnit.Kilolux)]
+        [InlineData("lx", IlluminanceUnit.Lux)]
+        [InlineData("Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("mlx", IlluminanceUnit.Millilux)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Illuminance.TryParseUnit(abbreviation, out IlluminanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("klx", IlluminanceUnit.Kilolux)]
+        [InlineData("lx", IlluminanceUnit.Lux)]
+        [InlineData("Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("mlx", IlluminanceUnit.Millilux)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Illuminance.TryParseUnit(abbreviation, out IlluminanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "klx", IlluminanceUnit.Kilolux)]
+        [InlineData("en-US", "lx", IlluminanceUnit.Lux)]
+        [InlineData("en-US", "Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("en-US", "mlx", IlluminanceUnit.Millilux)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Illuminance.TryParseUnit(abbreviation, out IlluminanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "klx", IlluminanceUnit.Kilolux)]
+        [InlineData("en-US", "lx", IlluminanceUnit.Lux)]
+        [InlineData("en-US", "Mlx", IlluminanceUnit.Megalux)]
+        [InlineData("en-US", "mlx", IlluminanceUnit.Millilux)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, IlluminanceUnit expectedUnit)
+        {
+            Assert.True(Illuminance.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out IlluminanceUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", IlluminanceUnit.Kilolux, "klx")]
+        [InlineData("en-US", IlluminanceUnit.Lux, "lx")]
+        [InlineData("en-US", IlluminanceUnit.Megalux, "Mlx")]
+        [InlineData("en-US", IlluminanceUnit.Millilux, "mlx")]
+        public void GetAbbreviationForCulture(string culture, IlluminanceUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Illuminance.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(Illuminance.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = Illuminance.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -316,12 +422,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(IlluminanceUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Illuminance.Units.First(u => u != Illuminance.BaseUnit);
-
-            var quantity = Illuminance.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Illuminance.Units.Where(u => u != Illuminance.BaseUnit), fromUnit =>
+            {
+                var quantity = Illuminance.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -331,6 +437,25 @@ namespace UnitsNet.Tests
             var quantity = default(Illuminance);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(IlluminanceUnit unit)
+        {
+            var quantity = Illuminance.From(3, Illuminance.BaseUnit);
+            Illuminance expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<IlluminanceUnit> quantityToConvert = quantity;
+                IQuantity<IlluminanceUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -438,21 +563,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Illuminance.FromLux(1);
-            Assert.True(v.Equals(Illuminance.FromLux(1), LuxTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Illuminance.Zero, LuxTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Illuminance.FromLux(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Illuminance.FromLux(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Illuminance lux = Illuminance.FromLux(1);
@@ -466,13 +576,39 @@ namespace UnitsNet.Tests
             Assert.False(lux.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Illuminance.FromLux(firstValue);
+            var otherQuantity = Illuminance.FromLux(secondValue);
+            Illuminance maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Illuminance.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Illuminance.FromLux(1);
+            var negativeTolerance = Illuminance.FromLux(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(IlluminanceUnit)).Cast<IlluminanceUnit>();
+            var units = Enum.GetValues<IlluminanceUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -485,18 +621,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 klx", new Illuminance(1, IlluminanceUnit.Kilolux).ToString());
-                Assert.Equal("1 lx", new Illuminance(1, IlluminanceUnit.Lux).ToString());
-                Assert.Equal("1 Mlx", new Illuminance(1, IlluminanceUnit.Megalux).ToString());
-                Assert.Equal("1 mlx", new Illuminance(1, IlluminanceUnit.Millilux).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 klx", new Illuminance(1, IlluminanceUnit.Kilolux).ToString());
+            Assert.Equal("1 lx", new Illuminance(1, IlluminanceUnit.Lux).ToString());
+            Assert.Equal("1 Mlx", new Illuminance(1, IlluminanceUnit.Megalux).ToString());
+            Assert.Equal("1 mlx", new Illuminance(1, IlluminanceUnit.Millilux).ToString());
         }
 
         [Fact]
@@ -514,19 +643,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s1"));
-                Assert.Equal("0.12 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s2"));
-                Assert.Equal("0.123 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s3"));
-                Assert.Equal("0.1235 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s1"));
+            Assert.Equal("0.12 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s2"));
+            Assert.Equal("0.123 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s3"));
+            Assert.Equal("0.1235 lx", new Illuminance(0.123456, IlluminanceUnit.Lux).ToString("s4"));
         }
 
         [Fact]
@@ -549,7 +670,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -562,150 +683,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Illuminance)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(IlluminanceUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal(Illuminance.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal(Illuminance.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Illuminance.FromLux(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Illuminance.FromLux(1.0);
-            Assert.Equal(new {Illuminance.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

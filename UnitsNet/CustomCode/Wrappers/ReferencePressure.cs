@@ -2,8 +2,8 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
-using System.Linq;
 using UnitsNet.CustomCode.Units;
+using UnitsNet.InternalHelpers;
 using UnitsNet.Units;
 
 namespace UnitsNet.Wrappers
@@ -35,8 +35,7 @@ namespace UnitsNet.Wrappers
         ///     Gets a list of <see cref="PressureReference" /> options: <see cref="PressureReference.Gauge" />,
         ///     <see cref="PressureReference.Absolute" />, and <see cref="PressureReference.Vacuum" />
         /// </summary>
-        public static PressureReference[] References { get; } =
-            Enum.GetValues(typeof(PressureReference)).Cast<PressureReference>().ToArray();
+        public static PressureReference[] References { get; } = EnumHelper.GetValues<PressureReference>();
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ReferencePressure" /> struct requiring measured
@@ -147,7 +146,7 @@ namespace UnitsNet.Wrappers
                 case PressureReference.Gauge: return baseReferenceValue - AtmosphericPressure.ToUnit(Pressure.Unit).Value;
                 case PressureReference.Vacuum: return AtmosphericPressure.ToUnit(Pressure.Unit).Value - negatingValue * baseReferenceValue;
                 default:
-                    throw new NotImplementedException($"Can not convert {Reference} to {reference}.");
+                    throw new NotImplementedException($"Can't convert {Reference} to {reference}.");
             }
         }
 
@@ -188,7 +187,7 @@ namespace UnitsNet.Wrappers
                     return AtmosphericPressure.ToUnit(Pressure.Unit).Value - Pressure.Value;
                 }
                 default:
-                    throw new NotImplementedException($"Can not convert {Reference} to base reference.");
+                    throw new NotImplementedException($"Can't convert {Reference} to base reference.");
             }
         }
     }

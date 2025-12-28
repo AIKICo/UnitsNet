@@ -8,8 +8,6 @@ namespace UnitsNet.Tests
 {
     public class KinematicViscosityTests : KinematicViscosityTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
-
         protected override double CentistokesInOneSquareMeterPerSecond => 1e6;
 
         protected override double DecistokesInOneSquareMeterPerSecond => 1e5;
@@ -53,13 +51,6 @@ namespace UnitsNet.Tests
         public static void KinematicViscosityTimesTimeSpanEqualsArea()
         {
             Area area = KinematicViscosity.FromSquareMetersPerSecond(4)*TimeSpan.FromSeconds(2);
-            Assert.Equal(area, Area.FromSquareMeters(8));
-        }
-
-        [Fact]
-        public static void TimeSpanTimesKinematicViscosityEqualsArea()
-        {
-            Area area = TimeSpan.FromSeconds(2)*KinematicViscosity.FromSquareMetersPerSecond(4);
             Assert.Equal(area, Area.FromSquareMeters(8));
         }
 

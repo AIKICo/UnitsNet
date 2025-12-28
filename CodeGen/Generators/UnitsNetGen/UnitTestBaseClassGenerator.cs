@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using CodeGen.JsonTypes;
 
@@ -41,11 +43,6 @@ namespace CodeGen.Generators.UnitsNetGen
         private readonly string _baseUnitFullName;
 
         /// <summary>
-        /// Constructors for decimal-backed quantities require decimal numbers as input, so add the "m" suffix to numbers when constructing those quantities.
-        /// </summary>
-        private readonly string _numberSuffix;
-
-        /// <summary>
         /// Other unit, if more than one unit exists for quantity, otherwise same as <see cref="_baseUnit"/>.
         /// </summary>
         private readonly Unit _otherOrBaseUnit;
@@ -54,6 +51,56 @@ namespace CodeGen.Generators.UnitsNetGen
         /// Example: "LengthUnit.Centimeter".
         /// </summary>
         private readonly string _otherOrBaseUnitFullName;
+
+        /// <summary>
+        /// Indicates whether the quantity is dimensionless.
+        /// </summary>
+        /// <remarks>
+        /// A dimensionless quantity has all base dimensions (L, M, T, I, Θ, N, J) equal to zero.
+        /// </remarks>
+        private readonly bool _isDimensionless;
+
+        /// <summary>
+        ///     Stores a mapping of culture names to their corresponding unique unit abbreviations.
+        ///     Each culture maps to a dictionary where the key is the unit abbreviation and the value is the corresponding
+        ///     <see cref="Unit" />.
+        ///     This ensures that unit abbreviations are unique within the context of a specific culture.
+        /// </summary>
+        /// <remarks>
+        ///     Used for testing culture-specific parsing with non-ambiguous (unique) abbreviations.
+        /// </remarks>
+        private readonly Dictionary<string, Dictionary<string, Unit>> _uniqueAbbreviationsForCulture;
+
+        /// <summary>
+        ///     Stores a mapping of culture names to their respective ambiguous unit abbreviations.
+        ///     Each culture maps to a dictionary where the key is the ambiguous abbreviation, and the value is a list of
+        ///     <see cref="Unit" /> objects
+        ///     that share the same abbreviation within that culture.
+        /// </summary>
+        /// <remarks>
+        ///     This field is used to identify and handle unit abbreviations that are not unique within a specific culture.
+        ///     Ambiguities arise when multiple units share the same abbreviation, requiring additional logic to resolve.
+        /// </remarks>
+        private readonly Dictionary<string, Dictionary<string, List<Unit>>> _ambiguousAbbreviationsForCulture;
+
+        /// <summary>
+        ///     A dictionary that maps culture names to their respective dictionaries of units and their default abbreviations.
+        /// </summary>
+        /// <remarks>
+        ///     This field is used to store the default abbreviation for each unit in a specific culture.
+        ///     The outer dictionary key represents the culture name (e.g., "en-US"), while the inner dictionary maps a
+        ///     <see cref="Unit" /> to its default abbreviation.
+        /// </remarks>
+        private readonly Dictionary<string, Dictionary<Unit, string>> _defaultAbbreviationsForCulture;
+
+        /// <summary>
+        ///     The default or fallback culture for unit localizations.
+        /// </summary>
+        /// <remarks>
+        ///     This culture, "en-US", is used as a fallback when a specific <see cref="System.Globalization.CultureInfo" />
+        ///     is not available for the defined unit localizations.
+        /// </remarks>
+        private const string FallbackCultureName = "en-US";
 
         public UnitTestBaseClassGenerator(Quantity quantity)
         {
@@ -66,11 +113,70 @@ namespace CodeGen.Generators.UnitsNetGen
 
             _baseUnitEnglishAbbreviation = GetEnglishAbbreviation(_baseUnit);
             _baseUnitFullName = $"{_unitEnumName}.{_baseUnit.SingularName}";
-            _numberSuffix = quantity.ValueType == "decimal" ? "m" : "";
 
             // Try to pick another unit, or fall back to base unit if only a single unit.
             _otherOrBaseUnit = quantity.Units.Where(u => u != _baseUnit).DefaultIfEmpty(_baseUnit).First();
             _otherOrBaseUnitFullName = $"{_unitEnumName}.{_otherOrBaseUnit.SingularName}";
+            _isDimensionless = quantity.BaseDimensions is { L: 0, M: 0, T: 0, I: 0, Θ: 0, N: 0, J: 0 };
+
+            _defaultAbbreviationsForCulture = new Dictionary<string, Dictionary<Unit, string>>();
+            var abbreviationsForCulture = new Dictionary<string, Dictionary<string, List<Unit>>>();
+            foreach (Unit unit in quantity.Units)
+            {
+                if (unit.ObsoleteText != null)
+                {
+                    continue;
+                }
+
+                foreach (Localization localization in unit.Localization)
+                {
+                    if (localization.Abbreviations.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    if (!abbreviationsForCulture.TryGetValue(localization.Culture, out Dictionary<string, List<Unit>>? localizationsForCulture))
+                    {
+                        abbreviationsForCulture[localization.Culture] = localizationsForCulture = new Dictionary<string, List<Unit>>();
+                    }
+
+                    foreach (var abbreviation in localization.Abbreviations)
+                    {
+                        if (localizationsForCulture.TryGetValue(abbreviation, out List<Unit>? matchingUnits))
+                        {
+                            matchingUnits.Add(unit);
+                        }
+                        else
+                        {
+                            localizationsForCulture[abbreviation] = [unit];
+                        }
+                    }
+
+                    if (!_defaultAbbreviationsForCulture.TryGetValue(localization.Culture, out Dictionary<Unit, string>? defaultLocalizationsForCulture))
+                    {
+                        _defaultAbbreviationsForCulture[localization.Culture] = defaultLocalizationsForCulture = new Dictionary<Unit, string>();
+                    }
+
+                    defaultLocalizationsForCulture.Add(unit, localization.Abbreviations[0]);
+                }
+            }
+
+            _uniqueAbbreviationsForCulture = new Dictionary<string, Dictionary<string, Unit>>();
+            _ambiguousAbbreviationsForCulture = new Dictionary<string, Dictionary<string, List<Unit>>>();
+            foreach ((var cultureName, Dictionary<string, List<Unit>>? abbreviations) in abbreviationsForCulture)
+            {
+                var uniqueAbbreviations = abbreviations.Where(pair => pair.Value.Count == 1).ToDictionary(pair => pair.Key, pair => pair.Value[0]);
+                if (uniqueAbbreviations.Count != 0)
+                {
+                    _uniqueAbbreviationsForCulture.Add(cultureName, uniqueAbbreviations);
+                }
+
+                var ambiguousAbbreviations = abbreviations.Where(pair => pair.Value.Count > 1).ToDictionary();
+                if (ambiguousAbbreviations.Count != 0)
+                {
+                    _ambiguousAbbreviationsForCulture.Add(cultureName, ambiguousAbbreviations);
+                }
+            }
         }
 
         private string GetUnitFullName(Unit unit) => $"{_unitEnumName}.{unit.SingularName}";
@@ -96,6 +202,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -117,7 +225,7 @@ namespace UnitsNet.Tests
                 if (unit.SkipConversionGeneration) continue;
 
                 Writer.WL($@"
-        protected abstract {_quantity.ValueType} {unit.PluralName}InOne{_baseUnit.SingularName} {{ get; }}");
+        protected abstract double {unit.PluralName}InOne{_baseUnit.SingularName} {{ get; }}");
             }
 
             Writer.WL();
@@ -128,12 +236,12 @@ namespace UnitsNet.Tests
                 if (unit.SkipConversionGeneration) continue;
 
                 Writer.WL($@"
-        protected virtual {_quantity.ValueType} {unit.PluralName}Tolerance {{ get {{ return { (_quantity.ValueType == "decimal" ? "1e-9m" : "1e-5") }; }} }}");
+        protected virtual double {unit.PluralName}Tolerance {{ get {{ return 1e-5; }} }}");
             }
             Writer.WL($@"
 // ReSharper restore VirtualMemberNeverOverriden.Global
 
-        protected ({_quantity.ValueType} UnitsInBaseUnit, {_quantity.ValueType} Tolerence) GetConversionFactor({_unitEnumName} unit)
+        protected (double UnitsInBaseUnit, double Tolerence) GetConversionFactor({_unitEnumName} unit)
         {{
             return unit switch
             {{");
@@ -162,27 +270,31 @@ namespace UnitsNet.Tests
         public void DefaultCtor_ReturnsQuantityWithZeroValueAndBaseUnit()
         {{
             var quantity = new {_quantity.Name}();
-            Assert.Equal(0, quantity.Value);");
-            if (_quantity.ValueType == "decimal") Writer.WL(@"
-            Assert.Equal(0m, ((IValueQuantity<decimal>)quantity).Value);");
-            Writer.WL($@"
+            Assert.Equal(0, quantity.Value);
             Assert.Equal({_baseUnitFullName}, quantity.Unit);
-        }}
-");
-            if (_quantity.ValueType == "double") Writer.WL($@"
-        [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
-        {{
-            Assert.Throws<ArgumentException>(() => new {_quantity.Name}(double.PositiveInfinity, {_baseUnitFullName}));
-            Assert.Throws<ArgumentException>(() => new {_quantity.Name}(double.NegativeInfinity, {_baseUnitFullName}));
         }}
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {{
-            Assert.Throws<ArgumentException>(() => new {_quantity.Name}(double.NaN, {_baseUnitFullName}));
+            var exception1 = Record.Exception(() => new {_quantity.Name}(double.PositiveInfinity, {_baseUnitFullName}));
+            var exception2 = Record.Exception(() => new {_quantity.Name}(double.NegativeInfinity, {_baseUnitFullName}));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }}
-"); Writer.WL($@"
+
+        [Fact]
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
+        {{
+            var exception = Record.Exception(() => new {_quantity.Name}(double.NaN, {_baseUnitFullName}));
+
+            Assert.Null(exception);
+        }}
+");
+            if (!_isDimensionless)
+            {
+                Writer.WL($@"
 
         [Fact]
         public void Ctor_NullAsUnitSystem_ThrowsArgumentNullException()
@@ -191,32 +303,40 @@ namespace UnitsNet.Tests
         }}
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {{
-            Func<object> TestCode = () => new {_quantity.Name}(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {{
-                var quantity = ({_quantity.Name}) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }}
-            else
-            {{
-                Assert.Throws<ArgumentException>(TestCode);
-            }}
+            var quantity = new {_quantity.Name}(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
         }}
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {{
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new {_quantity.Name}(value: 1, unitSystem: unsupportedUnitSystem));
+        }}
+");
+            }
+
+            Writer.WL($@"
 
         [Fact]
         public void {_quantity.Name}_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {{
+            {_unitEnumName}[] unitsOrderedByName = EnumHelper.GetValues<{_unitEnumName}>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new {_quantity.Name}(1, {_baseUnitFullName});
 
-            QuantityInfo<{_unitEnumName}> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<{_quantity.Name}, {_unitEnumName}> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal({_quantity.Name}.Zero, quantityInfo.Zero);
             Assert.Equal(""{_quantity.Name}"", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<{_unitEnumName}>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal({_quantity.Name}.Zero, quantityInfo.Zero);
+            Assert.Equal({_quantity.Name}.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal({_quantity.Name}.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<{_unitEnumName}>)quantity).QuantityInfo);
         }}
 
         [Fact]
@@ -231,35 +351,32 @@ namespace UnitsNet.Tests
 
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
-        {{");
-            var i = 0;
-            foreach (var unit in _quantity.Units)
-            {
-                var quantityVariable = $"quantity{i++:D2}";
-                Writer.WL($@"
-            var {quantityVariable} = {_quantity.Name}.From(1, {GetUnitFullName(unit)});
-            AssertEx.EqualTolerance(1, {quantityVariable}.{unit.PluralName}, {unit.PluralName}Tolerance);
-            Assert.Equal({GetUnitFullName(unit)}, {quantityVariable}.Unit);
-");
-
-            }
-            Writer.WL($@"
-        }}
-");
-            if (_quantity.ValueType == "double") Writer.WL($@"
-        [Fact]
-        public void From{_baseUnit.PluralName}_WithInfinityValue_ThrowsArgumentException()
         {{
-            Assert.Throws<ArgumentException>(() => {_quantity.Name}.From{_baseUnit.PluralName}(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => {_quantity.Name}.From{_baseUnit.PluralName}(double.NegativeInfinity));
+            Assert.All(EnumHelper.GetValues<{_unitEnumName}>(), unit =>
+            {{
+                var quantity = {_quantity.Name}.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            }});
         }}
 
         [Fact]
-        public void From{_baseUnit.PluralName}_WithNanValue_ThrowsArgumentException()
+        public void From{_baseUnit.PluralName}_WithInfinityValue_DoNotThrowsArgumentException()
         {{
-            Assert.Throws<ArgumentException>(() => {_quantity.Name}.From{_baseUnit.PluralName}(double.NaN));
+            var exception1 = Record.Exception(() => {_quantity.Name}.From{_baseUnit.PluralName}(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => {_quantity.Name}.From{_baseUnit.PluralName}(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }}
-"); Writer.WL($@"
+
+        [Fact]
+        public void From{_baseUnit.PluralName}_WithNanValue_DoNotThrowsArgumentException()
+        {{
+            var exception = Record.Exception(() => {_quantity.Name}.From{_baseUnit.PluralName}(double.NaN));
+
+            Assert.Null(exception);
+        }}
 
         [Fact]
         public void As()
@@ -269,102 +386,447 @@ namespace UnitsNet.Tests
             AssertEx.EqualTolerance({unit.PluralName}InOne{_baseUnit.SingularName}, {baseUnitVariableName}.As({GetUnitFullName(unit)}), {unit.PluralName}Tolerance);");
             Writer.WL($@"
         }}
+");
+            if (_isDimensionless)
+            {
+                Writer.WL($@"
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public void As_UnitSystem_ReturnsValueInDimensionlessUnit()
+        {{
+            var quantity = new {_quantity.Name}(value: 1, unit: {_baseUnitFullName});
+
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(quantity.Value, convertedValue);
+        }}
+
+        [Fact]
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {{
             var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
+        }}
 
-            if (SupportsSIUnitSystem)
+        [Fact]
+        public void ToUnit_UnitSystem_ReturnsValueInDimensionlessUnit()
+        {{
+            var quantity = new {_quantity.Name}(value: 1, unit: {_baseUnitFullName});
+
+            {_quantity.Name} convertedQuantity = quantity.ToUnit(UnitSystem.SI);
+
+            Assert.Equal({_baseUnitFullName}, convertedQuantity.Unit);
+            Assert.Equal(quantity.Value, convertedQuantity.Value);
+        }}
+
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
+        {{
+            UnitSystem nullUnitSystem = null!;
+            Assert.Multiple(() =>
             {{
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }}
+                var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }}, () =>
+            {{
+                IQuantity<{_unitEnumName}> quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }}, () =>
+            {{
+                IQuantity quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }});
+        }}
+");
+            }
             else
-            {{
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }}
+            {
+                Writer.WL($@"
+
+        [Fact]
+        public virtual void BaseUnit_HasSIBase()
+        {{
+            var baseUnitInfo = {_quantity.Name}.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
         }}
 
         [Fact]
-        public void Parse()
-        {{");
-            foreach (var unit in _quantity.Units.Where(u => string.IsNullOrEmpty(u.ObsoleteText)))
-            foreach (var localization in unit.Localization)
-            foreach (var abbreviation in localization.Abbreviations)
-            {
-                Writer.WL($@"
-            try
-            {{
-                var parsed = {_quantity.Name}.Parse(""1 {abbreviation}"", CultureInfo.GetCultureInfo(""{localization.Culture}""));
-                AssertEx.EqualTolerance(1, parsed.{unit.PluralName}, {unit.PluralName}Tolerance);
-                Assert.Equal({GetUnitFullName(unit)}, parsed.Unit);
-            }} catch (AmbiguousUnitParseException) {{ /* Some units have the same abbreviations */ }}
-");
-            }
-            Writer.WL($@"
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
+        {{
+            var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+            var expectedValue = quantity.As({_quantity.Name}.Info.GetDefaultUnit(UnitSystem.SI));
+
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }}
 
         [Fact]
-        public void TryParse()
-        {{");
-            foreach (var unit in _quantity.Units.Where(u => string.IsNullOrEmpty(u.ObsoleteText)))
-            foreach (var localization in unit.Localization)
-            foreach (var abbreviation in localization.Abbreviations)
-            {
-                // Skip units with ambiguous abbreviations, since there is no exception to describe this is why TryParse failed.
-                if (IsAmbiguousAbbreviation(localization, abbreviation)) continue;
-
-                Writer.WL($@"
-            {{
-                Assert.True({_quantity.Name}.TryParse(""1 {abbreviation}"", CultureInfo.GetCultureInfo(""{localization.Culture}""), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.{unit.PluralName}, {unit.PluralName}Tolerance);
-                Assert.Equal({GetUnitFullName(unit)}, parsed.Unit);
-            }}
-");
-            }
-            Writer.WL($@"
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
+        {{
+            var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }}
 
         [Fact]
-        public void ParseUnit()
-        {{");
-            foreach (var unit in _quantity.Units.Where(u => string.IsNullOrEmpty(u.ObsoleteText)))
-            foreach (var localization in unit.Localization)
-            foreach (var abbreviation in localization.Abbreviations)
-            {
-                Writer.WL($@"
-            try
-            {{
-                var parsedUnit = {_quantity.Name}.ParseUnit(""{abbreviation}"", CultureInfo.GetCultureInfo(""{localization.Culture}""));
-                Assert.Equal({GetUnitFullName(unit)}, parsedUnit);
-            }} catch (AmbiguousUnitParseException) {{ /* Some units have the same abbreviations */ }}
-");
-            }
-            Writer.WL($@"
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {{
+            var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }}
 
         [Fact]
-        public void TryParseUnit()
-        {{");
-            foreach (var unit in _quantity.Units.Where(u => string.IsNullOrEmpty(u.ObsoleteText)))
-            foreach (var localization in unit.Localization)
-            foreach (var abbreviation in localization.Abbreviations)
-            {
-                // Skip units with ambiguous abbreviations, since there is no exception to describe this is why TryParse failed.
-                if (IsAmbiguousAbbreviation(localization, abbreviation)) continue;
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
+        {{
+            var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+            var expectedUnit = {_quantity.Name}.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-                Writer.WL($@"
-            {{
-                Assert.True({_quantity.Name}.TryParseUnit(""{abbreviation}"", CultureInfo.GetCultureInfo(""{localization.Culture}""), out var parsedUnit));
-                Assert.Equal({GetUnitFullName(unit)}, parsedUnit);
-            }}
-");
-            }
-            Writer.WL($@"
+            {_quantity.Name} convertedQuantity = quantity.ToUnit(UnitSystem.SI);
+
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }}
 
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
+        {{
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }}
+
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {{
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new {_quantity.Name}(value: 1, unit: {_quantity.Name}.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }}
+");
+            }
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var cultureName, Dictionary<string, Unit> abbreviations) in _uniqueAbbreviationsForCulture)
+            {
+                var culture = CultureInfo.GetCultureInfo(cultureName);
+                foreach ((var abbreviation, Unit unit) in abbreviations)
+                {
+                    Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{4.2m.ToString(culture)} {abbreviation}"", {GetUnitFullName(unit)}, 4.2)]");
+                }
+            }
+
+            Writer.WL($@"
+        public void Parse(string culture, string quantityString, {_unitEnumName} expectedUnit, double expectedValue)
+        {{
+            using var _ = new CultureScope(culture);
+            var parsed = {_quantity.Name}.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }}
+");
+
+            // we only generate these for a few of the quantities
+            if (_ambiguousAbbreviationsForCulture.Count != 0)
+            {
+                Writer.WL(@"
+        [Theory]");
+                foreach ((var cultureName, Dictionary<string, List<Unit>>? abbreviations) in _ambiguousAbbreviationsForCulture)
+                {
+                    foreach (KeyValuePair<string, List<Unit>> ambiguousPair in abbreviations)
+                    {
+                        Writer.WL($@"
+        [InlineData(""{cultureName}"", ""1 {ambiguousPair.Key}"")] // [{string.Join(", ", ambiguousPair.Value.Select(x => x.SingularName))}] ");
+                    }
+                }
+
+                Writer.WL($@"
+        public void ParseWithAmbiguousAbbreviation(string culture, string quantityString)
+        {{
+            Assert.Throws<AmbiguousUnitParseException>(() => {_quantity.Name}.Parse(quantityString, CultureInfo.GetCultureInfo(culture)));
+        }}
+");
+            } // ambiguousAbbreviations
+
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var cultureName, Dictionary<string, Unit> abbreviations) in _uniqueAbbreviationsForCulture)
+            {
+                var culture = CultureInfo.GetCultureInfo(cultureName);
+                foreach ((var abbreviation, Unit unit) in abbreviations)
+                {
+                    Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{4.2m.ToString(culture)} {abbreviation}"", {GetUnitFullName(unit)}, 4.2)]");
+                }
+            }
+
+            Writer.WL($@"
+        public void TryParse(string culture, string quantityString, {_unitEnumName} expectedUnit, double expectedValue)
+        {{
+            using var _ = new CultureScope(culture);
+            Assert.True({_quantity.Name}.TryParse(quantityString, out {_quantity.Name} parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }}
+");
+
+            // we only generate these for a few of the quantities
+            if (_ambiguousAbbreviationsForCulture.Count != 0)
+            {
+                Writer.WL(@"
+        [Theory]");
+                foreach ((var cultureName, Dictionary<string, List<Unit>>? abbreviations) in _ambiguousAbbreviationsForCulture)
+                {
+                    foreach (KeyValuePair<string, List<Unit>> ambiguousPair in abbreviations)
+                    {
+                        Writer.WL($@"
+        [InlineData(""{cultureName}"", ""1 {ambiguousPair.Key}"")] // [{string.Join(", ", ambiguousPair.Value.Select(x => x.SingularName))}] ");
+                    }
+                }
+
+                Writer.WL($@"
+        public void TryParseWithAmbiguousAbbreviation(string culture, string quantityString)
+        {{
+            Assert.False({_quantity.Name}.TryParse(quantityString, CultureInfo.GetCultureInfo(culture), out _));
+        }}
+");
+            } // ambiguousAbbreviations
+
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var abbreviation, Unit unit) in _uniqueAbbreviationsForCulture[FallbackCultureName])
+            {
+                Writer.WL($@"
+        [InlineData(""{abbreviation}"", {GetUnitFullName(unit)})]");
+            }
+
+            Writer.WL($@"
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            // Fallback culture ""{FallbackCultureName}"" is always localized
+            using var _ = new CultureScope(""{FallbackCultureName}"");
+            {_unitEnumName} parsedUnit = {_quantity.Name}.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var abbreviation, Unit unit) in _uniqueAbbreviationsForCulture[FallbackCultureName])
+            {
+                Writer.WL($@"
+        [InlineData(""{abbreviation}"", {GetUnitFullName(unit)})]");
+            }
+
+            Writer.WL($@"
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to ""{FallbackCultureName}"" when parsing.
+            using var _ = new CultureScope(""is-IS"");
+            {_unitEnumName} parsedUnit = {_quantity.Name}.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var cultureName, Dictionary<string, Unit> abbreviations) in _uniqueAbbreviationsForCulture)
+            {
+                foreach ((var abbreviation, Unit unit) in abbreviations)
+                {
+                    Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{abbreviation}"", {GetUnitFullName(unit)})]");
+                }
+            }
+
+            Writer.WL($@"
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            using var _ = new CultureScope(culture);
+            {_unitEnumName} parsedUnit = {_quantity.Name}.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var cultureName, Dictionary<string, Unit> abbreviations) in _uniqueAbbreviationsForCulture)
+            {
+                foreach ((var abbreviation, Unit unit) in abbreviations)
+                {
+                    Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{abbreviation}"", {GetUnitFullName(unit)})]");
+                }
+            }
+
+            Writer.WL($@"
+        public void ParseUnit_WithCulture(string culture, string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            {_unitEnumName} parsedUnit = {_quantity.Name}.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            // we only generate these for a few of the quantities
+            if (_ambiguousAbbreviationsForCulture.Count != 0)
+            {
+                Writer.WL(@"
+        [Theory]");
+                foreach ((var cultureName, Dictionary<string, List<Unit>>? abbreviations) in _ambiguousAbbreviationsForCulture)
+                {
+                    foreach (KeyValuePair<string, List<Unit>> ambiguousPair in abbreviations)
+                    {
+                        Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{ambiguousPair.Key}"")] // [{string.Join(", ", ambiguousPair.Value.Select(x => x.SingularName))}]");
+                    }
+                }
+
+                Writer.WL($@"
+        public void ParseUnitWithAmbiguousAbbreviation(string culture, string abbreviation)
+        {{
+            Assert.Throws<AmbiguousUnitParseException>(() => {_quantity.Name}.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture)));
+        }}
+");
+            } // ambiguousAbbreviations
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var abbreviation, Unit unit) in _uniqueAbbreviationsForCulture[FallbackCultureName])
+            {
+                Writer.WL($@"
+        [InlineData(""{abbreviation}"", {GetUnitFullName(unit)})]");
+            }
+
+            Writer.WL($@"
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            // Fallback culture ""{FallbackCultureName}"" is always localized
+            using var _ = new CultureScope(""{FallbackCultureName}"");
+            Assert.True({_quantity.Name}.TryParseUnit(abbreviation, out {_unitEnumName} parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var abbreviation, Unit unit) in _uniqueAbbreviationsForCulture[FallbackCultureName])
+            {
+                Writer.WL($@"
+        [InlineData(""{abbreviation}"", {GetUnitFullName(unit)})]");
+            }
+
+            Writer.WL($@"
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to ""{FallbackCultureName}"" when parsing.
+            using var _ = new CultureScope(""is-IS"");
+            Assert.True({_quantity.Name}.TryParseUnit(abbreviation, out {_unitEnumName} parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var cultureName, Dictionary<string, Unit> abbreviations) in _uniqueAbbreviationsForCulture)
+            {
+                foreach ((var abbreviation, Unit unit) in abbreviations)
+                {
+                    Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{abbreviation}"", {GetUnitFullName(unit)})]");
+                }
+            }
+
+            Writer.WL($@"
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            using var _ = new CultureScope(culture);
+            Assert.True({_quantity.Name}.TryParseUnit(abbreviation, out {_unitEnumName} parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var cultureName, Dictionary<string, Unit> abbreviations) in _uniqueAbbreviationsForCulture)
+            {
+                foreach ((var abbreviation, Unit unit) in abbreviations)
+                {
+                    Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{abbreviation}"", {GetUnitFullName(unit)})]");
+                }
+            }
+
+            Writer.WL($@"
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, {_unitEnumName} expectedUnit)
+        {{
+            Assert.True({_quantity.Name}.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out {_unitEnumName} parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }}
+");
+
+            // we only generate these for a few of the quantities
+            if (_ambiguousAbbreviationsForCulture.Count != 0)
+            {
+                Writer.WL(@"
+        [Theory]");
+                foreach ((var cultureName, Dictionary<string, List<Unit>>? abbreviations) in _ambiguousAbbreviationsForCulture)
+                {
+                    foreach (KeyValuePair<string, List<Unit>> ambiguousPair in abbreviations)
+                    {
+                        Writer.WL($@"
+        [InlineData(""{cultureName}"", ""{ambiguousPair.Key}"")] // [{string.Join(", ", ambiguousPair.Value.Select(x => x.SingularName))}]");
+                    }
+                }
+
+                Writer.WL($@"
+        public void TryParseUnitWithAmbiguousAbbreviation(string culture, string abbreviation)
+        {{
+            Assert.False({_quantity.Name}.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out _));
+        }}
+");
+            } // ambiguousAbbreviations
+
+            Writer.WL(@"
+        [Theory]");
+            foreach ((var cultureName, Dictionary<Unit, string> abbreviations) in _defaultAbbreviationsForCulture)
+            {
+                foreach ((Unit unit, var abbreviation) in abbreviations)
+                {
+                    Writer.WL($@"
+        [InlineData(""{cultureName}"", {GetUnitFullName(unit)}, ""{abbreviation}"")]");
+                }
+            }
+
+            Writer.WL($@"
+        public void GetAbbreviationForCulture(string culture, {_unitEnumName} unit, string expectedAbbreviation)
+        {{
+            var defaultAbbreviation = {_quantity.Name}.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }}
+");
+            Writer.WL($@"
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {{
+            Assert.All({_quantity.Name}.Units, unit =>
+            {{
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = {_quantity.Name}.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            }});
+        }}
+");
+
+            Writer.WL($@"
         [Theory]
         [MemberData(nameof(UnitTypes))]
         public void ToUnit({_unitEnumName} unit)
@@ -386,16 +848,16 @@ namespace UnitsNet.Tests
             Assert.Equal(quantity, toUnitWithSameUnit);
         }}
 
-        [Theory{(_quantity.Units.Length == 1 ? "(Skip = \"Multiple units required\")" : string.Empty)}]
+        [Theory]
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit({_unitEnumName} unit)
         {{
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = {_quantity.Name}.Units.First(u => u != {_quantity.Name}.BaseUnit);
-
-            var quantity = {_quantity.Name}.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All({_quantity.Name}.Units.Where(u => u != {_quantity.Name}.BaseUnit), fromUnit =>
+            {{
+                var quantity = {_quantity.Name}.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            }});
         }}
 
         [Theory]
@@ -405,6 +867,25 @@ namespace UnitsNet.Tests
             var quantity = default({_quantity.Name});
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }}
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity({_unitEnumName} unit)
+        {{
+            var quantity = {_quantity.Name}.From(3, {_quantity.Name}.BaseUnit);
+            {_quantity.Name} expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {{
+                IQuantity<{_unitEnumName}> quantityToConvert = quantity;
+                IQuantity<{_unitEnumName}> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }}, () =>
+            {{
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }});
         }}
 
         [Fact]
@@ -438,7 +919,7 @@ namespace UnitsNet.Tests
         protected abstract void AssertLogarithmicSubtraction();
 ");
             }
-            else if (_quantity.GenerateArithmetic)
+            else if (!_quantity.IsAffine)
             {
                 Writer.WL($@"
         [Fact]
@@ -511,7 +992,7 @@ namespace UnitsNet.Tests
         [InlineData(1, {_baseUnitFullName}, 1, {_otherOrBaseUnitFullName}, false)] // Different unit.");
             }
             Writer.WL($@"
-        public void Equals_ReturnsTrue_IfValueAndUnitAreEqual({_quantity.ValueType} valueA, {_unitEnumName} unitA, {_quantity.ValueType} valueB, {_unitEnumName} unitB, bool expectEqual)
+        public void Equals_ReturnsTrue_IfValueAndUnitAreEqual(double valueA, {_unitEnumName} unitA, double valueB, {_unitEnumName} unitB, bool expectEqual)
         {{
             var a = new {_quantity.Name}(valueA, unitA);
             var b = new {_quantity.Name}(valueB, unitB);
@@ -548,21 +1029,6 @@ namespace UnitsNet.Tests
         }}
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {{
-            var v = {_quantity.Name}.From{_baseUnit.PluralName}(1);
-            Assert.True(v.Equals({_quantity.Name}.From{_baseUnit.PluralName}(1), {_baseUnit.PluralName}Tolerance, ComparisonType.Relative));
-            Assert.False(v.Equals({_quantity.Name}.Zero, {_baseUnit.PluralName}Tolerance, ComparisonType.Relative));
-        }}
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {{
-            var v = {_quantity.Name}.From{_baseUnit.PluralName}(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals({_quantity.Name}.From{_baseUnit.PluralName}(1), -1, ComparisonType.Relative));
-        }}
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {{
             {_quantity.Name} {baseUnitVariableName} = {_quantity.Name}.From{_baseUnit.PluralName}(1);
@@ -575,14 +1041,100 @@ namespace UnitsNet.Tests
             {_quantity.Name} {baseUnitVariableName} = {_quantity.Name}.From{_baseUnit.PluralName}(1);
             Assert.False({baseUnitVariableName}.Equals(null));
         }}
+");
+            var differenceResultType = _quantity.AffineOffsetType ?? _quantity.Name;
+            if (_quantity.Logarithmic)
+            {
+                Writer.WL($@"
+
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_Logarithmic_WithTolerance(double firstValue, double secondValue)
+        {{
+            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(firstValue);
+            var otherQuantity = {_quantity.Name}.From{_baseUnit.PluralName}(secondValue);
+            {differenceResultType} maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, {differenceResultType}.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+            // note: it's currently not possible to test this due to the rounding error from (quantity - otherQuantity)
+            // Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+        }}
+
+        [Fact]
+        public void Equals_Logarithmic_WithNegativeTolerance_DoesNotThrowArgumentOutOfRangeException()
+        {{
+            // note: unlike with vector quantities- a small tolerance maybe positive in one unit and negative in another
+            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1);
+            var negativeTolerance = {_quantity.Name}.From{_baseUnit.PluralName}(-1);
+            Assert.True(quantity.Equals(quantity, negativeTolerance));
+        }}
+");
+            }
+            else // quantities with a linear scale
+            {
+                Writer.WL($@"
+
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {{
+            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(firstValue);
+            var otherQuantity = {_quantity.Name}.From{_baseUnit.PluralName}(secondValue);
+            {differenceResultType} maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, {differenceResultType}.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }}
+");
+                if (_quantity.IsAffine)
+                {
+                    Writer.WL($@"
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {{
+            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1);
+            {differenceResultType} negativeTolerance = quantity - {_quantity.Name}.From{_baseUnit.PluralName}(2);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }}
+");
+                }
+                else  // vector quantities
+                {
+                    Writer.WL($@"
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {{
+            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1);
+            var negativeTolerance = {_quantity.Name}.From{_baseUnit.PluralName}(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }}
+");
+                }
+            }
+
+            Writer.WL($@"
 
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {{
-            var units = Enum.GetValues(typeof({_unitEnumName})).Cast<{_unitEnumName}>();
+            var units = Enum.GetValues<{_unitEnumName}>();
             foreach (var unit in units)
             {{
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }}
         }}
 
@@ -595,20 +1147,13 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {{
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(""en-US"");
-            try {{");
+            using var _ = new CultureScope(""en-US"");");
             foreach (var unit in _quantity.Units)
             {
                 Writer.WL($@"
-                Assert.Equal(""1{GetEnglishAbbreviation(unit)}"", new {_quantity.Name}(1, {GetUnitFullName(unit)}).ToString());");
+            Assert.Equal(""1{GetEnglishAbbreviation(unit)}"", new {_quantity.Name}(1, {GetUnitFullName(unit)}).ToString());");
             }
             Writer.WL($@"
-            }}
-            finally
-            {{
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }}
         }}
 
         [Fact]
@@ -628,29 +1173,21 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {{
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {{
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal(""0.1{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s1""));
-                Assert.Equal(""0.12{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s2""));
-                Assert.Equal(""0.123{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s3""));
-                Assert.Equal(""0.1235{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s4""));
-            }}
-            finally
-            {{
-                CultureInfo.CurrentCulture = oldCulture;
-            }}
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal(""0.1{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s1""));
+            Assert.Equal(""0.12{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s2""));
+            Assert.Equal(""0.123{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s3""));
+            Assert.Equal(""0.1235{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s4""));
         }}
 
         [Fact]
         public void ToString_SFormatAndCulture_FormatsNumberWithGivenDigitsAfterRadixForGivenCulture()
         {{
             var culture = CultureInfo.InvariantCulture;
-            Assert.Equal(""0.1{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s1"", culture));
-            Assert.Equal(""0.12{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s2"", culture));
-            Assert.Equal(""0.123{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s3"", culture));
-            Assert.Equal(""0.1235{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456{_numberSuffix}, {_baseUnitFullName}).ToString(""s4"", culture));
+            Assert.Equal(""0.1{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s1"", culture));
+            Assert.Equal(""0.12{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s2"", culture));
+            Assert.Equal(""0.123{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s3"", culture));
+            Assert.Equal(""0.1235{_baseUnitEnglishAbbreviation}"", new {_quantity.Name}(0.123456, {_baseUnitFullName}).ToString(""s4"", culture));
         }}
 
         [Theory]
@@ -663,7 +1200,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString(""g"", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString(""G"", formatProvider), quantity.ToString(null, formatProvider));
         }}
 
         [Theory]
@@ -676,154 +1213,14 @@ namespace UnitsNet.Tests
         }}
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }}
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof({_quantity.Name})));
-        }}
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof({_unitEnumName})));
-        }}
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal({_quantity.Name}.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }}
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal({_quantity.Name}.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }}
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {{
-            var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }}
-
-        [Fact]
         public void GetHashCode_Equals()
         {{
             var quantity = {_quantity.Name}.From{_baseUnit.PluralName}(1.0);
-            Assert.Equal(new {{{_quantity.Name}.Info.Name, quantity.Value, quantity.Unit}}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }}
 ");
 
-        if (_quantity.GenerateArithmetic)
+        if (!_quantity.IsAffine)
         {
                 Writer.WL($@"
         [Theory]
@@ -840,13 +1237,6 @@ namespace UnitsNet.Tests
     }}
 }}");
             return Writer.ToString();
-        }
-
-        private bool IsAmbiguousAbbreviation(Localization localization, string abbreviation)
-        {
-            return _quantity.Units.Count(u =>
-                u.Localization.SingleOrDefault(l => l.Culture == localization.Culture) is { } otherUnitLocalization &&
-                otherUnitLocalization.Abbreviations.Contains(abbreviation, StringComparer.OrdinalIgnoreCase)) > 1;
         }
     }
 }

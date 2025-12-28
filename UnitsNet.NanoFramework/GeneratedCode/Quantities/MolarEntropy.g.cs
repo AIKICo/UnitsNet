@@ -51,7 +51,6 @@ namespace UnitsNet
         /// </summary>
         /// <param name="value">The numeric value to construct this quantity with.</param>
         /// <param name="unit">The unit representation to construct this quantity with.</param>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public MolarEntropy(double value, MolarEntropyUnit unit)
         {
             _value = value;
@@ -59,17 +58,17 @@ namespace UnitsNet
         }
 
         /// <summary>
-        ///     The base unit of Duration, which is Second. All conversions go via this value.
+        ///     The base unit of MolarEntropy, which is Second. All conversions go via this value.
         /// </summary>
         public static MolarEntropyUnit BaseUnit { get; } = MolarEntropyUnit.JoulePerMoleKelvin;
 
         /// <summary>
-        /// Represents the largest possible value of Duration
+        /// Represents the largest possible value of MolarEntropy.
         /// </summary>
         public static MolarEntropy MaxValue { get; } = new MolarEntropy(double.MaxValue, BaseUnit);
 
         /// <summary>
-        /// Represents the smallest possible value of Duration
+        /// Represents the smallest possible value of MolarEntropy.
         /// </summary>
         public static MolarEntropy MinValue { get; } = new MolarEntropy(double.MinValue, BaseUnit);
 
@@ -101,19 +100,16 @@ namespace UnitsNet
         /// <summary>
         ///     Creates a <see cref="MolarEntropy"/> from <see cref="MolarEntropyUnit.JoulePerMoleKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MolarEntropy FromJoulesPerMoleKelvin(double joulespermolekelvin) => new MolarEntropy(joulespermolekelvin, MolarEntropyUnit.JoulePerMoleKelvin);
 
         /// <summary>
         ///     Creates a <see cref="MolarEntropy"/> from <see cref="MolarEntropyUnit.KilojoulePerMoleKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MolarEntropy FromKilojoulesPerMoleKelvin(double kilojoulespermolekelvin) => new MolarEntropy(kilojoulespermolekelvin, MolarEntropyUnit.KilojoulePerMoleKelvin);
 
         /// <summary>
         ///     Creates a <see cref="MolarEntropy"/> from <see cref="MolarEntropyUnit.MegajoulePerMoleKelvin"/>.
         /// </summary>
-        /// <exception cref="ArgumentException">If value is NaN or Infinity.</exception>
         public static MolarEntropy FromMegajoulesPerMoleKelvin(double megajoulespermolekelvin) => new MolarEntropy(megajoulespermolekelvin, MolarEntropyUnit.MegajoulePerMoleKelvin);
 
         /// <summary>
@@ -138,9 +134,9 @@ namespace UnitsNet
                 public double As(MolarEntropyUnit unit) => GetValueAs(unit);
 
                 /// <summary>
-                ///     Converts this Duration to another Duration with the unit representation <paramref name="unit" />.
+                ///     Converts this MolarEntropy to another MolarEntropy with the unit representation <paramref name="unit" />.
                 /// </summary>
-                /// <returns>A Duration with the specified unit.</returns>
+                /// <returns>A MolarEntropy with the specified unit.</returns>
                 public MolarEntropy ToUnit(MolarEntropyUnit unit)
                 {
                     var convertedValue = GetValueAs(unit);
@@ -159,7 +155,7 @@ namespace UnitsNet
                         MolarEntropyUnit.JoulePerMoleKelvin => _value,
                         MolarEntropyUnit.KilojoulePerMoleKelvin => (_value) * 1e3d,
                         MolarEntropyUnit.MegajoulePerMoleKelvin => (_value) * 1e6d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to base units.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to base units.")
                     };
                     }
 
@@ -175,7 +171,7 @@ namespace UnitsNet
                         MolarEntropyUnit.JoulePerMoleKelvin => baseUnitValue,
                         MolarEntropyUnit.KilojoulePerMoleKelvin => (baseUnitValue) / 1e3d,
                         MolarEntropyUnit.MegajoulePerMoleKelvin => (baseUnitValue) / 1e6d,
-                        _ => throw new NotImplementedException($"Can not convert {Unit} to {unit}.")
+                        _ => throw new NotImplementedException($"Can't convert {Unit} to {unit}.")
                     };
                     }
 

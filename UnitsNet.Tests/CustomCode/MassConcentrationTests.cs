@@ -28,7 +28,6 @@ namespace UnitsNet.Tests.CustomCode
 {
     public class MassConcentrationTests : MassConcentrationTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
 
         #region Unit Conversion Coefficients
         protected override double PicogramsPerLiterInOneKilogramPerCubicMeter => 1e12;
@@ -136,7 +135,7 @@ namespace UnitsNet.Tests.CustomCode
             AssertEx.EqualTolerance(expectedMassValue, massComponent.As(expectedMassUnit), tolerance);
         }
 
-        [Fact(Skip = "No BaseUnit defined: see https://github.com/angularsen/UnitsNet/issues/651")]
+        [Fact]
         public void DefaultSIUnitIsKgPerCubicMeter()
         {
             var massConcentration = new MassConcentration(1, UnitSystem.SI);

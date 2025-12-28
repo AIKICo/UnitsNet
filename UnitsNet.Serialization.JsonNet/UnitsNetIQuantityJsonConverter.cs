@@ -2,6 +2,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -12,6 +13,10 @@ namespace UnitsNet.Serialization.JsonNet
     /// JSON.net converter for IQuantity types (e.g. all units in UnitsNet)
     /// Use this converter to serialize and deserialize UnitsNet types to and from JSON
     /// </summary>
+#if NET
+    [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+    [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+#endif
     public sealed class UnitsNetIQuantityJsonConverter : UnitsNetBaseJsonConverter<IQuantity?>
     {
         /// <summary>
@@ -31,7 +36,7 @@ namespace UnitsNet.Serialization.JsonNet
                 return;
             }
 
-            var valueUnit = ConvertIQuantity(value);
+            ValueUnit valueUnit = ConvertIQuantity(value);
 
             serializer.Serialize(writer, valueUnit);
         }
@@ -51,24 +56,28 @@ namespace UnitsNet.Serialization.JsonNet
         public override IQuantity? ReadJson(JsonReader reader, Type objectType, IQuantity? existingValue, bool hasExistingValue,
             JsonSerializer serializer)
         {
-            reader = reader ?? throw new ArgumentNullException(nameof(reader));
-            serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (serializer == null) throw new ArgumentNullException(nameof(serializer));
 
-            if (reader.TokenType == JsonToken.Null)
+            var token = JToken.Load(reader);
+
+            if (token.Type is JTokenType.Null)
             {
                 return existingValue;
             }
 
-            var token = JToken.Load(reader);
+            // Try to read value and unit from JSON, otherwise throw.
+            ValueUnit? valueUnit = ReadValueUnit(token);
 
-            var valueUnit = ReadValueUnit(token);
-
-            if (valueUnit == null)
-            {
-                return token.ToObject<IQuantity>(serializer);
-            }
-
-            return ConvertValueUnit(valueUnit);
+            return valueUnit != null
+                ? ConvertValueUnit(valueUnit)
+                : throw new JsonSerializationException(
+                    $"Failed to deserialize IQuantity for target type {objectType} from JSON '{token.ToString().Truncate(100)}', expected properties Unit and Value.")
+                {
+                    HelpLink =
+                        "https://github.com/angularsen/UnitsNet/wiki/Serializing-to-JSON,-XML-and-more#unitsnetserializationjsonnet-with-jsonnet-newtonsoft",
+                    Data = { { "JsonToken", token.ToString() }, }
+                };
         }
     }
 }

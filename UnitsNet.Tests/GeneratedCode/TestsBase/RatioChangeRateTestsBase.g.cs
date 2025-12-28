@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -71,16 +73,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new RatioChangeRate(double.PositiveInfinity, RatioChangeRateUnit.DecimalFractionPerSecond));
-            Assert.Throws<ArgumentException>(() => new RatioChangeRate(double.NegativeInfinity, RatioChangeRateUnit.DecimalFractionPerSecond));
+            var exception1 = Record.Exception(() => new RatioChangeRate(double.PositiveInfinity, RatioChangeRateUnit.DecimalFractionPerSecond));
+            var exception2 = Record.Exception(() => new RatioChangeRate(double.NegativeInfinity, RatioChangeRateUnit.DecimalFractionPerSecond));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new RatioChangeRate(double.NaN, RatioChangeRateUnit.DecimalFractionPerSecond));
+            var exception = Record.Exception(() => new RatioChangeRate(double.NaN, RatioChangeRateUnit.DecimalFractionPerSecond));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -90,32 +97,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new RatioChangeRate(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (RatioChangeRate) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new RatioChangeRate(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new RatioChangeRate(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void RatioChangeRate_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            RatioChangeRateUnit[] unitsOrderedByName = EnumHelper.GetValues<RatioChangeRateUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new RatioChangeRate(1, RatioChangeRateUnit.DecimalFractionPerSecond);
 
-            QuantityInfo<RatioChangeRateUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<RatioChangeRate, RatioChangeRateUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(RatioChangeRate.Zero, quantityInfo.Zero);
             Assert.Equal("RatioChangeRate", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<RatioChangeRateUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(RatioChangeRate.Zero, quantityInfo.Zero);
+            Assert.Equal(RatioChangeRate.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(RatioChangeRate.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<RatioChangeRateUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -129,27 +140,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = RatioChangeRate.From(1, RatioChangeRateUnit.DecimalFractionPerSecond);
-            AssertEx.EqualTolerance(1, quantity00.DecimalFractionsPerSecond, DecimalFractionsPerSecondTolerance);
-            Assert.Equal(RatioChangeRateUnit.DecimalFractionPerSecond, quantity00.Unit);
-
-            var quantity01 = RatioChangeRate.From(1, RatioChangeRateUnit.PercentPerSecond);
-            AssertEx.EqualTolerance(1, quantity01.PercentsPerSecond, PercentsPerSecondTolerance);
-            Assert.Equal(RatioChangeRateUnit.PercentPerSecond, quantity01.Unit);
-
+            Assert.All(EnumHelper.GetValues<RatioChangeRateUnit>(), unit =>
+            {
+                var quantity = RatioChangeRate.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromDecimalFractionsPerSecond_WithInfinityValue_ThrowsArgumentException()
+        public void FromDecimalFractionsPerSecond_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RatioChangeRate.FromDecimalFractionsPerSecond(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => RatioChangeRate.FromDecimalFractionsPerSecond(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => RatioChangeRate.FromDecimalFractionsPerSecond(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => RatioChangeRate.FromDecimalFractionsPerSecond(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromDecimalFractionsPerSecond_WithNanValue_ThrowsArgumentException()
+        public void FromDecimalFractionsPerSecond_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RatioChangeRate.FromDecimalFractionsPerSecond(double.NaN));
+            var exception = Record.Exception(() => RatioChangeRate.FromDecimalFractionsPerSecond(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -161,88 +175,192 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = RatioChangeRate.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new RatioChangeRate(value: 1, unit: RatioChangeRate.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(RatioChangeRate.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = RatioChangeRate.Parse("1 /s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.DecimalFractionsPerSecond, DecimalFractionsPerSecondTolerance);
-                Assert.Equal(RatioChangeRateUnit.DecimalFractionPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = RatioChangeRate.Parse("1 %/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PercentsPerSecond, PercentsPerSecondTolerance);
-                Assert.Equal(RatioChangeRateUnit.PercentPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new RatioChangeRate(value: 1, unit: RatioChangeRate.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(RatioChangeRate.TryParse("1 /s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.DecimalFractionsPerSecond, DecimalFractionsPerSecondTolerance);
-                Assert.Equal(RatioChangeRateUnit.DecimalFractionPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(RatioChangeRate.TryParse("1 %/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PercentsPerSecond, PercentsPerSecondTolerance);
-                Assert.Equal(RatioChangeRateUnit.PercentPerSecond, parsed.Unit);
-            }
-
+            var quantity = new RatioChangeRate(value: 1, unit: RatioChangeRate.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = RatioChangeRate.ParseUnit("/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RatioChangeRateUnit.DecimalFractionPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new RatioChangeRate(value: 1, unit: RatioChangeRate.BaseUnit);
+            var expectedUnit = RatioChangeRate.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = RatioChangeRate.ParseUnit("%/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(RatioChangeRateUnit.PercentPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            RatioChangeRate convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(RatioChangeRate.TryParseUnit("/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RatioChangeRateUnit.DecimalFractionPerSecond, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new RatioChangeRate(value: 1, unit: RatioChangeRate.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(RatioChangeRate.TryParseUnit("%/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(RatioChangeRateUnit.PercentPerSecond, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new RatioChangeRate(value: 1, unit: RatioChangeRate.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
+        [Theory]
+        [InlineData("en-US", "4.2 /s", RatioChangeRateUnit.DecimalFractionPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 %/s", RatioChangeRateUnit.PercentPerSecond, 4.2)]
+        public void Parse(string culture, string quantityString, RatioChangeRateUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = RatioChangeRate.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 /s", RatioChangeRateUnit.DecimalFractionPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 %/s", RatioChangeRateUnit.PercentPerSecond, 4.2)]
+        public void TryParse(string culture, string quantityString, RatioChangeRateUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(RatioChangeRate.TryParse(quantityString, out RatioChangeRate parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            RatioChangeRateUnit parsedUnit = RatioChangeRate.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            RatioChangeRateUnit parsedUnit = RatioChangeRate.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("en-US", "%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            RatioChangeRateUnit parsedUnit = RatioChangeRate.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("en-US", "%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            RatioChangeRateUnit parsedUnit = RatioChangeRate.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(RatioChangeRate.TryParseUnit(abbreviation, out RatioChangeRateUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(RatioChangeRate.TryParseUnit(abbreviation, out RatioChangeRateUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("en-US", "%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(RatioChangeRate.TryParseUnit(abbreviation, out RatioChangeRateUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "/s", RatioChangeRateUnit.DecimalFractionPerSecond)]
+        [InlineData("en-US", "%/s", RatioChangeRateUnit.PercentPerSecond)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, RatioChangeRateUnit expectedUnit)
+        {
+            Assert.True(RatioChangeRate.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out RatioChangeRateUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", RatioChangeRateUnit.DecimalFractionPerSecond, "/s")]
+        [InlineData("en-US", RatioChangeRateUnit.PercentPerSecond, "%/s")]
+        public void GetAbbreviationForCulture(string culture, RatioChangeRateUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = RatioChangeRate.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
+
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(RatioChangeRate.Units, unit =>
+            {
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
+
+                var defaultAbbreviation = RatioChangeRate.GetAbbreviation(unit);
+
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -270,12 +388,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(RatioChangeRateUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = RatioChangeRate.Units.First(u => u != RatioChangeRate.BaseUnit);
-
-            var quantity = RatioChangeRate.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(RatioChangeRate.Units.Where(u => u != RatioChangeRate.BaseUnit), fromUnit =>
+            {
+                var quantity = RatioChangeRate.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -285,6 +403,25 @@ namespace UnitsNet.Tests
             var quantity = default(RatioChangeRate);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(RatioChangeRateUnit unit)
+        {
+            var quantity = RatioChangeRate.From(3, RatioChangeRate.BaseUnit);
+            RatioChangeRate expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<RatioChangeRateUnit> quantityToConvert = quantity;
+                IQuantity<RatioChangeRateUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -390,21 +527,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = RatioChangeRate.FromDecimalFractionsPerSecond(1);
-            Assert.True(v.Equals(RatioChangeRate.FromDecimalFractionsPerSecond(1), DecimalFractionsPerSecondTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(RatioChangeRate.Zero, DecimalFractionsPerSecondTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = RatioChangeRate.FromDecimalFractionsPerSecond(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(RatioChangeRate.FromDecimalFractionsPerSecond(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             RatioChangeRate decimalfractionpersecond = RatioChangeRate.FromDecimalFractionsPerSecond(1);
@@ -418,13 +540,39 @@ namespace UnitsNet.Tests
             Assert.False(decimalfractionpersecond.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(firstValue);
+            var otherQuantity = RatioChangeRate.FromDecimalFractionsPerSecond(secondValue);
+            RatioChangeRate maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, RatioChangeRate.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1);
+            var negativeTolerance = RatioChangeRate.FromDecimalFractionsPerSecond(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(RatioChangeRateUnit)).Cast<RatioChangeRateUnit>();
+            var units = Enum.GetValues<RatioChangeRateUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -437,16 +585,9 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 /s", new RatioChangeRate(1, RatioChangeRateUnit.DecimalFractionPerSecond).ToString());
-                Assert.Equal("1 %/s", new RatioChangeRate(1, RatioChangeRateUnit.PercentPerSecond).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 /s", new RatioChangeRate(1, RatioChangeRateUnit.DecimalFractionPerSecond).ToString());
+            Assert.Equal("1 %/s", new RatioChangeRate(1, RatioChangeRateUnit.PercentPerSecond).ToString());
         }
 
         [Fact]
@@ -462,19 +603,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s1"));
-                Assert.Equal("0.12 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s2"));
-                Assert.Equal("0.123 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s3"));
-                Assert.Equal("0.1235 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s1"));
+            Assert.Equal("0.12 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s2"));
+            Assert.Equal("0.123 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s3"));
+            Assert.Equal("0.1235 /s", new RatioChangeRate(0.123456, RatioChangeRateUnit.DecimalFractionPerSecond).ToString("s4"));
         }
 
         [Fact]
@@ -497,7 +630,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -510,150 +643,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(RatioChangeRate)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(RatioChangeRateUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal(RatioChangeRate.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal(RatioChangeRate.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = RatioChangeRate.FromDecimalFractionsPerSecond(1.0);
-            Assert.Equal(new {RatioChangeRate.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

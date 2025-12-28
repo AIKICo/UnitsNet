@@ -11,26 +11,36 @@
     {
       "SingularName": "JoulePerKilogramKelvin",
       "PluralName": "JoulesPerKilogramKelvin",
+      "BaseUnits": {
+        "L": "Meter",
+        "T": "Second",
+        "Θ": "Kelvin"
+      },
       "FromUnitToBaseFunc": "{x}",
       "FromBaseToUnitFunc": "{x}",
       "Prefixes": [ "Kilo", "Mega" ],
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "J/kg.K" ]
+          "Abbreviations": [ "J/kg·K" ]
         }
       ]
     },
     {
       "SingularName": "JoulePerKilogramDegreeCelsius",
       "PluralName": "JoulesPerKilogramDegreeCelsius",
+      "BaseUnits": {
+        "L": "Meter",
+        "T": "Second",
+        "Θ": "DegreeCelsius"
+      },
       "FromUnitToBaseFunc": "{x}",
       "FromBaseToUnitFunc": "{x}",
       "Prefixes": [ "Kilo", "Mega" ],
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "J/kg.C" ]
+          "Abbreviations": [ "J/kg·°C" ]
         }
       ]
     },
@@ -43,7 +53,7 @@
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "cal/g.K" ]
+          "Abbreviations": [ "cal/g·K" ]
         }
       ]
     },
@@ -55,7 +65,7 @@
       "Localization": [
         {
           "Culture": "en-US",
-          "Abbreviations": [ "BTU/lb·°F", "BTU/lbm·°F" ]
+          "Abbreviations": [ "BTU/(lb·°F)", "BTU/(lbm·°F)" ]
         }
       ]
     }

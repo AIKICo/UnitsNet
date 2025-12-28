@@ -2,6 +2,7 @@
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -15,6 +16,10 @@ namespace UnitsNet.Serialization.JsonNet
     /// Should only be used when UnitsNet types are assigned to properties of type IComparable.
     /// Requires TypeNameHandling on <see cref="JsonSerializerSettings"/> to be set to something other than <see cref="TypeNameHandling.None"/> so that it outputs $type when serializing.
     /// </summary>
+#if NET
+    [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+    [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+#endif
     public sealed class UnitsNetIComparableJsonConverter : UnitsNetBaseJsonConverter<IComparable?>
     {
         /// <summary>
@@ -50,28 +55,30 @@ namespace UnitsNet.Serialization.JsonNet
         public override IComparable? ReadJson(JsonReader reader, Type objectType, IComparable? existingValue, bool hasExistingValue,
             JsonSerializer serializer)
         {
-            reader = reader ?? throw new ArgumentNullException(nameof(reader));
-            serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (serializer == null) throw new ArgumentNullException(nameof(serializer));
 
-            if (reader.TokenType == JsonToken.Null)
+            var token = JToken.Load(reader);
+
+            if (token.Type is JTokenType.Null)
             {
                 return existingValue;
             }
 
-            var localSerializer = CreateLocalSerializer(serializer, this);
-
-            var token = JToken.Load(reader);
-
             // If objectType is not IComparable but a type that implements IComparable, deserialize directly as this type instead.
             if (objectType != typeof(IComparable))
             {
+                // Remove the current converter from the list of converters to avoid infinite recursion.
+                JsonSerializer localSerializer = CreateLocalSerializer(serializer, this);
                 return (IComparable)token.ToObject(objectType, localSerializer)!;
             }
 
-            var valueUnit = ReadValueUnit(token);
+            ValueUnit? valueUnit = ReadValueUnit(token);
 
             if (valueUnit == null)
             {
+                // Remove the current converter from the list of converters to avoid infinite recursion.
+                JsonSerializer localSerializer = CreateLocalSerializer(serializer, this);
                 return token.ToObject<IComparable>(localSerializer);
             }
 

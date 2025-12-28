@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -67,51 +69,39 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Turbidity(double.PositiveInfinity, TurbidityUnit.NTU));
-            Assert.Throws<ArgumentException>(() => new Turbidity(double.NegativeInfinity, TurbidityUnit.NTU));
+            var exception1 = Record.Exception(() => new Turbidity(double.PositiveInfinity, TurbidityUnit.NTU));
+            var exception2 = Record.Exception(() => new Turbidity(double.NegativeInfinity, TurbidityUnit.NTU));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Turbidity(double.NaN, TurbidityUnit.NTU));
-        }
+            var exception = Record.Exception(() => new Turbidity(double.NaN, TurbidityUnit.NTU));
 
-        [Fact]
-        public void Ctor_NullAsUnitSystem_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Turbidity(value: 1, unitSystem: null));
-        }
-
-        [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
-        {
-            Func<object> TestCode = () => new Turbidity(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Turbidity) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            Assert.Null(exception);
         }
 
         [Fact]
         public void Turbidity_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            TurbidityUnit[] unitsOrderedByName = EnumHelper.GetValues<TurbidityUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Turbidity(1, TurbidityUnit.NTU);
 
-            QuantityInfo<TurbidityUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Turbidity, TurbidityUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Turbidity.Zero, quantityInfo.Zero);
             Assert.Equal("Turbidity", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<TurbidityUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Turbidity.Zero, quantityInfo.Zero);
+            Assert.Equal(Turbidity.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Turbidity.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<TurbidityUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -124,23 +114,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Turbidity.From(1, TurbidityUnit.NTU);
-            AssertEx.EqualTolerance(1, quantity00.NTU, NTUTolerance);
-            Assert.Equal(TurbidityUnit.NTU, quantity00.Unit);
-
+            Assert.All(EnumHelper.GetValues<TurbidityUnit>(), unit =>
+            {
+                var quantity = Turbidity.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromNTU_WithInfinityValue_ThrowsArgumentException()
+        public void FromNTU_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Turbidity.FromNTU(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Turbidity.FromNTU(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Turbidity.FromNTU(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Turbidity.FromNTU(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromNTU_WithNanValue_ThrowsArgumentException()
+        public void FromNTU_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Turbidity.FromNTU(double.NaN));
+            var exception = Record.Exception(() => Turbidity.FromNTU(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -151,64 +148,166 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public void As_UnitSystem_ReturnsValueInDimensionlessUnit()
+        {
+            var quantity = new Turbidity(value: 1, unit: TurbidityUnit.NTU);
+
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(quantity.Value, convertedValue);
+        }
+
+        [Fact]
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
             var quantity = new Turbidity(value: 1, unit: Turbidity.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
-
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void Parse()
+        public void ToUnit_UnitSystem_ReturnsValueInDimensionlessUnit()
         {
-            try
-            {
-                var parsed = Turbidity.Parse("1 NTU", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.NTU, NTUTolerance);
-                Assert.Equal(TurbidityUnit.NTU, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Turbidity(value: 1, unit: TurbidityUnit.NTU);
 
+            Turbidity convertedQuantity = quantity.ToUnit(UnitSystem.SI);
+
+            Assert.Equal(TurbidityUnit.NTU, convertedQuantity.Unit);
+            Assert.Equal(quantity.Value, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParse()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
+            UnitSystem nullUnitSystem = null!;
+            Assert.Multiple(() =>
             {
-                Assert.True(Turbidity.TryParse("1 NTU", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.NTU, NTUTolerance);
-                Assert.Equal(TurbidityUnit.NTU, parsed.Unit);
-            }
+                var quantity = new Turbidity(value: 1, unit: Turbidity.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
+            {
+                IQuantity<TurbidityUnit> quantity = new Turbidity(value: 1, unit: Turbidity.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            }, () =>
+            {
+                IQuantity quantity = new Turbidity(value: 1, unit: Turbidity.BaseUnit);
+                Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+            });
+        }
 
+        [Theory]
+        [InlineData("en-US", "4.2 NTU", TurbidityUnit.NTU, 4.2)]
+        public void Parse(string culture, string quantityString, TurbidityUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Turbidity.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("en-US", "4.2 NTU", TurbidityUnit.NTU, 4.2)]
+        public void TryParse(string culture, string quantityString, TurbidityUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Turbidity.TryParse(quantityString, out Turbidity parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
+
+        [Theory]
+        [InlineData("NTU", TurbidityUnit.NTU)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, TurbidityUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            TurbidityUnit parsedUnit = Turbidity.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("NTU", TurbidityUnit.NTU)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, TurbidityUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            TurbidityUnit parsedUnit = Turbidity.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "NTU", TurbidityUnit.NTU)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, TurbidityUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            TurbidityUnit parsedUnit = Turbidity.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "NTU", TurbidityUnit.NTU)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, TurbidityUnit expectedUnit)
+        {
+            TurbidityUnit parsedUnit = Turbidity.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("NTU", TurbidityUnit.NTU)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, TurbidityUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Turbidity.TryParseUnit(abbreviation, out TurbidityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("NTU", TurbidityUnit.NTU)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, TurbidityUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Turbidity.TryParseUnit(abbreviation, out TurbidityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "NTU", TurbidityUnit.NTU)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, TurbidityUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Turbidity.TryParseUnit(abbreviation, out TurbidityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", "NTU", TurbidityUnit.NTU)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, TurbidityUnit expectedUnit)
+        {
+            Assert.True(Turbidity.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out TurbidityUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
+
+        [Theory]
+        [InlineData("en-US", TurbidityUnit.NTU, "NTU")]
+        public void GetAbbreviationForCulture(string culture, TurbidityUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Turbidity.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
         }
 
         [Fact]
-        public void ParseUnit()
+        public void GetAbbreviationWithDefaultCulture()
         {
-            try
+            Assert.All(Turbidity.Units, unit =>
             {
-                var parsedUnit = Turbidity.ParseUnit("NTU", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(TurbidityUnit.NTU, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-        }
+                var defaultAbbreviation = Turbidity.GetAbbreviation(unit);
 
-        [Fact]
-        public void TryParseUnit()
-        {
-            {
-                Assert.True(Turbidity.TryParseUnit("NTU", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(TurbidityUnit.NTU, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -232,16 +331,16 @@ namespace UnitsNet.Tests
             Assert.Equal(quantity, toUnitWithSameUnit);
         }
 
-        [Theory(Skip = "Multiple units required")]
+        [Theory]
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(TurbidityUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Turbidity.Units.First(u => u != Turbidity.BaseUnit);
-
-            var quantity = Turbidity.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Turbidity.Units.Where(u => u != Turbidity.BaseUnit), fromUnit =>
+            {
+                var quantity = Turbidity.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -251,6 +350,25 @@ namespace UnitsNet.Tests
             var quantity = default(Turbidity);
             var converted = quantity.ToUnit(unit);
             Assert.Equal(converted.Unit, unit);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(TurbidityUnit unit)
+        {
+            var quantity = Turbidity.From(3, Turbidity.BaseUnit);
+            Turbidity expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<TurbidityUnit> quantityToConvert = quantity;
+                IQuantity<TurbidityUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
         }
 
         [Fact]
@@ -354,21 +472,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Turbidity.FromNTU(1);
-            Assert.True(v.Equals(Turbidity.FromNTU(1), NTUTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Turbidity.Zero, NTUTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Turbidity.FromNTU(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Turbidity.FromNTU(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Turbidity ntu = Turbidity.FromNTU(1);
@@ -382,13 +485,39 @@ namespace UnitsNet.Tests
             Assert.False(ntu.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Turbidity.FromNTU(firstValue);
+            var otherQuantity = Turbidity.FromNTU(secondValue);
+            Turbidity maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Turbidity.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Turbidity.FromNTU(1);
+            var negativeTolerance = Turbidity.FromNTU(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(TurbidityUnit)).Cast<TurbidityUnit>();
+            var units = Enum.GetValues<TurbidityUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -401,15 +530,8 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 NTU", new Turbidity(1, TurbidityUnit.NTU).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 NTU", new Turbidity(1, TurbidityUnit.NTU).ToString());
         }
 
         [Fact]
@@ -424,19 +546,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s1"));
-                Assert.Equal("0.12 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s2"));
-                Assert.Equal("0.123 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s3"));
-                Assert.Equal("0.1235 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s1"));
+            Assert.Equal("0.12 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s2"));
+            Assert.Equal("0.123 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s3"));
+            Assert.Equal("0.1235 NTU", new Turbidity(0.123456, TurbidityUnit.NTU).ToString("s4"));
         }
 
         [Fact]
@@ -459,7 +573,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -472,150 +586,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Turbidity)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(TurbidityUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal(Turbidity.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal(Turbidity.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Turbidity.FromNTU(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Turbidity.FromNTU(1.0);
-            Assert.Equal(new {Turbidity.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

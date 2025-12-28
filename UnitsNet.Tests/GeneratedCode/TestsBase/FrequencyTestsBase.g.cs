@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using UnitsNet.InternalHelpers;
+using UnitsNet.Tests.Helpers;
 using UnitsNet.Tests.TestsBase;
 using UnitsNet.Units;
 using Xunit;
@@ -39,7 +41,6 @@ namespace UnitsNet.Tests
     public abstract partial class FrequencyTestsBase : QuantityTestsBase
     {
         protected abstract double BeatsPerMinuteInOneHertz { get; }
-        protected abstract double BUnitsInOneHertz { get; }
         protected abstract double CyclesPerHourInOneHertz { get; }
         protected abstract double CyclesPerMinuteInOneHertz { get; }
         protected abstract double GigahertzInOneHertz { get; }
@@ -54,7 +55,6 @@ namespace UnitsNet.Tests
 
 // ReSharper disable VirtualMemberNeverOverriden.Global
         protected virtual double BeatsPerMinuteTolerance { get { return 1e-5; } }
-        protected virtual double BUnitsTolerance { get { return 1e-5; } }
         protected virtual double CyclesPerHourTolerance { get { return 1e-5; } }
         protected virtual double CyclesPerMinuteTolerance { get { return 1e-5; } }
         protected virtual double GigahertzTolerance { get { return 1e-5; } }
@@ -73,7 +73,6 @@ namespace UnitsNet.Tests
             return unit switch
             {
                 FrequencyUnit.BeatPerMinute => (BeatsPerMinuteInOneHertz, BeatsPerMinuteTolerance),
-                FrequencyUnit.BUnit => (BUnitsInOneHertz, BUnitsTolerance),
                 FrequencyUnit.CyclePerHour => (CyclesPerHourInOneHertz, CyclesPerHourTolerance),
                 FrequencyUnit.CyclePerMinute => (CyclesPerMinuteInOneHertz, CyclesPerMinuteTolerance),
                 FrequencyUnit.Gigahertz => (GigahertzInOneHertz, GigahertzTolerance),
@@ -92,7 +91,6 @@ namespace UnitsNet.Tests
         public static IEnumerable<object[]> UnitTypes = new List<object[]>
         {
             new object[] { FrequencyUnit.BeatPerMinute },
-            new object[] { FrequencyUnit.BUnit },
             new object[] { FrequencyUnit.CyclePerHour },
             new object[] { FrequencyUnit.CyclePerMinute },
             new object[] { FrequencyUnit.Gigahertz },
@@ -115,16 +113,21 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_WithInfinityValue_ThrowsArgumentException()
+        public void Ctor_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Frequency(double.PositiveInfinity, FrequencyUnit.Hertz));
-            Assert.Throws<ArgumentException>(() => new Frequency(double.NegativeInfinity, FrequencyUnit.Hertz));
+            var exception1 = Record.Exception(() => new Frequency(double.PositiveInfinity, FrequencyUnit.Hertz));
+            var exception2 = Record.Exception(() => new Frequency(double.NegativeInfinity, FrequencyUnit.Hertz));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void Ctor_WithNaNValue_ThrowsArgumentException()
+        public void Ctor_WithNaNValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Frequency(double.NaN, FrequencyUnit.Hertz));
+            var exception = Record.Exception(() => new Frequency(double.NaN, FrequencyUnit.Hertz));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -134,32 +137,36 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Ctor_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void Ctor_SIUnitSystem_ReturnsQuantityWithSIUnits()
         {
-            Func<object> TestCode = () => new Frequency(value: 1, unitSystem: UnitSystem.SI);
-            if (SupportsSIUnitSystem)
-            {
-                var quantity = (Frequency) TestCode();
-                Assert.Equal(1, quantity.Value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(TestCode);
-            }
+            var quantity = new Frequency(value: 1, unitSystem: UnitSystem.SI);
+            Assert.Equal(1, quantity.Value);
+            Assert.True(quantity.QuantityInfo[quantity.Unit].BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public void Ctor_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => new Frequency(value: 1, unitSystem: unsupportedUnitSystem));
         }
 
         [Fact]
         public void Frequency_QuantityInfo_ReturnsQuantityInfoDescribingQuantity()
         {
+            FrequencyUnit[] unitsOrderedByName = EnumHelper.GetValues<FrequencyUnit>().OrderBy(x => x.ToString(), StringComparer.OrdinalIgnoreCase).ToArray();
             var quantity = new Frequency(1, FrequencyUnit.Hertz);
 
-            QuantityInfo<FrequencyUnit> quantityInfo = quantity.QuantityInfo;
+            QuantityInfo<Frequency, FrequencyUnit> quantityInfo = quantity.QuantityInfo;
 
-            Assert.Equal(Frequency.Zero, quantityInfo.Zero);
             Assert.Equal("Frequency", quantityInfo.Name);
-
-            var units = EnumUtils.GetEnumValues<FrequencyUnit>().OrderBy(x => x.ToString()).ToArray();
-            var unitNames = units.Select(x => x.ToString());
+            Assert.Equal(Frequency.Zero, quantityInfo.Zero);
+            Assert.Equal(Frequency.BaseUnit, quantityInfo.BaseUnitInfo.Value);
+            Assert.Equal(unitsOrderedByName, quantityInfo.Units);
+            Assert.Equal(unitsOrderedByName, quantityInfo.UnitInfos.Select(x => x.Value));
+            Assert.Equal(Frequency.Info, quantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity)quantity).QuantityInfo);
+            Assert.Equal(quantityInfo, ((IQuantity<FrequencyUnit>)quantity).QuantityInfo);
         }
 
         [Fact]
@@ -167,7 +174,6 @@ namespace UnitsNet.Tests
         {
             Frequency hertz = Frequency.FromHertz(1);
             AssertEx.EqualTolerance(BeatsPerMinuteInOneHertz, hertz.BeatsPerMinute, BeatsPerMinuteTolerance);
-            AssertEx.EqualTolerance(BUnitsInOneHertz, hertz.BUnits, BUnitsTolerance);
             AssertEx.EqualTolerance(CyclesPerHourInOneHertz, hertz.CyclesPerHour, CyclesPerHourTolerance);
             AssertEx.EqualTolerance(CyclesPerMinuteInOneHertz, hertz.CyclesPerMinute, CyclesPerMinuteTolerance);
             AssertEx.EqualTolerance(GigahertzInOneHertz, hertz.Gigahertz, GigahertzTolerance);
@@ -184,71 +190,30 @@ namespace UnitsNet.Tests
         [Fact]
         public void From_ValueAndUnit_ReturnsQuantityWithSameValueAndUnit()
         {
-            var quantity00 = Frequency.From(1, FrequencyUnit.BeatPerMinute);
-            AssertEx.EqualTolerance(1, quantity00.BeatsPerMinute, BeatsPerMinuteTolerance);
-            Assert.Equal(FrequencyUnit.BeatPerMinute, quantity00.Unit);
-
-            var quantity01 = Frequency.From(1, FrequencyUnit.BUnit);
-            AssertEx.EqualTolerance(1, quantity01.BUnits, BUnitsTolerance);
-            Assert.Equal(FrequencyUnit.BUnit, quantity01.Unit);
-
-            var quantity02 = Frequency.From(1, FrequencyUnit.CyclePerHour);
-            AssertEx.EqualTolerance(1, quantity02.CyclesPerHour, CyclesPerHourTolerance);
-            Assert.Equal(FrequencyUnit.CyclePerHour, quantity02.Unit);
-
-            var quantity03 = Frequency.From(1, FrequencyUnit.CyclePerMinute);
-            AssertEx.EqualTolerance(1, quantity03.CyclesPerMinute, CyclesPerMinuteTolerance);
-            Assert.Equal(FrequencyUnit.CyclePerMinute, quantity03.Unit);
-
-            var quantity04 = Frequency.From(1, FrequencyUnit.Gigahertz);
-            AssertEx.EqualTolerance(1, quantity04.Gigahertz, GigahertzTolerance);
-            Assert.Equal(FrequencyUnit.Gigahertz, quantity04.Unit);
-
-            var quantity05 = Frequency.From(1, FrequencyUnit.Hertz);
-            AssertEx.EqualTolerance(1, quantity05.Hertz, HertzTolerance);
-            Assert.Equal(FrequencyUnit.Hertz, quantity05.Unit);
-
-            var quantity06 = Frequency.From(1, FrequencyUnit.Kilohertz);
-            AssertEx.EqualTolerance(1, quantity06.Kilohertz, KilohertzTolerance);
-            Assert.Equal(FrequencyUnit.Kilohertz, quantity06.Unit);
-
-            var quantity07 = Frequency.From(1, FrequencyUnit.Megahertz);
-            AssertEx.EqualTolerance(1, quantity07.Megahertz, MegahertzTolerance);
-            Assert.Equal(FrequencyUnit.Megahertz, quantity07.Unit);
-
-            var quantity08 = Frequency.From(1, FrequencyUnit.Microhertz);
-            AssertEx.EqualTolerance(1, quantity08.Microhertz, MicrohertzTolerance);
-            Assert.Equal(FrequencyUnit.Microhertz, quantity08.Unit);
-
-            var quantity09 = Frequency.From(1, FrequencyUnit.Millihertz);
-            AssertEx.EqualTolerance(1, quantity09.Millihertz, MillihertzTolerance);
-            Assert.Equal(FrequencyUnit.Millihertz, quantity09.Unit);
-
-            var quantity10 = Frequency.From(1, FrequencyUnit.PerSecond);
-            AssertEx.EqualTolerance(1, quantity10.PerSecond, PerSecondTolerance);
-            Assert.Equal(FrequencyUnit.PerSecond, quantity10.Unit);
-
-            var quantity11 = Frequency.From(1, FrequencyUnit.RadianPerSecond);
-            AssertEx.EqualTolerance(1, quantity11.RadiansPerSecond, RadiansPerSecondTolerance);
-            Assert.Equal(FrequencyUnit.RadianPerSecond, quantity11.Unit);
-
-            var quantity12 = Frequency.From(1, FrequencyUnit.Terahertz);
-            AssertEx.EqualTolerance(1, quantity12.Terahertz, TerahertzTolerance);
-            Assert.Equal(FrequencyUnit.Terahertz, quantity12.Unit);
-
+            Assert.All(EnumHelper.GetValues<FrequencyUnit>(), unit =>
+            {
+                var quantity = Frequency.From(1, unit);
+                Assert.Equal(1, quantity.Value);
+                Assert.Equal(unit, quantity.Unit);
+            });
         }
 
         [Fact]
-        public void FromHertz_WithInfinityValue_ThrowsArgumentException()
+        public void FromHertz_WithInfinityValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Frequency.FromHertz(double.PositiveInfinity));
-            Assert.Throws<ArgumentException>(() => Frequency.FromHertz(double.NegativeInfinity));
+            var exception1 = Record.Exception(() => Frequency.FromHertz(double.PositiveInfinity));
+            var exception2 = Record.Exception(() => Frequency.FromHertz(double.NegativeInfinity));
+
+            Assert.Null(exception1);
+            Assert.Null(exception2);
         }
 
         [Fact]
-        public void FromHertz_WithNanValue_ThrowsArgumentException()
+        public void FromHertz_WithNanValue_DoNotThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Frequency.FromHertz(double.NaN));
+            var exception = Record.Exception(() => Frequency.FromHertz(double.NaN));
+
+            Assert.Null(exception);
         }
 
         [Fact]
@@ -256,7 +221,6 @@ namespace UnitsNet.Tests
         {
             var hertz = Frequency.FromHertz(1);
             AssertEx.EqualTolerance(BeatsPerMinuteInOneHertz, hertz.As(FrequencyUnit.BeatPerMinute), BeatsPerMinuteTolerance);
-            AssertEx.EqualTolerance(BUnitsInOneHertz, hertz.As(FrequencyUnit.BUnit), BUnitsTolerance);
             AssertEx.EqualTolerance(CyclesPerHourInOneHertz, hertz.As(FrequencyUnit.CyclePerHour), CyclesPerHourTolerance);
             AssertEx.EqualTolerance(CyclesPerMinuteInOneHertz, hertz.As(FrequencyUnit.CyclePerMinute), CyclesPerMinuteTolerance);
             AssertEx.EqualTolerance(GigahertzInOneHertz, hertz.As(FrequencyUnit.Gigahertz), GigahertzTolerance);
@@ -271,524 +235,365 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void As_SIUnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        public virtual void BaseUnit_HasSIBase()
+        {
+            var baseUnitInfo = Frequency.Info.BaseUnitInfo;
+            Assert.True(baseUnitInfo.BaseUnits.IsSubsetOf(UnitSystem.SI.BaseUnits));
+        }
+
+        [Fact]
+        public virtual void As_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
             var quantity = new Frequency(value: 1, unit: Frequency.BaseUnit);
-            Func<object> AsWithSIUnitSystem = () => quantity.As(UnitSystem.SI);
+            var expectedValue = quantity.As(Frequency.Info.GetDefaultUnit(UnitSystem.SI));
 
-            if (SupportsSIUnitSystem)
-            {
-                var value = Convert.ToDouble(AsWithSIUnitSystem());
-                Assert.Equal(1, value);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>(AsWithSIUnitSystem);
-            }
+            var convertedValue = quantity.As(UnitSystem.SI);
+
+            Assert.Equal(expectedValue, convertedValue);
         }
 
         [Fact]
-        public void Parse()
+        public void As_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            try
-            {
-                var parsed = Frequency.Parse("1 bpm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BeatsPerMinute, BeatsPerMinuteTolerance);
-                Assert.Equal(FrequencyUnit.BeatPerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 B Units", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.BUnits, BUnitsTolerance);
-                Assert.Equal(FrequencyUnit.BUnit, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 cph", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CyclesPerHour, CyclesPerHourTolerance);
-                Assert.Equal(FrequencyUnit.CyclePerHour, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 cpm", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.CyclesPerMinute, CyclesPerMinuteTolerance);
-                Assert.Equal(FrequencyUnit.CyclePerMinute, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 GHz", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Gigahertz, GigahertzTolerance);
-                Assert.Equal(FrequencyUnit.Gigahertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 ГГц", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Gigahertz, GigahertzTolerance);
-                Assert.Equal(FrequencyUnit.Gigahertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 Hz", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Hertz, HertzTolerance);
-                Assert.Equal(FrequencyUnit.Hertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 Гц", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Hertz, HertzTolerance);
-                Assert.Equal(FrequencyUnit.Hertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 kHz", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Kilohertz, KilohertzTolerance);
-                Assert.Equal(FrequencyUnit.Kilohertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 кГц", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Kilohertz, KilohertzTolerance);
-                Assert.Equal(FrequencyUnit.Kilohertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 MHz", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Megahertz, MegahertzTolerance);
-                Assert.Equal(FrequencyUnit.Megahertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 МГц", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Megahertz, MegahertzTolerance);
-                Assert.Equal(FrequencyUnit.Megahertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 µHz", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Microhertz, MicrohertzTolerance);
-                Assert.Equal(FrequencyUnit.Microhertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 мкГц", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Microhertz, MicrohertzTolerance);
-                Assert.Equal(FrequencyUnit.Microhertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 mHz", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Millihertz, MillihertzTolerance);
-                Assert.Equal(FrequencyUnit.Millihertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 мГц", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Millihertz, MillihertzTolerance);
-                Assert.Equal(FrequencyUnit.Millihertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 s⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.PerSecond, PerSecondTolerance);
-                Assert.Equal(FrequencyUnit.PerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 с⁻¹", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.PerSecond, PerSecondTolerance);
-                Assert.Equal(FrequencyUnit.PerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 rad/s", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.RadiansPerSecond, RadiansPerSecondTolerance);
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 рад/с", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.RadiansPerSecond, RadiansPerSecondTolerance);
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 THz", CultureInfo.GetCultureInfo("en-US"));
-                AssertEx.EqualTolerance(1, parsed.Terahertz, TerahertzTolerance);
-                Assert.Equal(FrequencyUnit.Terahertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsed = Frequency.Parse("1 ТГц", CultureInfo.GetCultureInfo("ru-RU"));
-                AssertEx.EqualTolerance(1, parsed.Terahertz, TerahertzTolerance);
-                Assert.Equal(FrequencyUnit.Terahertz, parsed.Unit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            var quantity = new Frequency(value: 1, unit: Frequency.BaseUnit);
+            UnitSystem nullUnitSystem = null!;
+            Assert.Throws<ArgumentNullException>(() => quantity.As(nullUnitSystem));
         }
 
         [Fact]
-        public void TryParse()
+        public void As_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
         {
-            {
-                Assert.True(Frequency.TryParse("1 bpm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BeatsPerMinute, BeatsPerMinuteTolerance);
-                Assert.Equal(FrequencyUnit.BeatPerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 B Units", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.BUnits, BUnitsTolerance);
-                Assert.Equal(FrequencyUnit.BUnit, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 cph", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CyclesPerHour, CyclesPerHourTolerance);
-                Assert.Equal(FrequencyUnit.CyclePerHour, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 cpm", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.CyclesPerMinute, CyclesPerMinuteTolerance);
-                Assert.Equal(FrequencyUnit.CyclePerMinute, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 GHz", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Gigahertz, GigahertzTolerance);
-                Assert.Equal(FrequencyUnit.Gigahertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 ГГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Gigahertz, GigahertzTolerance);
-                Assert.Equal(FrequencyUnit.Gigahertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 Hz", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Hertz, HertzTolerance);
-                Assert.Equal(FrequencyUnit.Hertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 Гц", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Hertz, HertzTolerance);
-                Assert.Equal(FrequencyUnit.Hertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 kHz", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Kilohertz, KilohertzTolerance);
-                Assert.Equal(FrequencyUnit.Kilohertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 кГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Kilohertz, KilohertzTolerance);
-                Assert.Equal(FrequencyUnit.Kilohertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 µHz", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Microhertz, MicrohertzTolerance);
-                Assert.Equal(FrequencyUnit.Microhertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 мкГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Microhertz, MicrohertzTolerance);
-                Assert.Equal(FrequencyUnit.Microhertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 s⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PerSecond, PerSecondTolerance);
-                Assert.Equal(FrequencyUnit.PerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 с⁻¹", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.PerSecond, PerSecondTolerance);
-                Assert.Equal(FrequencyUnit.PerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 rad/s", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.RadiansPerSecond, RadiansPerSecondTolerance);
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 рад/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.RadiansPerSecond, RadiansPerSecondTolerance);
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 THz", CultureInfo.GetCultureInfo("en-US"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Terahertz, TerahertzTolerance);
-                Assert.Equal(FrequencyUnit.Terahertz, parsed.Unit);
-            }
-
-            {
-                Assert.True(Frequency.TryParse("1 ТГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsed));
-                AssertEx.EqualTolerance(1, parsed.Terahertz, TerahertzTolerance);
-                Assert.Equal(FrequencyUnit.Terahertz, parsed.Unit);
-            }
-
+            var quantity = new Frequency(value: 1, unit: Frequency.BaseUnit);
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            Assert.Throws<ArgumentException>(() => quantity.As(unsupportedUnitSystem));
         }
 
         [Fact]
-        public void ParseUnit()
+        public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
         {
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("bpm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.BeatPerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            var quantity = new Frequency(value: 1, unit: Frequency.BaseUnit);
+            var expectedUnit = Frequency.Info.GetDefaultUnit(UnitSystem.SI);
+            var expectedValue = quantity.As(expectedUnit);
 
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("B Units", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.BUnit, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
+            Frequency convertedQuantity = quantity.ToUnit(UnitSystem.SI);
 
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("cph", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.CyclePerHour, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("cpm", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.CyclePerMinute, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("GHz", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.Gigahertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("ГГц", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.Gigahertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("Hz", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.Hertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("Гц", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.Hertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("kHz", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.Kilohertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("кГц", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.Kilohertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("MHz", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.Megahertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("МГц", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.Megahertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("µHz", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.Microhertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("мкГц", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.Microhertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("mHz", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.Millihertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("мГц", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.Millihertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("s⁻¹", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.PerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("с⁻¹", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.PerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("rad/s", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("рад/с", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("THz", CultureInfo.GetCultureInfo("en-US"));
-                Assert.Equal(FrequencyUnit.Terahertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
-            try
-            {
-                var parsedUnit = Frequency.ParseUnit("ТГц", CultureInfo.GetCultureInfo("ru-RU"));
-                Assert.Equal(FrequencyUnit.Terahertz, parsedUnit);
-            } catch (AmbiguousUnitParseException) { /* Some units have the same abbreviations */ }
-
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
         }
 
         [Fact]
-        public void TryParseUnit()
+        public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
         {
-            {
-                Assert.True(Frequency.TryParseUnit("bpm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.BeatPerMinute, parsedUnit);
-            }
+            UnitSystem nullUnitSystem = null!;
+            var quantity = new Frequency(value: 1, unit: Frequency.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("B Units", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.BUnit, parsedUnit);
-            }
+        [Fact]
+        public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+        {
+            var unsupportedUnitSystem = new UnitSystem(UnsupportedBaseUnits);
+            var quantity = new Frequency(value: 1, unit: Frequency.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("cph", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.CyclePerHour, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 bpm", FrequencyUnit.BeatPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 cph", FrequencyUnit.CyclePerHour, 4.2)]
+        [InlineData("en-US", "4.2 cpm", FrequencyUnit.CyclePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 GHz", FrequencyUnit.Gigahertz, 4.2)]
+        [InlineData("en-US", "4.2 Hz", FrequencyUnit.Hertz, 4.2)]
+        [InlineData("en-US", "4.2 kHz", FrequencyUnit.Kilohertz, 4.2)]
+        [InlineData("en-US", "4.2 MHz", FrequencyUnit.Megahertz, 4.2)]
+        [InlineData("en-US", "4.2 µHz", FrequencyUnit.Microhertz, 4.2)]
+        [InlineData("en-US", "4.2 mHz", FrequencyUnit.Millihertz, 4.2)]
+        [InlineData("en-US", "4.2 s⁻¹", FrequencyUnit.PerSecond, 4.2)]
+        [InlineData("en-US", "4.2 rad/s", FrequencyUnit.RadianPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 THz", FrequencyUnit.Terahertz, 4.2)]
+        [InlineData("ru-RU", "4,2 ГГц", FrequencyUnit.Gigahertz, 4.2)]
+        [InlineData("ru-RU", "4,2 Гц", FrequencyUnit.Hertz, 4.2)]
+        [InlineData("ru-RU", "4,2 кГц", FrequencyUnit.Kilohertz, 4.2)]
+        [InlineData("ru-RU", "4,2 МГц", FrequencyUnit.Megahertz, 4.2)]
+        [InlineData("ru-RU", "4,2 мкГц", FrequencyUnit.Microhertz, 4.2)]
+        [InlineData("ru-RU", "4,2 мГц", FrequencyUnit.Millihertz, 4.2)]
+        [InlineData("ru-RU", "4,2 с⁻¹", FrequencyUnit.PerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 рад/с", FrequencyUnit.RadianPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 ТГц", FrequencyUnit.Terahertz, 4.2)]
+        public void Parse(string culture, string quantityString, FrequencyUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            var parsed = Frequency.Parse(quantityString);
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("cpm", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.CyclePerMinute, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "4.2 bpm", FrequencyUnit.BeatPerMinute, 4.2)]
+        [InlineData("en-US", "4.2 cph", FrequencyUnit.CyclePerHour, 4.2)]
+        [InlineData("en-US", "4.2 cpm", FrequencyUnit.CyclePerMinute, 4.2)]
+        [InlineData("en-US", "4.2 GHz", FrequencyUnit.Gigahertz, 4.2)]
+        [InlineData("en-US", "4.2 Hz", FrequencyUnit.Hertz, 4.2)]
+        [InlineData("en-US", "4.2 kHz", FrequencyUnit.Kilohertz, 4.2)]
+        [InlineData("en-US", "4.2 MHz", FrequencyUnit.Megahertz, 4.2)]
+        [InlineData("en-US", "4.2 µHz", FrequencyUnit.Microhertz, 4.2)]
+        [InlineData("en-US", "4.2 mHz", FrequencyUnit.Millihertz, 4.2)]
+        [InlineData("en-US", "4.2 s⁻¹", FrequencyUnit.PerSecond, 4.2)]
+        [InlineData("en-US", "4.2 rad/s", FrequencyUnit.RadianPerSecond, 4.2)]
+        [InlineData("en-US", "4.2 THz", FrequencyUnit.Terahertz, 4.2)]
+        [InlineData("ru-RU", "4,2 ГГц", FrequencyUnit.Gigahertz, 4.2)]
+        [InlineData("ru-RU", "4,2 Гц", FrequencyUnit.Hertz, 4.2)]
+        [InlineData("ru-RU", "4,2 кГц", FrequencyUnit.Kilohertz, 4.2)]
+        [InlineData("ru-RU", "4,2 МГц", FrequencyUnit.Megahertz, 4.2)]
+        [InlineData("ru-RU", "4,2 мкГц", FrequencyUnit.Microhertz, 4.2)]
+        [InlineData("ru-RU", "4,2 мГц", FrequencyUnit.Millihertz, 4.2)]
+        [InlineData("ru-RU", "4,2 с⁻¹", FrequencyUnit.PerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 рад/с", FrequencyUnit.RadianPerSecond, 4.2)]
+        [InlineData("ru-RU", "4,2 ТГц", FrequencyUnit.Terahertz, 4.2)]
+        public void TryParse(string culture, string quantityString, FrequencyUnit expectedUnit, double expectedValue)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Frequency.TryParse(quantityString, out Frequency parsed));
+            Assert.Equal(expectedUnit, parsed.Unit);
+            Assert.Equal(expectedValue, parsed.Value);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("GHz", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Gigahertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("Hz", FrequencyUnit.Hertz)]
+        [InlineData("kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("MHz", FrequencyUnit.Megahertz)]
+        [InlineData("µHz", FrequencyUnit.Microhertz)]
+        [InlineData("mHz", FrequencyUnit.Millihertz)]
+        [InlineData("s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("THz", FrequencyUnit.Terahertz)]
+        public void ParseUnit_WithUsEnglishCurrentCulture(string abbreviation, FrequencyUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            FrequencyUnit parsedUnit = Frequency.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("ГГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Gigahertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("Hz", FrequencyUnit.Hertz)]
+        [InlineData("kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("MHz", FrequencyUnit.Megahertz)]
+        [InlineData("µHz", FrequencyUnit.Microhertz)]
+        [InlineData("mHz", FrequencyUnit.Millihertz)]
+        [InlineData("s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("THz", FrequencyUnit.Terahertz)]
+        public void ParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, FrequencyUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            FrequencyUnit parsedUnit = Frequency.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("Hz", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Hertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("en-US", "cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("en-US", "cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("en-US", "GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("en-US", "Hz", FrequencyUnit.Hertz)]
+        [InlineData("en-US", "kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("en-US", "MHz", FrequencyUnit.Megahertz)]
+        [InlineData("en-US", "µHz", FrequencyUnit.Microhertz)]
+        [InlineData("en-US", "mHz", FrequencyUnit.Millihertz)]
+        [InlineData("en-US", "s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("en-US", "rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("en-US", "THz", FrequencyUnit.Terahertz)]
+        [InlineData("ru-RU", "ГГц", FrequencyUnit.Gigahertz)]
+        [InlineData("ru-RU", "Гц", FrequencyUnit.Hertz)]
+        [InlineData("ru-RU", "кГц", FrequencyUnit.Kilohertz)]
+        [InlineData("ru-RU", "МГц", FrequencyUnit.Megahertz)]
+        [InlineData("ru-RU", "мкГц", FrequencyUnit.Microhertz)]
+        [InlineData("ru-RU", "мГц", FrequencyUnit.Millihertz)]
+        [InlineData("ru-RU", "с⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("ru-RU", "рад/с", FrequencyUnit.RadianPerSecond)]
+        [InlineData("ru-RU", "ТГц", FrequencyUnit.Terahertz)]
+        public void ParseUnit_WithCurrentCulture(string culture, string abbreviation, FrequencyUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            FrequencyUnit parsedUnit = Frequency.ParseUnit(abbreviation);
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("Гц", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Hertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("en-US", "cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("en-US", "cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("en-US", "GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("en-US", "Hz", FrequencyUnit.Hertz)]
+        [InlineData("en-US", "kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("en-US", "MHz", FrequencyUnit.Megahertz)]
+        [InlineData("en-US", "µHz", FrequencyUnit.Microhertz)]
+        [InlineData("en-US", "mHz", FrequencyUnit.Millihertz)]
+        [InlineData("en-US", "s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("en-US", "rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("en-US", "THz", FrequencyUnit.Terahertz)]
+        [InlineData("ru-RU", "ГГц", FrequencyUnit.Gigahertz)]
+        [InlineData("ru-RU", "Гц", FrequencyUnit.Hertz)]
+        [InlineData("ru-RU", "кГц", FrequencyUnit.Kilohertz)]
+        [InlineData("ru-RU", "МГц", FrequencyUnit.Megahertz)]
+        [InlineData("ru-RU", "мкГц", FrequencyUnit.Microhertz)]
+        [InlineData("ru-RU", "мГц", FrequencyUnit.Millihertz)]
+        [InlineData("ru-RU", "с⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("ru-RU", "рад/с", FrequencyUnit.RadianPerSecond)]
+        [InlineData("ru-RU", "ТГц", FrequencyUnit.Terahertz)]
+        public void ParseUnit_WithCulture(string culture, string abbreviation, FrequencyUnit expectedUnit)
+        {
+            FrequencyUnit parsedUnit = Frequency.ParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("kHz", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Kilohertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("Hz", FrequencyUnit.Hertz)]
+        [InlineData("kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("MHz", FrequencyUnit.Megahertz)]
+        [InlineData("µHz", FrequencyUnit.Microhertz)]
+        [InlineData("mHz", FrequencyUnit.Millihertz)]
+        [InlineData("s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("THz", FrequencyUnit.Terahertz)]
+        public void TryParseUnit_WithUsEnglishCurrentCulture(string abbreviation, FrequencyUnit expectedUnit)
+        {
+            // Fallback culture "en-US" is always localized
+            using var _ = new CultureScope("en-US");
+            Assert.True(Frequency.TryParseUnit(abbreviation, out FrequencyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("кГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Kilohertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("Hz", FrequencyUnit.Hertz)]
+        [InlineData("kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("MHz", FrequencyUnit.Megahertz)]
+        [InlineData("µHz", FrequencyUnit.Microhertz)]
+        [InlineData("mHz", FrequencyUnit.Millihertz)]
+        [InlineData("s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("THz", FrequencyUnit.Terahertz)]
+        public void TryParseUnit_WithUnsupportedCurrentCulture_FallsBackToUsEnglish(string abbreviation, FrequencyUnit expectedUnit)
+        {
+            // Currently, no abbreviations are localized for Icelandic, so it should fall back to "en-US" when parsing.
+            using var _ = new CultureScope("is-IS");
+            Assert.True(Frequency.TryParseUnit(abbreviation, out FrequencyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("µHz", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Microhertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("en-US", "cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("en-US", "cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("en-US", "GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("en-US", "Hz", FrequencyUnit.Hertz)]
+        [InlineData("en-US", "kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("en-US", "MHz", FrequencyUnit.Megahertz)]
+        [InlineData("en-US", "µHz", FrequencyUnit.Microhertz)]
+        [InlineData("en-US", "mHz", FrequencyUnit.Millihertz)]
+        [InlineData("en-US", "s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("en-US", "rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("en-US", "THz", FrequencyUnit.Terahertz)]
+        [InlineData("ru-RU", "ГГц", FrequencyUnit.Gigahertz)]
+        [InlineData("ru-RU", "Гц", FrequencyUnit.Hertz)]
+        [InlineData("ru-RU", "кГц", FrequencyUnit.Kilohertz)]
+        [InlineData("ru-RU", "МГц", FrequencyUnit.Megahertz)]
+        [InlineData("ru-RU", "мкГц", FrequencyUnit.Microhertz)]
+        [InlineData("ru-RU", "мГц", FrequencyUnit.Millihertz)]
+        [InlineData("ru-RU", "с⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("ru-RU", "рад/с", FrequencyUnit.RadianPerSecond)]
+        [InlineData("ru-RU", "ТГц", FrequencyUnit.Terahertz)]
+        public void TryParseUnit_WithCurrentCulture(string culture, string abbreviation, FrequencyUnit expectedUnit)
+        {
+            using var _ = new CultureScope(culture);
+            Assert.True(Frequency.TryParseUnit(abbreviation, out FrequencyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("мкГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Microhertz, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", "bpm", FrequencyUnit.BeatPerMinute)]
+        [InlineData("en-US", "cph", FrequencyUnit.CyclePerHour)]
+        [InlineData("en-US", "cpm", FrequencyUnit.CyclePerMinute)]
+        [InlineData("en-US", "GHz", FrequencyUnit.Gigahertz)]
+        [InlineData("en-US", "Hz", FrequencyUnit.Hertz)]
+        [InlineData("en-US", "kHz", FrequencyUnit.Kilohertz)]
+        [InlineData("en-US", "MHz", FrequencyUnit.Megahertz)]
+        [InlineData("en-US", "µHz", FrequencyUnit.Microhertz)]
+        [InlineData("en-US", "mHz", FrequencyUnit.Millihertz)]
+        [InlineData("en-US", "s⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("en-US", "rad/s", FrequencyUnit.RadianPerSecond)]
+        [InlineData("en-US", "THz", FrequencyUnit.Terahertz)]
+        [InlineData("ru-RU", "ГГц", FrequencyUnit.Gigahertz)]
+        [InlineData("ru-RU", "Гц", FrequencyUnit.Hertz)]
+        [InlineData("ru-RU", "кГц", FrequencyUnit.Kilohertz)]
+        [InlineData("ru-RU", "МГц", FrequencyUnit.Megahertz)]
+        [InlineData("ru-RU", "мкГц", FrequencyUnit.Microhertz)]
+        [InlineData("ru-RU", "мГц", FrequencyUnit.Millihertz)]
+        [InlineData("ru-RU", "с⁻¹", FrequencyUnit.PerSecond)]
+        [InlineData("ru-RU", "рад/с", FrequencyUnit.RadianPerSecond)]
+        [InlineData("ru-RU", "ТГц", FrequencyUnit.Terahertz)]
+        public void TryParseUnit_WithCulture(string culture, string abbreviation, FrequencyUnit expectedUnit)
+        {
+            Assert.True(Frequency.TryParseUnit(abbreviation, CultureInfo.GetCultureInfo(culture), out FrequencyUnit parsedUnit));
+            Assert.Equal(expectedUnit, parsedUnit);
+        }
 
-            {
-                Assert.True(Frequency.TryParseUnit("s⁻¹", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.PerSecond, parsedUnit);
-            }
+        [Theory]
+        [InlineData("en-US", FrequencyUnit.BeatPerMinute, "bpm")]
+        [InlineData("en-US", FrequencyUnit.CyclePerHour, "cph")]
+        [InlineData("en-US", FrequencyUnit.CyclePerMinute, "cpm")]
+        [InlineData("en-US", FrequencyUnit.Gigahertz, "GHz")]
+        [InlineData("en-US", FrequencyUnit.Hertz, "Hz")]
+        [InlineData("en-US", FrequencyUnit.Kilohertz, "kHz")]
+        [InlineData("en-US", FrequencyUnit.Megahertz, "MHz")]
+        [InlineData("en-US", FrequencyUnit.Microhertz, "µHz")]
+        [InlineData("en-US", FrequencyUnit.Millihertz, "mHz")]
+        [InlineData("en-US", FrequencyUnit.PerSecond, "s⁻¹")]
+        [InlineData("en-US", FrequencyUnit.RadianPerSecond, "rad/s")]
+        [InlineData("en-US", FrequencyUnit.Terahertz, "THz")]
+        [InlineData("ru-RU", FrequencyUnit.Gigahertz, "ГГц")]
+        [InlineData("ru-RU", FrequencyUnit.Hertz, "Гц")]
+        [InlineData("ru-RU", FrequencyUnit.Kilohertz, "кГц")]
+        [InlineData("ru-RU", FrequencyUnit.Megahertz, "МГц")]
+        [InlineData("ru-RU", FrequencyUnit.Microhertz, "мкГц")]
+        [InlineData("ru-RU", FrequencyUnit.Millihertz, "мГц")]
+        [InlineData("ru-RU", FrequencyUnit.PerSecond, "с⁻¹")]
+        [InlineData("ru-RU", FrequencyUnit.RadianPerSecond, "рад/с")]
+        [InlineData("ru-RU", FrequencyUnit.Terahertz, "ТГц")]
+        public void GetAbbreviationForCulture(string culture, FrequencyUnit unit, string expectedAbbreviation)
+        {
+            var defaultAbbreviation = Frequency.GetAbbreviation(unit, CultureInfo.GetCultureInfo(culture));
+            Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+        }
 
+        [Fact]
+        public void GetAbbreviationWithDefaultCulture()
+        {
+            Assert.All(Frequency.Units, unit =>
             {
-                Assert.True(Frequency.TryParseUnit("с⁻¹", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.PerSecond, parsedUnit);
-            }
+                var expectedAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
 
-            {
-                Assert.True(Frequency.TryParseUnit("rad/s", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsedUnit);
-            }
+                var defaultAbbreviation = Frequency.GetAbbreviation(unit);
 
-            {
-                Assert.True(Frequency.TryParseUnit("рад/с", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.RadianPerSecond, parsedUnit);
-            }
-
-            {
-                Assert.True(Frequency.TryParseUnit("THz", CultureInfo.GetCultureInfo("en-US"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Terahertz, parsedUnit);
-            }
-
-            {
-                Assert.True(Frequency.TryParseUnit("ТГц", CultureInfo.GetCultureInfo("ru-RU"), out var parsedUnit));
-                Assert.Equal(FrequencyUnit.Terahertz, parsedUnit);
-            }
-
+                Assert.Equal(expectedAbbreviation, defaultAbbreviation);
+            });
         }
 
         [Theory]
@@ -816,12 +621,12 @@ namespace UnitsNet.Tests
         [MemberData(nameof(UnitTypes))]
         public void ToUnit_FromNonBaseUnit_ReturnsQuantityWithGivenUnit(FrequencyUnit unit)
         {
-            // See if there is a unit available that is not the base unit, fallback to base unit if it has only a single unit.
-            var fromUnit = Frequency.Units.First(u => u != Frequency.BaseUnit);
-
-            var quantity = Frequency.From(3.0, fromUnit);
-            var converted = quantity.ToUnit(unit);
-            Assert.Equal(converted.Unit, unit);
+            Assert.All(Frequency.Units.Where(u => u != Frequency.BaseUnit), fromUnit =>
+            {
+                var quantity = Frequency.From(3.0, fromUnit);
+                var converted = quantity.ToUnit(unit);
+                Assert.Equal(converted.Unit, unit);
+            });
         }
 
         [Theory]
@@ -833,12 +638,30 @@ namespace UnitsNet.Tests
             Assert.Equal(converted.Unit, unit);
         }
 
+        [Theory]
+        [MemberData(nameof(UnitTypes))]
+        public void ToUnit_FromIQuantity_ReturnsTheExpectedIQuantity(FrequencyUnit unit)
+        {
+            var quantity = Frequency.From(3, Frequency.BaseUnit);
+            Frequency expectedQuantity = quantity.ToUnit(unit);
+            Assert.Multiple(() =>
+            {
+                IQuantity<FrequencyUnit> quantityToConvert = quantity;
+                IQuantity<FrequencyUnit> convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            }, () =>
+            {
+                IQuantity quantityToConvert = quantity;
+                IQuantity convertedQuantity = quantityToConvert.ToUnit(unit);
+                Assert.Equal(unit, convertedQuantity.Unit);
+            });
+        }
+
         [Fact]
         public void ConversionRoundTrip()
         {
             Frequency hertz = Frequency.FromHertz(1);
             AssertEx.EqualTolerance(1, Frequency.FromBeatsPerMinute(hertz.BeatsPerMinute).Hertz, BeatsPerMinuteTolerance);
-            AssertEx.EqualTolerance(1, Frequency.FromBUnits(hertz.BUnits).Hertz, BUnitsTolerance);
             AssertEx.EqualTolerance(1, Frequency.FromCyclesPerHour(hertz.CyclesPerHour).Hertz, CyclesPerHourTolerance);
             AssertEx.EqualTolerance(1, Frequency.FromCyclesPerMinute(hertz.CyclesPerMinute).Hertz, CyclesPerMinuteTolerance);
             AssertEx.EqualTolerance(1, Frequency.FromGigahertz(hertz.Gigahertz).Hertz, GigahertzTolerance);
@@ -947,21 +770,6 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Equals_RelativeTolerance_IsImplemented()
-        {
-            var v = Frequency.FromHertz(1);
-            Assert.True(v.Equals(Frequency.FromHertz(1), HertzTolerance, ComparisonType.Relative));
-            Assert.False(v.Equals(Frequency.Zero, HertzTolerance, ComparisonType.Relative));
-        }
-
-        [Fact]
-        public void Equals_NegativeRelativeTolerance_ThrowsArgumentOutOfRangeException()
-        {
-            var v = Frequency.FromHertz(1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => v.Equals(Frequency.FromHertz(1), -1, ComparisonType.Relative));
-        }
-
-        [Fact]
         public void EqualsReturnsFalseOnTypeMismatch()
         {
             Frequency hertz = Frequency.FromHertz(1);
@@ -975,13 +783,39 @@ namespace UnitsNet.Tests
             Assert.False(hertz.Equals(null));
         }
 
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(100, 110)]
+        [InlineData(100, 90)]
+        public void Equals_WithTolerance(double firstValue, double secondValue)
+        {
+            var quantity = Frequency.FromHertz(firstValue);
+            var otherQuantity = Frequency.FromHertz(secondValue);
+            Frequency maxTolerance = quantity > otherQuantity ? quantity - otherQuantity : otherQuantity - quantity;
+            var largerTolerance = maxTolerance * 1.1;
+            var smallerTolerance = maxTolerance / 1.1;
+            Assert.True(quantity.Equals(quantity, Frequency.Zero));
+            Assert.True(quantity.Equals(quantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, maxTolerance));
+            Assert.True(quantity.Equals(otherQuantity, largerTolerance));
+            Assert.False(quantity.Equals(otherQuantity, smallerTolerance));
+        }
+
+        [Fact]
+        public void Equals_WithNegativeTolerance_ThrowsArgumentOutOfRangeException()
+        {
+            var quantity = Frequency.FromHertz(1);
+            var negativeTolerance = Frequency.FromHertz(-1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => quantity.Equals(quantity, negativeTolerance));
+        }
+
         [Fact]
         public void HasAtLeastOneAbbreviationSpecified()
         {
-            var units = Enum.GetValues(typeof(FrequencyUnit)).Cast<FrequencyUnit>();
+            var units = Enum.GetValues<FrequencyUnit>();
             foreach (var unit in units)
             {
-                var defaultAbbreviation = UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit);
+                var defaultAbbreviation = UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit);
             }
         }
 
@@ -994,27 +828,19 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_ReturnsValueAndUnitAbbreviationInCurrentCulture()
         {
-            var prevCulture = Thread.CurrentThread.CurrentCulture;
-            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
-            try {
-                Assert.Equal("1 bpm", new Frequency(1, FrequencyUnit.BeatPerMinute).ToString());
-                Assert.Equal("1 B Units", new Frequency(1, FrequencyUnit.BUnit).ToString());
-                Assert.Equal("1 cph", new Frequency(1, FrequencyUnit.CyclePerHour).ToString());
-                Assert.Equal("1 cpm", new Frequency(1, FrequencyUnit.CyclePerMinute).ToString());
-                Assert.Equal("1 GHz", new Frequency(1, FrequencyUnit.Gigahertz).ToString());
-                Assert.Equal("1 Hz", new Frequency(1, FrequencyUnit.Hertz).ToString());
-                Assert.Equal("1 kHz", new Frequency(1, FrequencyUnit.Kilohertz).ToString());
-                Assert.Equal("1 MHz", new Frequency(1, FrequencyUnit.Megahertz).ToString());
-                Assert.Equal("1 µHz", new Frequency(1, FrequencyUnit.Microhertz).ToString());
-                Assert.Equal("1 mHz", new Frequency(1, FrequencyUnit.Millihertz).ToString());
-                Assert.Equal("1 s⁻¹", new Frequency(1, FrequencyUnit.PerSecond).ToString());
-                Assert.Equal("1 rad/s", new Frequency(1, FrequencyUnit.RadianPerSecond).ToString());
-                Assert.Equal("1 THz", new Frequency(1, FrequencyUnit.Terahertz).ToString());
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = prevCulture;
-            }
+            using var _ = new CultureScope("en-US");
+            Assert.Equal("1 bpm", new Frequency(1, FrequencyUnit.BeatPerMinute).ToString());
+            Assert.Equal("1 cph", new Frequency(1, FrequencyUnit.CyclePerHour).ToString());
+            Assert.Equal("1 cpm", new Frequency(1, FrequencyUnit.CyclePerMinute).ToString());
+            Assert.Equal("1 GHz", new Frequency(1, FrequencyUnit.Gigahertz).ToString());
+            Assert.Equal("1 Hz", new Frequency(1, FrequencyUnit.Hertz).ToString());
+            Assert.Equal("1 kHz", new Frequency(1, FrequencyUnit.Kilohertz).ToString());
+            Assert.Equal("1 MHz", new Frequency(1, FrequencyUnit.Megahertz).ToString());
+            Assert.Equal("1 µHz", new Frequency(1, FrequencyUnit.Microhertz).ToString());
+            Assert.Equal("1 mHz", new Frequency(1, FrequencyUnit.Millihertz).ToString());
+            Assert.Equal("1 s⁻¹", new Frequency(1, FrequencyUnit.PerSecond).ToString());
+            Assert.Equal("1 rad/s", new Frequency(1, FrequencyUnit.RadianPerSecond).ToString());
+            Assert.Equal("1 THz", new Frequency(1, FrequencyUnit.Terahertz).ToString());
         }
 
         [Fact]
@@ -1024,7 +850,6 @@ namespace UnitsNet.Tests
             var swedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
             Assert.Equal("1 bpm", new Frequency(1, FrequencyUnit.BeatPerMinute).ToString(swedishCulture));
-            Assert.Equal("1 B Units", new Frequency(1, FrequencyUnit.BUnit).ToString(swedishCulture));
             Assert.Equal("1 cph", new Frequency(1, FrequencyUnit.CyclePerHour).ToString(swedishCulture));
             Assert.Equal("1 cpm", new Frequency(1, FrequencyUnit.CyclePerMinute).ToString(swedishCulture));
             Assert.Equal("1 GHz", new Frequency(1, FrequencyUnit.Gigahertz).ToString(swedishCulture));
@@ -1041,19 +866,11 @@ namespace UnitsNet.Tests
         [Fact]
         public void ToString_SFormat_FormatsNumberWithGivenDigitsAfterRadixForCurrentCulture()
         {
-            var oldCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                Assert.Equal("0.1 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s1"));
-                Assert.Equal("0.12 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s2"));
-                Assert.Equal("0.123 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s3"));
-                Assert.Equal("0.1235 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s4"));
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldCulture;
-            }
+            var _ = new CultureScope(CultureInfo.InvariantCulture);
+            Assert.Equal("0.1 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s1"));
+            Assert.Equal("0.12 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s2"));
+            Assert.Equal("0.123 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s3"));
+            Assert.Equal("0.1235 Hz", new Frequency(0.123456, FrequencyUnit.Hertz).ToString("s4"));
         }
 
         [Fact]
@@ -1076,7 +893,7 @@ namespace UnitsNet.Tests
                 ? null
                 : CultureInfo.GetCultureInfo(cultureName);
 
-            Assert.Equal(quantity.ToString("g", formatProvider), quantity.ToString(null, formatProvider));
+            Assert.Equal(quantity.ToString("G", formatProvider), quantity.ToString(null, formatProvider));
         }
 
         [Theory]
@@ -1089,150 +906,10 @@ namespace UnitsNet.Tests
         }
 
         [Fact]
-        public void Convert_ToBool_ThrowsInvalidCastException()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToByte_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-           Assert.Equal((byte)quantity.Value, Convert.ToByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToChar_ThrowsInvalidCastException()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDateTime_ThrowsInvalidCastException()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDecimal_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((decimal)quantity.Value, Convert.ToDecimal(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToDouble_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((double)quantity.Value, Convert.ToDouble(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt16_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((short)quantity.Value, Convert.ToInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt32_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((int)quantity.Value, Convert.ToInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToInt64_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((long)quantity.Value, Convert.ToInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSByte_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((sbyte)quantity.Value, Convert.ToSByte(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToSingle_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((float)quantity.Value, Convert.ToSingle(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToString_EqualsToString()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal(quantity.ToString(), Convert.ToString(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt16_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((ushort)quantity.Value, Convert.ToUInt16(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt32_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((uint)quantity.Value, Convert.ToUInt32(quantity));
-        }
-
-        [Fact]
-        public void Convert_ToUInt64_EqualsValueAsSameType()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal((ulong)quantity.Value, Convert.ToUInt64(quantity));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_SelfType_EqualsSelf()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal(quantity, Convert.ChangeType(quantity, typeof(Frequency)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_UnitType_EqualsUnit()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal(quantity.Unit, Convert.ChangeType(quantity, typeof(FrequencyUnit)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_QuantityInfo_EqualsQuantityInfo()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal(Frequency.Info, Convert.ChangeType(quantity, typeof(QuantityInfo)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_BaseDimensions_EqualsBaseDimensions()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal(Frequency.BaseDimensions, Convert.ChangeType(quantity, typeof(BaseDimensions)));
-        }
-
-        [Fact]
-        public void Convert_ChangeType_InvalidType_ThrowsInvalidCastException()
-        {
-            var quantity = Frequency.FromHertz(1.0);
-            Assert.Throws<InvalidCastException>(() => Convert.ChangeType(quantity, typeof(QuantityFormatter)));
-        }
-
-        [Fact]
         public void GetHashCode_Equals()
         {
             var quantity = Frequency.FromHertz(1.0);
-            Assert.Equal(new {Frequency.Info.Name, quantity.Value, quantity.Unit}.GetHashCode(), quantity.GetHashCode());
+            Assert.Equal(Comparison.GetHashCode(quantity.Unit, quantity.Value), quantity.GetHashCode());
         }
 
         [Theory]

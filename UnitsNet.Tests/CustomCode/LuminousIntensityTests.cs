@@ -22,12 +22,18 @@
 
 
 using System;
+using Xunit;
 
 namespace UnitsNet.Tests.CustomCode
 {
     public class LuminousIntensityTests : LuminousIntensityTestsBase
     {
-        protected override bool SupportsSIUnitSystem => true;
         protected override double CandelaInOneCandela => 1;
+        
+        [Fact]
+        public void AllBaseQuantityUnitsAreBaseUnits()
+        {
+            Assert.All(LuminousIntensity.Info.UnitInfos, unitInfo => Assert.Equal(new BaseUnits(luminousIntensity: unitInfo.Value), unitInfo.BaseUnits));
+        }
     }
 }

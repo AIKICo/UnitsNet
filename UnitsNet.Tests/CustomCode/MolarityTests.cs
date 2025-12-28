@@ -28,8 +28,6 @@ namespace UnitsNet.Tests.CustomCode
 {
     public class MolarityTests : MolarityTestsBase
     {
-        protected override bool SupportsSIUnitSystem => true;
-
         #region Unit Conversion Coefficients
 
         protected override double CentimolesPerLiterInOneMolePerCubicMeter => 1e-1;
@@ -50,7 +48,7 @@ namespace UnitsNet.Tests.CustomCode
         [InlineData(0.5, MolarityUnit.MolePerLiter,
                     KnownQuantities.DensityOfEthanolInKgPerCubicMeter, DensityUnit.KilogramPerCubicMeter,
                     KnownQuantities.MolarMassOfEthanolInGramsPerMole, MolarMassUnit.GramPerMole,
-                    29.19419518377693, VolumeConcentrationUnit.MillilitersPerLiter)]    // 0.5M ethanol
+                    29.19419518377693, VolumeConcentrationUnit.MilliliterPerLiter)]    // 0.5M ethanol
         public void VolumeConcentrationFromComponentDensityAndMolarity(
             double molarityValue, MolarityUnit molarityUnit,
             double componentDensityValue, DensityUnit componentDensityUnit,

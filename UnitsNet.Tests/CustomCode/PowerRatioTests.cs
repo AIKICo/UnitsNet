@@ -8,7 +8,6 @@ namespace UnitsNet.Tests
 {
     public class PowerRatioTests : PowerRatioTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
         protected override double DecibelMilliwattsInOneDecibelWatt => 31;
 
         protected override double DecibelWattsInOneDecibelWatt => 1;
@@ -41,12 +40,11 @@ namespace UnitsNet.Tests
         public void ExpectPowerConvertedCorrectly(double power, double expected)
         {
             Power p = Power.FromWatts(power);
-            double actual = PowerRatio.FromPower(p).DecibelWatts;
+            var actual = PowerRatio.FromPower(p).DecibelWatts;
             Assert.Equal(expected, actual);
         }
 
         [Theory]
-        // Note: Attribute arguments cannot be of type decimal.
         [InlineData(-20, 0.01)]
         [InlineData(-10, 0.1)]
         [InlineData(0, 1)]
@@ -55,8 +53,8 @@ namespace UnitsNet.Tests
         public void ExpectPowerRatioConvertedCorrectly(double powerRatio, double expected)
         {
             PowerRatio pr = PowerRatio.FromDecibelWatts(powerRatio);
-            decimal actual = pr.ToPower().Watts;
-            Assert.Equal((decimal)expected, actual);
+            var actual = pr.ToPower().Watts;
+            Assert.Equal(expected, actual);
         }
 
         // http://www.maximintegrated.com/en/app-notes/index.mvp/id/808

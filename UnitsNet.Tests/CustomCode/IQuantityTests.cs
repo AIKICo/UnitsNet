@@ -1,104 +1,84 @@
 ﻿// Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
-using UnitsNet.Units;
-using Xunit;
+namespace UnitsNet.Tests;
 
-namespace UnitsNet.Tests
+// ReSharper disable once InconsistentNaming
+public partial class IQuantityTests
 {
-    // ReSharper disable once InconsistentNaming
-    public partial class IQuantityTests
+    [Fact]
+    public void As_GivenWrongUnitType_ThrowsArgumentException()
     {
-        [Fact]
-        public void As_GivenWrongUnitType_ThrowsArgumentException()
+        Assert.All(Quantity.Infos.Select(x => x.Zero), quantity => { Assert.Throws<ArgumentException>(() => quantity.As(ComparisonType.Absolute)); });
+    }
+
+    [Fact]
+    public void ToUnit_GivenWrongUnitType_ThrowsArgumentException()
+    {
+        Assert.All(Quantity.Infos.Select(x => x.Zero), quantity => { Assert.Throws<ArgumentException>(() => quantity.ToUnit(ComparisonType.Absolute)); });
+    }
+
+    [Fact]
+    public virtual void ToUnit_UnitSystem_SI_ReturnsQuantityInSIUnits()
+    {
+        var quantity = new Mass(1, Mass.BaseUnit);
+        MassUnit expectedUnit = Mass.Info.GetDefaultUnit(UnitSystem.SI);
+        var expectedValue = quantity.As(expectedUnit);
+
+        Assert.Multiple(() =>
         {
-            IQuantity length = Length.FromMeters(1.2345);
-            Assert.Throws<ArgumentException>(() => length.As(MassUnit.Kilogram));
-        }
+            IQuantity<MassUnit> quantityToConvert = quantity;
 
-        [Fact]
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-        public void As_GivenNullUnitSystem_ThrowsArgumentNullException()
+            IQuantity<MassUnit> convertedQuantity = quantityToConvert.ToUnit(UnitSystem.SI);
+
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
+        }, () =>
         {
-            IQuantity imperialLengthQuantity = new Length(2.0, LengthUnit.Inch);
-            Assert.Throws<ArgumentNullException>(() => imperialLengthQuantity.As((UnitSystem)null!));
-        }
+            IQuantity quantityToConvert = quantity;
 
-        [Fact]
-        public void As_GivenSIUnitSystem_ReturnsSIValue()
+            IQuantity convertedQuantity = quantityToConvert.ToUnit(UnitSystem.SI);
+
+            Assert.Equal(expectedUnit, convertedQuantity.Unit);
+            Assert.Equal(expectedValue, convertedQuantity.Value);
+        });
+    }
+
+    [Fact]
+    public void ToUnit_UnitSystem_ThrowsArgumentNullExceptionIfNull()
+    {
+        UnitSystem nullUnitSystem = null!;
+        Assert.Multiple(() =>
         {
-            IQuantity inches = new Length(2.0, LengthUnit.Inch);
-            Assert.Equal(0.0508, inches.As(UnitSystem.SI));
-        }
-
-        [Fact]
-        public void ToUnit_GivenWrongUnitType_ThrowsArgumentException()
+            IQuantity<MassUnit> quantity = new Mass(1, Mass.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        }, () =>
         {
-            IQuantity length = Length.FromMeters(1.2345);
-            Assert.Throws<ArgumentException>(() => length.ToUnit(MassUnit.Kilogram));
-        }
+            IQuantity quantity = new Mass(1, Mass.BaseUnit);
+            Assert.Throws<ArgumentNullException>(() => quantity.ToUnit(nullUnitSystem));
+        });
+    }
 
-        [Fact]
-        public void ToUnit_GivenNullUnitSystem_ThrowsArgumentNullException()
+    [Fact]
+    public void ToUnit_UnitSystem_ThrowsArgumentExceptionIfNotSupported()
+    {
+        var unsupportedUnitSystem = new UnitSystem(new BaseUnits(
+            (LengthUnit)(-1),
+            (MassUnit)(-1),
+            (DurationUnit)(-1),
+            (ElectricCurrentUnit)(-1),
+            (TemperatureUnit)(-1),
+            (AmountOfSubstanceUnit)(-1),
+            (LuminousIntensityUnit)(-1)));
+
+        Assert.Multiple(() =>
         {
-            IQuantity imperialLengthQuantity = new Length(2.0, LengthUnit.Inch);
-            Assert.Throws<ArgumentNullException>(() => imperialLengthQuantity.ToUnit((UnitSystem)null!));
-        }
-
-        [Fact]
-        public void ToUnit_GivenSIUnitSystem_ReturnsSIQuantity()
+            IQuantity<MassUnit> quantity = new Mass(1, Mass.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        }, () =>
         {
-            IQuantity inches = new Length(2.0, LengthUnit.Inch);
-
-            IQuantity inSI = inches.ToUnit(UnitSystem.SI);
-
-            Assert.Equal(0.0508, inSI.Value);
-            Assert.Equal(LengthUnit.Meter, inSI.Unit);
-        }
-
-
-        [Fact]
-        public void IQuantityTUnitDouble_Value_ReturnsDouble()
-        {
-            IQuantity<TemperatureUnit, double> doubleQuantity = Temperature.FromDegreesCelsius(1234.5);
-            Assert.IsType<double>(doubleQuantity.Value);
-        }
-
-        [Fact]
-        public void IQuantityTUnitDouble_AsEnum_ReturnsDouble()
-        {
-            IQuantity<TemperatureUnit, double> doubleQuantity = Temperature.FromDegreesCelsius(1234.5);
-            Assert.IsType<double>(doubleQuantity.As(TemperatureUnit.Kelvin));
-        }
-
-        [Fact]
-        public void IQuantityTUnitDouble_AsUnitSystem_ReturnsDouble()
-        {
-            IQuantity<TemperatureUnit, double> doubleQuantity = Temperature.FromDegreesCelsius(1234.5);
-            Assert.IsType<double>(doubleQuantity.As(UnitSystem.SI));
-        }
-
-        [Fact]
-        public void IQuantityTUnitDecimal_Value_ReturnsDecimal()
-        {
-            IQuantity<InformationUnit, decimal> decimalQuantity = Information.FromKilobytes(1234.5);
-            Assert.IsType<decimal>(decimalQuantity.Value);
-        }
-
-        [Fact]
-        public void IQuantityTUnitDecimal_AsEnum_ReturnsDecimal()
-        {
-            IQuantity<InformationUnit, decimal> decimalQuantity = Information.FromKilobytes(1234.5);
-            Assert.IsType<decimal>(decimalQuantity.As(InformationUnit.Byte));
-        }
-
-        [Fact]
-        public void IQuantityTUnitDecimal_AsUnitSystem_ReturnsDecimal()
-        {
-            IQuantity<PowerUnit, decimal> decimalQuantity = Power.FromMegawatts(1234.5);
-            Assert.IsType<decimal>(decimalQuantity.As(UnitSystem.SI));
-        }
+            IQuantity quantity = new Mass(1, Mass.BaseUnit);
+            Assert.Throws<ArgumentException>(() => quantity.ToUnit(unsupportedUnitSystem));
+        });
     }
 }

@@ -28,7 +28,6 @@ namespace UnitsNet.Tests.CustomCode
 {
     public class MolarMassTests : MolarMassTestsBase
     {
-        protected override bool SupportsSIUnitSystem => false;
         protected override double CentigramsPerMoleInOneKilogramPerMole => 1e5;
         protected override double DecagramsPerMoleInOneKilogramPerMole => 1e2;
         protected override double DecigramsPerMoleInOneKilogramPerMole => 1e4;
@@ -43,5 +42,26 @@ namespace UnitsNet.Tests.CustomCode
         protected override double NanogramsPerMoleInOneKilogramPerMole => 1e12;
         protected override double PoundsPerMoleInOneKilogramPerMole => 2.2046226218487757;
         protected override double KilogramsPerKilomoleInOneKilogramPerMole => 1e3;
+
+        [Fact]
+        public void MolarMassTimesAmountOfSubstanceEqualsMass()
+        {
+            Mass mass = MolarMass.FromKilogramsPerMole(2) * AmountOfSubstance.FromMoles(5);
+            Assert.Equal(Mass.FromKilograms(10), mass);
+        }
+
+        [Fact]
+        public void MolarMassTimesMolarityEqualsMassConcentration()
+        {
+            MassConcentration massConcentration = MolarMass.FromKilogramsPerMole(2) * Molarity.FromMolesPerCubicMeter(5);
+            Assert.Equal(MassConcentration.FromKilogramsPerCubicMeter(10), massConcentration);
+        }
+
+        [Fact]
+        public void MolarMassTimesMolarFlowEqualsMassFlow()
+        {
+            MassFlow massFlow = MolarMass.FromKilogramsPerMole(2) * MolarFlow.FromMolesPerSecond(5);
+            Assert.Equal(MassFlow.FromKilogramsPerSecond(10), massFlow);
+        }
     }
 }
