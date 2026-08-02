@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Build, run tests and pack nugets for all Units.NET projects.
 .DESCRIPTION
@@ -9,7 +9,6 @@
     on the master branch.
 .EXAMPLE
   powershell ./build.ps1
-  powershell ./build.ps1 -IncludeNanoFramework
 
 .NOTES
     Author: Andreas Gullberg Larsen
@@ -17,34 +16,33 @@
     #>
 [CmdletBinding()]
 Param(
-    [switch] $IncludeNanoFramework
-  )
+  [switch] $SkipTests,
+  [switch] $SkipCoverage,
+  [switch] $SkipPack,
+  [switch] $SkipArchive
+)
 
 remove-module build-functions -ErrorAction SilentlyContinue
-import-module $PSScriptRoot\build-functions.psm1
+import-module (Join-Path $PSScriptRoot "build-functions.psm1")
 
 try {
-  & "$PSScriptRoot/init.ps1" # Ensure tools are downloaded
+  & "$PSScriptRoot/init.ps1" -SkipCoverageTools:($SkipTests -or $SkipCoverage)
 
   Remove-ArtifactsDir
   Update-GeneratedCode
 
   # Build main projects with dotnet CLI (cross-platform)
   Start-Build
-  Start-Tests
-  Start-PackNugets
-
-  # Build NanoFramework if requested (Windows-only, requires Visual Studio)
-  if ($IncludeNanoFramework) {
-    write-host -foreground cyan "`n===== Building NanoFramework projects (requires Visual Studio) =====`n"
-    Start-BuildNanoFramework
-    Start-PackNugetsNanoFramework
+  if (-not $SkipTests) {
+    Start-Tests -SkipCoverage:$SkipCoverage
   }
-  else {
-    write-host -foreground yellow "`nSkipping NanoFramework build. Use -IncludeNanoFramework flag to build NanoFramework projects.`n"
+  if (-not $SkipPack) {
+    Start-PackNugets
   }
 
-  Compress-ArtifactsAsZip
+  if (-not $SkipArchive) {
+    Compress-ArtifactsAsZip
+  }
 }
 catch {
   $myError = $_.Exception.ToString()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,8 +15,8 @@ namespace CodeGen.Helpers
             Dictionary<string, string> replacements)
         {
             var tempFilename = $"{sourceFile.FullName}.edited";
-            using (StreamReader input = sourceFile.OpenText())
-            using (var output = new StreamWriter(tempFilename))
+            using (StreamReader input = CodeGenFile.OpenText(sourceFile.FullName))
+            using (var output = CodeGenFile.CreateText(tempFilename))
             {
                 while (input.ReadLine() is { } line)
                 {
@@ -40,8 +40,6 @@ namespace CodeGen.Helpers
                     }
 
                     // Make sure all line endings on Windows are CRLF.
-                    // This is important for opening .nfproj flies in Visual Studio,
-                    // and maybe for some other files too.
                     line = line.Replace("\r", "").Replace("\n", Environment.NewLine);
 
                     output.WriteLine(line);

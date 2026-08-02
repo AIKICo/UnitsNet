@@ -1,4 +1,4 @@
-﻿// Licensed under MIT No Attribution, see LICENSE file at the root.
+// Licensed under MIT No Attribution, see LICENSE file at the root.
 // Copyright 2013 Andreas Gullberg Larsen (andreas.larsen84@gmail.com). Maintained at https://github.com/angularsen/UnitsNet.
 
 using System;
@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CodeGen.Exceptions;
+using CodeGen.Helpers;
 using CodeGen.Helpers.PrefixBuilder;
 using CodeGen.JsonTypes;
 using Newtonsoft.Json;
@@ -16,7 +17,7 @@ namespace CodeGen.Generators;
 /// <summary>
 ///     Parses JSON files that define quantities and their units.
 ///     This will later be used to generate source code and can be reused for different targets such as .NET framework,
-///     .NET Core, .NET nanoFramework and even other programming languages.
+///     .NET Core and even other programming languages.
 /// </summary>
 internal static class QuantityJsonFilesParser
 {
@@ -54,7 +55,7 @@ internal static class QuantityJsonFilesParser
     {
         try
         {
-            return JsonConvert.DeserializeObject<Quantity>(File.ReadAllText(jsonFileName), JsonSerializerSettings)
+            return JsonConvert.DeserializeObject<Quantity>(CodeGenFile.ReadAllText(jsonFileName), JsonSerializerSettings)
                    ?? throw new UnitsNetCodeGenException($"Unable to parse quantity from JSON file: {jsonFileName}");
         }
         catch (Exception e)
